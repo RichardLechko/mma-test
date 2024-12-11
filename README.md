@@ -13,31 +13,30 @@ This MMA software provides a comprehensive platform for scheduling and tracking 
 
 # Backend
 
-Language: Go (1.21+)
-Web Framework: Fiber
-Web Scraping:
+- Language: Go (1.21+)
+- Web Framework: Fiber
+- Web Scraping:
+-- Colly
+-- GoQuery
 
-Colly
-GoQuery
 
+- Scheduling: Robfig/cron
+- Metrics: Prometheus
+- Logging: Zerolog
+- Rate Limiting: Fiber middleware
+- Circuit Breaker: Sony Gobreaker
+- Hosting: AWS ECS
 
-Scheduling: Robfig/cron
-Metrics: Prometheus
-Logging: Zerolog
-Rate Limiting: Fiber middleware
-Circuit Breaker: Sony Gobreaker
-Hosting: AWS ECS
+# Database & Caching
 
-Database & Caching
+- Primary Database: Supabase (PostgreSQL)
+- Caching: Redis
+- Search: PostgreSQL Full-Text Search
 
-Primary Database: Supabase (PostgreSQL)
-Caching: Redis
-Search: PostgreSQL Full-Text Search
+# Authentication
 
-Authentication
-
-Provider: Supabase Auth
-Features:
+- Provider: Supabase Auth
+- Features:
 
 Magic Link
 OAuth Providers
