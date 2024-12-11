@@ -18,13 +18,10 @@
 ### Career Stats:
 - Record (wins-losses-draws-no contests)
 - Method of victory breakdown (KO/TKO, submissions, decisions)
-- Red/Blue corner history
   
 ### Status: 
-- Active status (boolean flag)
 - Promotion-specific rankings
 - Last fight date
-- Injury status
   
 ### Social Media: 
 - Official social handles, website
@@ -72,7 +69,6 @@
 
 ## 5. Fights (Bout)
 - Fight ID
-- Clear red corner vs blue corner designation
 - Weight class (enumerated type)
 - Gender-specific weight class handling
 - Scheduled rounds and time limits
@@ -139,7 +135,7 @@
 
 # RELATIONSHIPS:
 
-## 1. Event to Fight Cards: One-to-Many (Modified)
+## 1. Event to Fight Cards: One-to-Many
 - Events can have one OR more fight cards
 - Flexible structure for different promotion formats
 - Maintains event integrity
