@@ -1,6 +1,6 @@
 # CORE ENTITIES:
 
-## Fighters
+## 1. Fighters
 
 ### Basic Info: 
 - ID, full name, nickname, nationality, date of birth, weight class(es), stance, reach, height
