@@ -37,26 +37,25 @@ This MMA software provides a comprehensive platform for scheduling and tracking 
 
 - Provider: Supabase Auth
 - Features:
-
-Magic Link
-OAuth Providers
-
+  - Magic Link
+  - OAuth Providers
 
 
-Containerization & Orchestration
 
-Containerization: Docker
-CI/CD: GitHub Actions
+# Containerization & Orchestration
 
-Testing
+- Containerization: Docker
+- CI/CD: GitHub Actions
 
-E2E Testing: Cypress
-Backend Testing: Go's built-in testing framework
+# Testing
 
-Error Tracking
+- E2E Testing: Cypress
+- Backend Testing: Go's built-in testing framework
 
-Method: GitHub Issues
+# Error Tracking
 
-Proxy Rotation
+- Method: GitHub Issues
 
-Custom Go Implementation: Inline proxy rotation service
+# Proxy Rotation
+
+- Custom Go Implementation: Inline proxy rotation service
