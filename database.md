@@ -1,5 +1,14 @@
 # CORE ENTITIES:
 
+## 1. Promotion (Top-Level Entity)
+
+### Core Promotion Info:
+- name, country, website
+
+- Critical for separating different organizations' rules and structures
+- Allows tracking of promotion-specific rankings
+- Enables users to follow specific promotions
+
 ## 1. Fighters
 
 ### Basic Info: 
@@ -9,7 +18,7 @@
 - record (wins-losses-draws-no contests), knockouts, submissions
   
 ### Status: 
-- active/retired, ranking (if any), last fight date
+- active/retired (boolean flag), ranking (if any), last fight date
   
 ### Social Media: 
 - official social handles, website
