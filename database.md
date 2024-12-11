@@ -3,7 +3,7 @@
 ## 1. Fighters
 
 ### Basic Info: 
-- ID, full name, nickname, nationality, date of birth, weight class(es), stance, reach, height
+- ID, full name, nickname, nationality, date of birth, weight class(es), stance, reach, height, gender
   
 ### Career Stats:
 - record (wins-losses-draws-no contests), knockouts, submissions
