@@ -14,15 +14,20 @@
 - profile photo URL, banner photo URL
 
 
-Events
+## 2. Events
 
-
-Basic Info: ID, event name, promotion (UFC, Bellator, etc.), date and time, venue
-Location: city, state/province, country
-Status: announced/scheduled/completed/canceled
-Broadcast: main broadcaster, streaming platforms
-Event Type: PPV/Fight Night/etc.
-Media: poster URL, banner URL
+### Basic Info: 
+- ID, event name, promotion (UFC, Bellator, etc.), date and time, venue
+### Location: 
+- city, state/province, country
+### Status: 
+- announced/scheduled/completed/canceled
+### Broadcast: 
+- main broadcaster, streaming platforms
+### Event Type: 
+- PPV/Fight Night/etc.
+### Media: 
+- poster URL, banner URL
 
 
 Fight Cards
