@@ -30,23 +30,22 @@
 - poster URL, banner URL
 
 
-Fight Cards
+## 3. Fight Cards
 
 
-Main Card / Prelims designation
-Start time for each card section
-Broadcast information specific to card section
+### Main Card / Prelims designation
+### Start time for each card section
+### Broadcast information specific to card section
 
 
-Fights (Bout)
+## 4. Fights (Bout)
 
-
-Fight ID
-Two fighters (references to Fighter table)
-Weight class for this specific bout
-Number of rounds scheduled
-Bout order on card
-Status (scheduled/completed/canceled)
+### Fight ID
+### Two fighters (references to Fighter table)
+### Weight class for this specific bout
+### Number of rounds scheduled
+### Bout order on card
+### Status (scheduled/completed/canceled)
 Result (if completed): winner, method, time, round
 Fight bonus awards (Fight of Night, Performance bonus etc.)
 
