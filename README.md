@@ -16,8 +16,8 @@ This MMA software provides a comprehensive platform for scheduling and tracking 
 - Language: Go (1.21+)
 - Web Framework: Fiber
 - Web Scraping:
-- - Colly
--- GoQuery
+  - Colly
+  - GoQuery
 
 
 - Scheduling: Robfig/cron
