@@ -40,40 +40,46 @@
 
 ## 4. Fights (Bout)
 
-### Fight ID
-### Two fighters (references to Fighter table)
-### Weight class for this specific bout
-### Number of rounds scheduled
-### Bout order on card
-### Status (scheduled/completed/canceled)
-Result (if completed): winner, method, time, round
-Fight bonus awards (Fight of Night, Performance bonus etc.)
+- Fight ID
+- Two fighters (references to Fighter table)
+- Weight class for this specific bout
+- Number of rounds scheduled
+- Bout order on card
+- Status (scheduled/completed/canceled)
+- Result (if completed): winner, method, time, round
+- Fight bonus awards (Fight of Night, Performance bonus etc.)
 
 
-Users
+## 5. Users
+
+### Basic Info:
+- ID, email, name, timezone
+### Authentication:
+- auth provider details, last login
+### Settings:
+- notification preferences, display preferences
+### Account Status:
+- active/inactive, subscription tier if applicable
 
 
-Basic Info: ID, email, name, timezone
-Authentication: auth provider details, last login
-Settings: notification preferences, display preferences
-Account Status: active/inactive, subscription tier if applicable
+## 6. User Preferences
 
 
-User Preferences
+### Display preferences: 
+- dark/light mode, preferred weight classes
+### Notification settings: 
+- email, push, SMS preferences
+
+- Calendar sync preferences
+- Favorite fighters list
+- Followed promotions list
 
 
-Display preferences: dark/light mode, preferred weight classes
-Notification settings: email, push, SMS preferences
-Calendar sync preferences
-Favorite fighters list
-Followed promotions list
+## 7. Watchlist
 
 
-Watchlist
-
-
-User ID (reference to Users)
-Fight/Event ID
-Reminder settings
-Notes
-Status (watching/maybe/not watching)
+- User ID (reference to Users)
+- Fight/Event ID
+- Reminder settings
+- Notes
+- Status (watching/maybe/not watching)
