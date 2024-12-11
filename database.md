@@ -1,154 +1,225 @@
 # CORE ENTITIES:
 
 ## 1. Promotion (Top-Level Entity)
-
 ### Core Promotion Info:
-- name, country, website
+- ID, name, country, website
+- Organization-specific rules and ranking systems
+- Broadcasting partnerships and platforms
+- Social media and official channels
+- Created/Updated timestamps for tracking changes
 
-- Critical for separating different organizations' rules and structures
-- Allows tracking of promotion-specific rankings
-- Enables users to follow specific promotions
-
-## 1. Fighters
-
+## 2. Fighters
 ### Basic Info: 
-- ID, full name, nickname, nationality, date of birth, weight class(es), stance, reach, height, gender
-  
+- ID, full name, nickname, nationality, date of birth, gender
+- Physical attributes: stance, reach (cm), height (cm)
+- Weight class(es) history
+- Standardized measurements in metric
+
 ### Career Stats:
-- record (wins-losses-draws-no contests), knockouts, submissions
+- Record (wins-losses-draws-no contests)
+- Method of victory breakdown (KO/TKO, submissions, decisions)
+- Red/Blue corner history
   
 ### Status: 
-- active/retired (boolean flag), ranking (if any), last fight date
+- Active status (boolean flag)
+- Promotion-specific rankings
+- Last fight date
+- Injury status
   
 ### Social Media: 
-- official social handles, website
+- Official social handles, website
+- Verified status
   
 ### Media: 
-- profile photo URL, banner photo URL
+- Profile photo URL, banner photo URL
+- Walkout/highlight footage rights
 
-## 2. Events
-
+## 3. Events
 ### Basic Info: 
-- ID, event name, promotion (UFC, Bellator, etc.), date and time, venue
+- ID, event name
+- Promotion reference (foreign key)
+- Date and time (with timezone)
+- Venue details
   
 ### Location: 
-- city, state/province, country
+- City, state/province, country
+- Venue capacity
+- Geographic coordinates for location-based queries
   
 ### Status: 
-- announced/scheduled/completed/canceled
+- Event lifecycle (announced/scheduled/completed/canceled)
+- Change history tracking
   
 ### Broadcast: 
-- main broadcaster, streaming platforms
+- Primary broadcaster
+- Multiple streaming platform support
+- Region-specific broadcast rights
   
 ### Event Type: 
-- PPV/Fight Night/etc.
+- Format (PPV/Fight Night/Tournament/etc.)
+- Special event designation
   
 ### Media: 
-- poster URL, banner URL
+- Poster URL, banner URL
+- Broadcasting rights info
 
-## 3. Fight Cards
-- Main Card / Prelims designation
-- Start time for each card section
-- Broadcast information specific to card section
+## 4. Fight Cards
+- Optional relationship with events (can be single card)
+- Card type designation (main/prelim/early)
+- Independent broadcast information
+- Start and end times (with timezone)
+- Order within event
 
-## 4. Fights (Bout)
+## 5. Fights (Bout)
 - Fight ID
-- Two fighters (references to Fighter table)
-- Weight class for this specific bout
-- Number of rounds scheduled
+- Clear red corner vs blue corner designation
+- Weight class (enumerated type)
+- Gender-specific weight class handling
+- Scheduled rounds and time limits
 - Bout order on card
-- Status (scheduled/completed/canceled)
-- Result (if completed): winner, method, time, round
-- Fight bonus awards (Fight of Night, Performance bonus etc.)
+- Status tracking
+- Comprehensive result data
+- Performance bonuses
+- Created/Updated timestamps
 
-## 5. Users
-
+## 6. Users
 ### Basic Info:
-- ID, email, name, timezone
+- ID, email, name
+- Timezone handling
+- Language preferences
   
 ### Authentication:
-- auth provider details, last login
+- Multiple auth provider support
+- Session management
+- Security logs
   
 ### Settings:
-- notification preferences, display preferences
+- Granular notification controls
+- Display preferences
+- Data privacy settings
   
 ### Account Status:
-- active/inactive, subscription tier if applicable
+- Active/Inactive flag
+- Subscription management
+- Account history
 
-## 6. User Preferences
-
+## 7. User Preferences
 ### Display preferences: 
-- dark/light mode, preferred weight classes
+- Theme settings (dark/light/system)
+- Weight class filtering
+- Promotion filtering
+- Language/region settings
 
 ### Notification settings: 
-- email, push, SMS preferences
-- Calendar sync preferences
-- Favorite fighters list
-- Followed promotions list
+- Per-event notification rules
+- Channel preferences (email/push/SMS)
+- Frequency controls
+- Calendar integration preferences
 
-## 7. Watchlist
-- User ID (reference to Users)
-- Fight/Event ID
-- Reminder settings
-- Notes
-- Status (watching/maybe/not watching)
+### Following:
+- Favorite fighters (with notification rules)
+- Followed promotions
+- Custom fight/event reminders
+
+## 8. Watchlist
+- User reference
+- Event/Fight reference
+- Watch status (watching/maybe/not watching)
+- Custom reminder settings
+- Personal notes
+- Sharing preferences
+
+## 9. Rankings (New Entity)
+- Fighter reference
+- Promotion reference
+- Weight class
+- Current rank
+- Ranking history
+- Last updated timestamp
 
 # RELATIONSHIPS:
 
-## 1. Event to Fight Cards: One-to-Many
-- Each event has one or more fight cards (main card, prelims)
-- Fight cards belong to exactly one event
+## 1. Event to Fight Cards: One-to-Many (Modified)
+- Events can have one OR more fight cards
+- Flexible structure for different promotion formats
+- Maintains event integrity
 
 ## 2. Fight Cards to Fights: One-to-Many
-- Each fight card contains multiple fights
-- Each fight belongs to one fight card
+- Ordered fight listing
+- Position tracking
+- Broadcast segment alignment
 
-## 3. Fights to Fighters: Many-to-Two
-- Each fight has exactly two fighters
-- Fighters can have many fights
+## 3. Fights to Fighters: Two-to-One
+- Explicit red corner and blue corner assignment
+- One fight per event per fighter constraint
+- Historical bout tracking
 
 ## 4. Users to Watchlist: One-to-Many
-- Users can watch many events/fights
-- Each watchlist entry belongs to one user
+- Enhanced tracking capabilities
+- Personalized notes and reminders
+- Sharing options
 
 ## 5. Fighters to Users (Favorites): Many-to-Many
-- Users can favorite multiple fighters
-- Fighters can be favorited by multiple users
+- Notification preferences per fighter
+- Follow history tracking
+- Interaction logging
+
+## 6. Promotion to Events: One-to-Many
+- Organizational hierarchy
+- Promotion-specific event rules
+- Broadcasting rights management
 
 # ADDITIONAL TRACKING:
 
 ## 1. Fight History
-- Tracks changes to fight status
-- Records updates to fight card positioning
-- Maintains history of weight changes
+- Complete status change history
+- Card position changes
+- Weight changes and missing weight incidents
+- Result modifications
 
 ## 2. Event Updates
-- Tracks changes to event details
-- Records venue changes
-- Maintains broadcast information updates
+- Comprehensive change tracking
+- Venue/location modifications
+- Broadcast updates
+- Card structure changes
 
 ## 3. Fighter Status Changes
-- Records weight class changes
-- Tracks ranking updates
-- Maintains injury status
+- Weight class history
+- Ranking changes per promotion
+- Injury status tracking
+- Contract status (optional)
+
+## 4. Broadcasting Rights (New)
+- Region-specific availability
+- Platform rights
+- Blackout rules
+- Replay availability
 
 # INDEXES AND SEARCH CONSIDERATIONS:
 
 ## 1. Primary Search Fields
-- Fighter names (including nicknames)
-- Event names and locations
-- Dates (for events and fights)
-- Weight classes
+- Fighter names (including nicknames and variations)
+- Event details (name, location, date)
+- Promotion-specific searches
+- Weight class and gender combinations
 
 ## 2. Common Query Patterns
-- Upcoming events by date
-- Fighter's upcoming fights
-- Events by location
-- Fights by weight class
-- Recent results
+- Upcoming events (location and time-based)
+- Fighter schedules and history
+- Promotion-specific event listings
+- Weight class-specific queries
+- Recent results and rankings
 
 ## 3. Performance Considerations
-- Full-text search on fighter names and event titles
-- Date-based indexing for quick event lookup
-- Geographic indexing for location-based queries
-- Composite indexes for common filter combinations
+- Multi-language search support
+- Geospatial indexing
+- Temporal data optimization
+- Composite indexes for common filters
+- Caching strategies for frequent queries
+
+This schema is designed to be:
+1. Promotion-agnostic but promotion-aware
+2. Globally accessible and timezone-conscious
+3. Highly scalable for future feature additions
+4. Optimized for common user interactions
+5. Historically accurate with full audit capabilities
