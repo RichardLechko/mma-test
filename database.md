@@ -33,9 +33,9 @@
 ## 3. Fight Cards
 
 
-### Main Card / Prelims designation
-### Start time for each card section
-### Broadcast information specific to card section
+### - Main Card / Prelims designation
+### - Start time for each card section
+### - Broadcast information specific to card section
 
 
 ## 4. Fights (Bout)
