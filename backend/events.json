@@ -1,0 +1,4232 @@
+[
+  {
+    "name": "UFC Fight Night: Adesanya vs Imavov",
+    "date": "Sat, Feb 1 / 12:00 PM EST / Main Card",
+    "location": "Riyadh, Saudi Arabia",
+    "main_event": "Adesanya vs Imavov"
+  },
+  {
+    "name": "UFC 312: Du Plessis vs Strickland 2",
+    "date": "Sat, Feb 8 / 10:00 PM EST / Main Card",
+    "location": "Sydney Olympic Park, NSW, Australia",
+    "main_event": "Du Plessis vs Strickland"
+  },
+  {
+    "name": "UFC Fight Night: Cannonier vs Rodrigues",
+    "date": "Sat, Feb 15 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Cannonier vs Rodrigues"
+  },
+  {
+    "name": "UFC Fight Night: Cejudo vs Song",
+    "date": "Sat, Feb 22 / 9:00 PM EST / Main Card",
+    "location": "Seattle, WA, United States",
+    "main_event": "Cejudo vs Yadong"
+  },
+  {
+    "name": "UFC Fight Night: Royval vs Kape",
+    "date": "Sat, Mar 1 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Royval vs Kape"
+  },
+  {
+    "name": "UFC 313: Pereira vs Ankalaev",
+    "date": "Sat, Mar 8 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Pereira vs Ankalaev"
+  },
+  {
+    "name": "UFC Fight Night: TBD vs TBD",
+    "date": "Sat, Mar 15 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": ""
+  },
+  {
+    "name": "UFC Fight Night: Edwards vs Della Maddalena",
+    "date": "Sat, Mar 22 / 3:00 PM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 311: Makhachev vs Moicano",
+    "date": "Sat, Jan 18 / 10:00 PM EST / Main Card",
+    "location": "Inglewood, CA, United States",
+    "main_event": "Makhachev vs Moicano"
+  },
+  {
+    "name": "UFC Fight Night: Dern vs Ribas 2",
+    "date": "Sat, Jan 11 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dern vs Ribas"
+  },
+  {
+    "name": "UFC Fight Night: Covington vs Buckley",
+    "date": "Sat, Dec 14 / 10:00 PM EST / Main Card",
+    "location": "Tampa, FL, United States",
+    "main_event": "Covington vs Buckley"
+  },
+  {
+    "name": "UFC 310: Pantoja vs Asakura",
+    "date": "Sat, Dec 7 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Pantoja vs Asakura"
+  },
+  {
+    "name": "UFC Fight Night: Yan vs Figueiredo",
+    "date": "Sat, Nov 23 / 6:00 AM EST / Main Card",
+    "location": "",
+    "main_event": "Yan vs Figueiredo"
+  },
+  {
+    "name": "UFC 309: Jones vs Miocic",
+    "date": "Sat, Nov 16 / 10:00 PM EST / Main Card",
+    "location": "New York, NY, United States",
+    "main_event": "Jones vs Miocic"
+  },
+  {
+    "name": "UFC Fight Night: Magny vs Prates",
+    "date": "Sat, Nov 9 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Magny vs Prates"
+  },
+  {
+    "name": "UFC Fight Night: Moreno vs Albazi",
+    "date": "Sat, Nov 2 / 8:00 PM EDT / Main Card",
+    "location": "Edmonton, AB, Canada",
+    "main_event": "Moreno vs Albazi"
+  },
+  {
+    "name": "UFC Fight Night: TBD vs TBD",
+    "date": "Sat, Mar 29 / 7:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 308: Topuria vs Holloway",
+    "date": "Sat, Oct 26 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Topuria vs Holloway"
+  },
+  {
+    "name": "UFC Fight Night: Hernandez vs Pereira",
+    "date": "Sat, Oct 19 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Hernandez vs Pereira"
+  },
+  {
+    "name": "UFC Fight Night: Royval vs Taira",
+    "date": "Sat, Oct 12 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Royval vs Taira"
+  },
+  {
+    "name": "UFC 307: Pereira vs Rountree Jr.",
+    "date": "Sat, Oct 5 / 10:00 PM EDT / Main Card",
+    "location": "Salt Lake City, UT, United States",
+    "main_event": "Pereira vs Rountree Jr."
+  },
+  {
+    "name": "UFC Fight Night: Moicano vs Saint Denis",
+    "date": "Sat, Sep 28 / 3:00 PM EDT / Main Card",
+    "location": "Paris, France",
+    "main_event": "Moicano vs Saint Denis"
+  },
+  {
+    "name": "UFC /event/riyadh-season-noche-ufc: O'Malley vs Dvalishvili",
+    "date": "Sat, Sep 14 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "O'Malley vs Dvalishvili"
+  },
+  {
+    "name": "UFC Fight Night: Burns vs Brady",
+    "date": "Sat, Sep 7 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Burns vs Brady"
+  },
+  {
+    "name": "UFC Fight Night: Cannonier vs Borralho",
+    "date": "Sat, Aug 24 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Cannonier vs Borralho"
+  },
+  {
+    "name": "UFC 305: Du Plessis vs Adesanya",
+    "date": "Sat, Aug 17 / 10:00 PM EDT / Main Card",
+    "location": "Perth, WA, Australia",
+    "main_event": "Du Plessis vs Adesanya"
+  },
+  {
+    "name": "UFC Fight Night: Tybura vs Spivac 2",
+    "date": "Sat, Aug 10 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Tybura vs Spivac"
+  },
+  {
+    "name": "UFC Fight Night: Sandhagen vs Nurmagomedov",
+    "date": "Sat, Aug 3 / 3:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Sandhagen vs Nurmagomedov"
+  },
+  {
+    "name": "UFC 304: Edwards vs Muhammad 2",
+    "date": "Sat, Jul 27 / 10:00 PM EDT / Main Card",
+    "location": "Manchester, United Kingdom",
+    "main_event": "Edwards vs Muhammad"
+  },
+  {
+    "name": "UFC Fight Night: Lemos vs Jandiroba",
+    "date": "Sat, Jul 20 / 8:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lemos vs Jandiroba"
+  },
+  {
+    "name": "UFC Fight Night: Namajunas vs Cortez",
+    "date": "Sat, Jul 13 / 10:00 PM EDT / Main Card",
+    "location": "Denver, CO, United States",
+    "main_event": "Namajunas vs Cortez"
+  },
+  {
+    "name": "UFC 303: Pereira vs Prochazka 2",
+    "date": "Sat, Jun 29 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Pereira vs Prochazka"
+  },
+  {
+    "name": "UFC Fight Night: Whittaker vs Aliskerov",
+    "date": "Sat, Jun 22 / 3:00 PM EDT / Main Card",
+    "location": "Riyadh, Saudi Arabia",
+    "main_event": "Whittaker vs Aliskerov"
+  },
+  {
+    "name": "UFC Fight Night: Perez vs Taira",
+    "date": "Sat, Jun 15 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Perez vs Taira"
+  },
+  {
+    "name": "UFC Fight Night: Cannonier vs Imavov",
+    "date": "Sat, Jun 8 / 8:00 PM EDT / Main Card",
+    "location": "Louisville, KY, United States",
+    "main_event": "Cannonier vs Imavov"
+  },
+  {
+    "name": "UFC 302: Makhachev vs Poirier",
+    "date": "Sat, Jun 1 / 10:00 PM EDT / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Makhachev vs Poirier"
+  },
+  {
+    "name": "UFC Fight Night: Barboza vs Murphy",
+    "date": "Sat, May 18 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Barboza vs Murphy"
+  },
+  {
+    "name": "UFC Fight Night: Lewis vs Nascimento",
+    "date": "Sat, May 11 / 7:00 PM EDT / Main Card",
+    "location": "St. Louis, MO, United States",
+    "main_event": "Lewis vs Nascimento"
+  },
+  {
+    "name": "UFC 301: Pantoja vs Erceg",
+    "date": "Sat, May 4 / 10:00 PM EDT / Main Card",
+    "location": "Rio de Janeiro, Brazil",
+    "main_event": "Pantoja vs Erceg"
+  },
+  {
+    "name": "UFC Fight Night: Nicolau vs Perez",
+    "date": "Sat, Apr 27 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Nicolau vs Perez"
+  },
+  {
+    "name": "UFC 300: Pereira vs Hill",
+    "date": "Sat, Apr 13 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Pereira vs Hill"
+  },
+  {
+    "name": "UFC Fight Night: Allen vs Curtis 2",
+    "date": "Sat, Apr 6 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Allen vs Curtis"
+  },
+  {
+    "name": "UFC Fight Night: Blanchfield vs Fiorot",
+    "date": "Sat, Mar 30 / 10:00 PM EDT / Main Card",
+    "location": "Atlantic City, NJ, United States",
+    "main_event": "Blanchfield vs Fiorot"
+  },
+  {
+    "name": "UFC Fight Night: Ribas vs Namajunas",
+    "date": "Sat, Mar 23 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Ribas vs Namajunas"
+  },
+  {
+    "name": "UFC Fight Night: Tuivasa vs Tybura",
+    "date": "Sat, Mar 16 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Tuivasa vs Tybura"
+  },
+  {
+    "name": "UFC 299: O'Malley vs Vera 2",
+    "date": "Sat, Mar 9 / 10:00 PM EST / Main Card",
+    "location": "Miami, FL, United States",
+    "main_event": "O'Malley vs Vera"
+  },
+  {
+    "name": "UFC Fight Night: Rozenstruik vs Gaziev",
+    "date": "Sat, Mar 2 / 4:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Rozenstruik vs Gaziev"
+  },
+  {
+    "name": "UFC Fight Night: Moreno vs Royval 2",
+    "date": "Sat, Feb 24 / 10:00 PM EST / Main Card",
+    "location": "México D.F., CDMX, Mexico",
+    "main_event": "Moreno vs Royval"
+  },
+  {
+    "name": "UFC 298: Volkanovski vs Topuria",
+    "date": "Sat, Feb 17 / 10:00 PM EST / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Volkanovski vs Topuria"
+  },
+  {
+    "name": "UFC Fight Night: Hermansson vs Pyfer",
+    "date": "Sat, Feb 10 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Hermansson vs Pyfer"
+  },
+  {
+    "name": "UFC Fight Night: Dolidze vs Imavov",
+    "date": "Sat, Feb 3 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dolidze vs Imavov"
+  },
+  {
+    "name": "UFC 297: Strickland vs Du Plessis",
+    "date": "Sat, Jan 20 / 10:00 PM EST / Main Card",
+    "location": "Toronto, ON, Canada",
+    "main_event": "Strickland vs Du Plessis"
+  },
+  {
+    "name": "UFC Fight Night: ANKALAEV vs WALKER 2",
+    "date": "Sat, Jan 13 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Ankalaev vs Walker"
+  },
+  {
+    "name": "UFC 296: EDWARDS vs COVINGTON",
+    "date": "Sat, Dec 16 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Edwards vs Covington"
+  },
+  {
+    "name": "UFC Fight Night: Song vs Gutierrez",
+    "date": "Sat, Dec 9 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Yadong vs Gutierrez"
+  },
+  {
+    "name": "UFC Fight Night: Dariush vs Tsarukyan",
+    "date": "Sat, Dec 2 / 7:00 PM EST / Main Card",
+    "location": "Austin, TX, United States",
+    "main_event": "Dariush vs Tsarukyan"
+  },
+  {
+    "name": "UFC Fight Night: Allen vs Craig",
+    "date": "Sat, Nov 18 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Allen vs Craig"
+  },
+  {
+    "name": "UFC 295: Procházka vs Pereira",
+    "date": "Sat, Nov 11 / 10:00 PM EST / Main Card",
+    "location": "New York, NY, United States",
+    "main_event": "Prochazka vs Pereira"
+  },
+  {
+    "name": "UFC Fight Night: Almeida vs Lewis",
+    "date": "Sat, Nov 4 / 9:00 PM EDT / Main Card",
+    "location": "São Paulo, Brazil",
+    "main_event": "Almeida vs Lewis"
+  },
+  {
+    "name": "UFC 294: Makhachev vs Volkanovski 2",
+    "date": "Sat, Oct 21 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Makhachev vs Volkanovski"
+  },
+  {
+    "name": "UFC Fight Night: Yusuff vs Barboza",
+    "date": "Sat, Oct 14 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Yusuff vs Barboza"
+  },
+  {
+    "name": "UFC Fight Night: Dawson vs Green",
+    "date": "Sat, Oct 7 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dawson vs Green"
+  },
+  {
+    "name": "UFC Fight Night: Fiziev vs Gamrot",
+    "date": "Sat, Sep 23 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Fiziev vs Gamrot"
+  },
+  {
+    "name": "UFC Fight Night: Grasso vs Shevchenko 2",
+    "date": "Sat, Sep 16 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Grasso vs Shevchenko"
+  },
+  {
+    "name": "UFC 293: Adesanya vs Strickland",
+    "date": "Sat, Sep 9 / 10:00 PM EDT / Main Card",
+    "location": "Sydney Olympic Park, NSW, Australia",
+    "main_event": "Adesanya vs Strickland"
+  },
+  {
+    "name": "UFC Fight Night: Gane vs Spivac",
+    "date": "Sat, Sep 2 / 3:00 PM EDT / Main Card",
+    "location": "Paris, France",
+    "main_event": "Gane vs Spivac"
+  },
+  {
+    "name": "UFC Fight Night: Holloway vs The Korean Zombie",
+    "date": "Sat, Aug 26 / 8:00 AM EDT / Main Card",
+    "location": "Singapore, Singapore",
+    "main_event": "Holloway vs Jung"
+  },
+  {
+    "name": "UFC 292: Sterling vs O'Malley",
+    "date": "Sat, Aug 19 / 10:00 PM EDT / Main Card",
+    "location": "Boston, MA, United States",
+    "main_event": "Sterling vs O'Malley"
+  },
+  {
+    "name": "UFC Fight Night: Luque vs Dos Anjos",
+    "date": "Sat, Aug 12 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Luque vs Dos Anjos"
+  },
+  {
+    "name": "UFC Fight Night: Sandhagen vs Font",
+    "date": "Sat, Aug 5 / 9:00 PM EDT / Main Card",
+    "location": "Nashville, TN, United States",
+    "main_event": "Sandhagen vs Font"
+  },
+  {
+    "name": "UFC 291: Poirier vs Gaethje 2",
+    "date": "Sat, Jul 29 / 10:00 PM EDT / Main Card",
+    "location": "Salt Lake City, UT, United States",
+    "main_event": "Poirier vs Gaethje"
+  },
+  {
+    "name": "UFC Fight Night: Aspinall vs Tybura",
+    "date": "Sat, Jul 22 / 3:00 PM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Aspinall vs Tybura"
+  },
+  {
+    "name": "UFC Fight Night: Holm vs Bueno Silva",
+    "date": "Sat, Jul 15 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Holm vs Silva"
+  },
+  {
+    "name": "UFC 290: Volkanovski vs Rodriguez",
+    "date": "Sat, Jul 8 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Volkanovski vs Rodriguez"
+  },
+  {
+    "name": "UFC Fight Night: Strickland vs Magomedov",
+    "date": "Sat, Jul 1 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Strickland vs Magomedov"
+  },
+  {
+    "name": "UFC Fight Night: Emmett vs Topuria",
+    "date": "Sat, Jun 24 / 3:00 PM EDT / Main Card",
+    "location": "Jacksonville, FL, United States",
+    "main_event": "Emmett vs Topuria"
+  },
+  {
+    "name": "UFC Fight Night: Vettori vs Cannonier",
+    "date": "Sat, Jun 17 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Vettori vs Cannonier"
+  },
+  {
+    "name": "UFC 289: Nunes vs Aldana",
+    "date": "Sat, Jun 10 / 10:00 PM EDT / Main Card",
+    "location": "Vancouver, BC, Canada",
+    "main_event": "Nunes vs Aldana"
+  },
+  {
+    "name": "UFC Fight Night: Kara-France vs Albazi",
+    "date": "Sat, Jun 3 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "France vs Albazi"
+  },
+  {
+    "name": "UFC Fight Night: Dern vs Hill",
+    "date": "Sat, May 20 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dern vs Hill"
+  },
+  {
+    "name": "UFC Fight Night: Rozenstruik vs Almeida",
+    "date": "Sat, May 13 / 3:00 PM EDT / Main Card",
+    "location": "Charlotte, NC, United States",
+    "main_event": "Rozenstruik vs Almeida"
+  },
+  {
+    "name": "UFC 288: Sterling vs Cejudo",
+    "date": "Sat, May 6 / 10:00 PM EDT / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Sterling vs Cejudo"
+  },
+  {
+    "name": "UFC Fight Night: Song vs Simon",
+    "date": "Sat, Apr 29 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Yadong vs Simon"
+  },
+  {
+    "name": "UFC Fight Night: Pavlovich vs Blaydes",
+    "date": "Sat, Apr 22 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Pavlovich vs Blaydes"
+  },
+  {
+    "name": "UFC Fight Night: Holloway vs Allen",
+    "date": "Sat, Apr 15 / 8:30 PM EDT / Main Card",
+    "location": "Kansas City, MO, United States",
+    "main_event": "Holloway vs Allen"
+  },
+  {
+    "name": "UFC 287: Pereira vs Adesanya 2",
+    "date": "Sat, Apr 8 / 10:00 PM EDT / Main Card",
+    "location": "Miami, FL, United States",
+    "main_event": "Pereira vs Adesanya"
+  },
+  {
+    "name": "UFC Fight Night: Vera vs Sandhagen",
+    "date": "Sat, Mar 25 / 7:00 PM EDT / Main Card",
+    "location": "San Antonio, TX, United States",
+    "main_event": "Vera vs Sandhagen"
+  },
+  {
+    "name": "UFC 286: Edwards vs Usman 3",
+    "date": "Sat, Mar 18 / 5:00 PM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Edwards vs Usman"
+  },
+  {
+    "name": "UFC Fight Night: Yan vs Dvalishvili",
+    "date": "Sat, Mar 11 / 6:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Yan vs Dvalishvili"
+  },
+  {
+    "name": "UFC 285: Jones vs Gane",
+    "date": "Sat, Mar 4 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Jones vs Gane"
+  },
+  {
+    "name": "UFC Fight Night: Muniz vs Allen",
+    "date": "Sat, Feb 25 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Muniz vs Allen"
+  },
+  {
+    "name": "UFC Fight Night: Andrade vs Blanchfield",
+    "date": "Sat, Feb 18 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Andrade vs Blanchfield"
+  },
+  {
+    "name": "UFC 284: Makhachev vs Volkanovski",
+    "date": "Sat, Feb 11 / 10:00 PM EST / Main Card",
+    "location": "Perth, WA, Australia",
+    "main_event": "Makhachev vs Volkanovski"
+  },
+  {
+    "name": "UFC Fight Night: Lewis vs Spivac",
+    "date": "Sun, Feb 5 / 1:00 AM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lewis vs Spivac"
+  },
+  {
+    "name": "UFC 283: Teixeira vs Hill",
+    "date": "Sat, Jan 21 / 10:00 PM EST / Main Card",
+    "location": "Rio de Janeiro, Brazil",
+    "main_event": "Teixeira vs Hill"
+  },
+  {
+    "name": "UFC Fight Night: Strickland vs Imavov",
+    "date": "Sat, Jan 14 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Strickland vs Imavov"
+  },
+  {
+    "name": "UFC Fight Night: Cannonier vs Strickland",
+    "date": "Sat, Dec 17 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Cannonier vs Strickland"
+  },
+  {
+    "name": "UFC 282: Blachowicz vs Ankalaev",
+    "date": "Sat, Dec 10 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Blachowicz vs Ankalaev"
+  },
+  {
+    "name": "UFC Fight Night: Thompson vs Holland",
+    "date": "Sat, Dec 3 / 10:00 PM EST / Main Card",
+    "location": "Orlando, FL, United States",
+    "main_event": "Thompson vs Holland"
+  },
+  {
+    "name": "UFC Fight Night: Nzechukwu vs Cutelaba",
+    "date": "Sat, Nov 19 / 4:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Nzechukwu vs Cutelaba"
+  },
+  {
+    "name": "UFC 281: Adesanya vs Pereira",
+    "date": "Sat, Nov 12 / 10:00 PM EST / Main Card",
+    "location": "New York, NY, United States",
+    "main_event": "Adesanya vs Pereira"
+  },
+  {
+    "name": "UFC Fight Night: Rodriguez vs Lemos",
+    "date": "Sat, Nov 5 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Rodriguez vs Lemos"
+  },
+  {
+    "name": "UFC Fight Night: Kattar vs Allen",
+    "date": "Sat, Oct 29 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Kattar vs Allen"
+  },
+  {
+    "name": "UFC 280: Oliveira vs Makhachev",
+    "date": "Sat, Oct 22 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Oliveira vs Makhachev"
+  },
+  {
+    "name": "UFC Fight Night: Grasso vs Araujo",
+    "date": "Sat, Oct 15 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Grasso vs Araujo"
+  },
+  {
+    "name": "UFC Fight Night: Dern vs Yan",
+    "date": "Sat, Oct 1 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dern vs Yan"
+  },
+  {
+    "name": "UFC Fight Night: Sandhagen vs Song",
+    "date": "Sat, Sep 17 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Sandhagen vs Yadong"
+  },
+  {
+    "name": "UFC 279: Diaz vs Ferguson",
+    "date": "Sat, Sep 10 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Diaz vs Ferguson"
+  },
+  {
+    "name": "UFC Fight Night: Gane vs Tuivasa",
+    "date": "Sat, Sep 3 / 3:00 PM EDT / Main Card",
+    "location": "Paris, France",
+    "main_event": "Gane vs Tuivasa"
+  },
+  {
+    "name": "UFC 278: Usman vs Edwards",
+    "date": "Sat, Aug 20 / 10:00 PM EDT / Main Card",
+    "location": "Salt Lake City, UT, United States",
+    "main_event": "Usman vs Edwards"
+  },
+  {
+    "name": "UFC Fight Night: Vera vs Cruz",
+    "date": "Sat, Aug 13 / 7:00 PM EDT / Main Card",
+    "location": "San Diego, CA, United States",
+    "main_event": "Vera vs Cruz"
+  },
+  {
+    "name": "UFC Fight Night: Santos vs Hill",
+    "date": "Sat, Aug 6 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Santos vs Hill"
+  },
+  {
+    "name": "UFC 277: Peña vs Nunes",
+    "date": "Sat, Jul 30 / 10:00 PM EDT / Main Card",
+    "location": "Dallas, TX, United States",
+    "main_event": "Peña vs Nunes"
+  },
+  {
+    "name": "UFC Fight Night: Blaydes vs Aspinall",
+    "date": "Sat, Jul 23 / 3:00 PM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Blaydes vs Aspinall"
+  },
+  {
+    "name": "UFC Fight Night: Ortega vs Rodriguez",
+    "date": "Sat, Jul 16 / 2:00 PM EDT / Main Card",
+    "location": "Elmont, NY, United States",
+    "main_event": "Ortega vs Rodriguez"
+  },
+  {
+    "name": "UFC Fight Night: Dos Anjos vs Fiziev",
+    "date": "Sat, Jul 9 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dos Anjos vs Fiziev"
+  },
+  {
+    "name": "UFC 276: Adesanya vs Cannonier",
+    "date": "Sat, Jul 2 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Adesanya vs Cannonier"
+  },
+  {
+    "name": "UFC Fight Night: Tsarukyan vs Gamrot",
+    "date": "Sat, Jun 25 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Tsarukyan vs Gamrot"
+  },
+  {
+    "name": "UFC Fight Night: Kattar vs Emmett",
+    "date": "Sat, Jun 18 / 7:00 PM EDT / Main Card",
+    "location": "Austin, TX, United States",
+    "main_event": "Kattar vs Emmett"
+  },
+  {
+    "name": "UFC 275: Teixeira vs Prochazka",
+    "date": "Sat, Jun 11 / 10:00 PM EDT / Main Card",
+    "location": "Singapore, Singapore",
+    "main_event": "Teixeira vs Prochazka"
+  },
+  {
+    "name": "UFC Fight Night: Volkov vs Rozenstruik",
+    "date": "Sat, Jun 4 / 4:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Volkov vs Rozenstruik"
+  },
+  {
+    "name": "UFC Fight Night: Holm vs Vieira",
+    "date": "Sat, May 21 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Holm vs Vieira"
+  },
+  {
+    "name": "UFC Fight Night: Blachowicz vs Rakic",
+    "date": "Sat, May 14 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Blachowicz vs Rakic"
+  },
+  {
+    "name": "UFC 274: Oliveira vs Gaethje",
+    "date": "Sat, May 7 / 10:00 PM EDT / Main Card",
+    "location": "Phoenix, AZ, United States",
+    "main_event": "Oliveira vs Gaethje"
+  },
+  {
+    "name": "UFC Fight Night: Font vs Vera",
+    "date": "Sat, Apr 30 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Font vs Vera"
+  },
+  {
+    "name": "UFC Fight Night: Lemos vs Andrade",
+    "date": "Sat, Apr 23 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lemos vs Andrade"
+  },
+  {
+    "name": "UFC Fight Night: Luque vs Muhammad",
+    "date": "Sat, Apr 16 / 8:30 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Luque vs Muhammad"
+  },
+  {
+    "name": "UFC 273: Volkanovski vs The Korean Zombie",
+    "date": "Sat, Apr 9 / 10:00 PM EDT / Main Card",
+    "location": "Jacksonville, FL, United States",
+    "main_event": "Volkanovski vs Jung"
+  },
+  {
+    "name": "UFC Fight Night: Blaydes vs Daukaus",
+    "date": "Sat, Mar 26 / 7:00 PM EDT / Main Card",
+    "location": "Columbus, OH, United States",
+    "main_event": "Blaydes vs Daukaus"
+  },
+  {
+    "name": "UFC Fight Night: Volkov vs Aspinall",
+    "date": "Sat, Mar 19 / 4:00 PM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Volkov vs Aspinall"
+  },
+  {
+    "name": "UFC Fight Night: Santos vs Ankalaev",
+    "date": "Sat, Mar 12 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Santos vs Ankalaev"
+  },
+  {
+    "name": "UFC 272: Covington vs Masvidal",
+    "date": "Sat, Mar 5 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Covington vs Masvidal"
+  },
+  {
+    "name": "UFC Fight Night: Makhachev vs Green",
+    "date": "Sat, Feb 26 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Makhachev vs Green"
+  },
+  {
+    "name": "UFC Fight Night: Walker vs Hill",
+    "date": "Sat, Feb 19 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Walker vs Hill"
+  },
+  {
+    "name": "UFC 271: Adesanya vs Whittaker",
+    "date": "Sat, Feb 12 / 10:00 PM EST / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Adesanya vs Whittaker"
+  },
+  {
+    "name": "UFC Fight Night: Hermansson vs Strickland",
+    "date": "Sat, Feb 5 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Hermansson vs Strickland"
+  },
+  {
+    "name": "UFC 270: Ngannou vs Gane",
+    "date": "Sat, Jan 22 / 10:00 PM EST / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Ngannou vs Gane"
+  },
+  {
+    "name": "UFC Fight Night: Kattar vs Chikadze",
+    "date": "Sat, Jan 15 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Kattar vs Chikadze"
+  },
+  {
+    "name": "UFC Fight Night: Lewis vs Daukaus",
+    "date": "Sat, Dec 18 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lewis vs Daukaus"
+  },
+  {
+    "name": "UFC 269: Oliveira vs Poirier",
+    "date": "Sat, Dec 11 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Oliveira vs Poirier"
+  },
+  {
+    "name": "UFC Fight Night: Font vs Aldo",
+    "date": "Sat, Dec 4 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Font vs Aldo"
+  },
+  {
+    "name": "UFC Fight Night: Vieira vs Tate",
+    "date": "Sat, Nov 20 / 6:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Vieira vs Tate"
+  },
+  {
+    "name": "UFC Fight Night: Holloway vs Rodriguez",
+    "date": "Sat, Nov 13 / 4:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Holloway vs Rodriguez"
+  },
+  {
+    "name": "UFC 268: Usman vs Covington",
+    "date": "Sat, Nov 6 / 10:00 PM EDT / Main Card",
+    "location": "New York, NY, United States",
+    "main_event": "Usman vs Covington"
+  },
+  {
+    "name": "UFC 267: Blachowicz vs Teixeira",
+    "date": "Sat, Oct 30 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Blachowicz vs Teixeira"
+  },
+  {
+    "name": "UFC Fight Night: Costa vs Vettori",
+    "date": "Sat, Oct 23 / 4:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Costa vs Vettori"
+  },
+  {
+    "name": "UFC Fight Night: Ladd vs Dumont",
+    "date": "Sat, Oct 16 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Ladd vs Dumont"
+  },
+  {
+    "name": "UFC Fight Night: Dern vs Rodriguez",
+    "date": "Sat, Oct 9 / 4:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dern vs Rodriguez"
+  },
+  {
+    "name": "UFC Fight Night: Santos vs Walker",
+    "date": "Sat, Oct 2 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Santos vs Walker"
+  },
+  {
+    "name": "UFC 266: Volkanovski vs Ortega",
+    "date": "Sat, Sep 25 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Volkanovski vs Ortega"
+  },
+  {
+    "name": "UFC Fight Night: Smith vs Spann",
+    "date": "Sat, Sep 18 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Smith vs Spann"
+  },
+  {
+    "name": "UFC Fight Night: Brunson vs Till",
+    "date": "Sat, Sep 4 / 4:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Brunson vs Till"
+  },
+  {
+    "name": "UFC Fight Night: Barboza vs Chikadze",
+    "date": "Sat, Aug 28 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Barboza vs Chikadze"
+  },
+  {
+    "name": "UFC Fight Night: Cannonier vs Gastelum",
+    "date": "Sat, Aug 21 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Cannonier vs Gastelum"
+  },
+  {
+    "name": "UFC 265: Lewis vs Gane",
+    "date": "Sat, Aug 7 / 10:00 PM EDT / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Lewis vs Gane"
+  },
+  {
+    "name": "UFC Fight Night: Hall vs Strickland",
+    "date": "Sat, Jul 31 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Hall vs Strickland"
+  },
+  {
+    "name": "UFC Fight Night: Sandhagen vs Dillashaw",
+    "date": "Sat, Jul 24 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Sandhagen vs Dillashaw"
+  },
+  {
+    "name": "UFC Fight Night: Makhachev vs Moises",
+    "date": "Sat, Jul 17 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Makhachev vs Moises"
+  },
+  {
+    "name": "UFC 264: Poirier vs McGregor",
+    "date": "Sat, Jul 10 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Poirier vs McGregor"
+  },
+  {
+    "name": "UFC Fight Night: Gane vs Volkov",
+    "date": "Sat, Jun 26 / 4:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Gane vs Volkov"
+  },
+  {
+    "name": "UFC Fight Night: Jung vs Ige",
+    "date": "Sat, Jun 19 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Jung vs Ige"
+  },
+  {
+    "name": "UFC 263: Adesanya vs Vettori",
+    "date": "Sat, Jun 12 / 10:00 PM EDT / Main Card",
+    "location": "Glendale, AZ, United States",
+    "main_event": "Adesanya vs Vettori"
+  },
+  {
+    "name": "UFC Fight Night: Rozenstruik vs Sakai",
+    "date": "Sat, Jun 5 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Rozenstruik vs Sakai"
+  },
+  {
+    "name": "UFC Fight Night: Font vs Garbrandt",
+    "date": "Sat, May 22 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Font vs Garbrandt"
+  },
+  {
+    "name": "UFC 262: Oliveira vs Chandler",
+    "date": "Sat, May 15 / 10:00 PM EDT / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Oliveira vs Chandler"
+  },
+  {
+    "name": "UFC Fight Night: Rodriguez vs Waterson",
+    "date": "Sat, May 8 / 8:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Rodriguez vs Waterson-Gomez"
+  },
+  {
+    "name": "UFC Fight Night: Reyes vs Prochazka",
+    "date": "Sat, May 1 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Reyes vs Prochazka"
+  },
+  {
+    "name": "UFC 261: Usman vs Masvidal",
+    "date": "Sat, Apr 24 / 10:00 PM EDT / Main Card",
+    "location": "Jacksonville, FL, United States",
+    "main_event": "Usman vs Masvidal"
+  },
+  {
+    "name": "UFC Fight Night: Whittaker vs Gastelum",
+    "date": "Sat, Apr 17 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Whittaker vs Gastelum"
+  },
+  {
+    "name": "UFC Fight Night: Vettori vs Holland",
+    "date": "Sat, Apr 10 / 3:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Vettori vs Holland"
+  },
+  {
+    "name": "UFC 260: Miocic vs Ngannou",
+    "date": "Sat, Mar 27 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Miocic vs Ngannou"
+  },
+  {
+    "name": "UFC Fight Night: Brunson vs Holland",
+    "date": "Sat, Mar 20 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Brunson vs Holland"
+  },
+  {
+    "name": "UFC Fight Night: Edwards vs Muhammad",
+    "date": "Sat, Mar 13 / 8:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Edwards vs Muhammad"
+  },
+  {
+    "name": "UFC 259: Blachowicz vs Adesanya",
+    "date": "Sat, Mar 6 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Blachowicz vs Adesanya"
+  },
+  {
+    "name": "UFC Fight Night: Rozenstruik vs Gane",
+    "date": "Sat, Feb 27 / 8:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Rozenstruik vs Gane"
+  },
+  {
+    "name": "UFC Fight Night: Blaydes vs Lewis",
+    "date": "Sat, Feb 20 / 8:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Blaydes vs Lewis"
+  },
+  {
+    "name": "UFC 258: Usman vs Burns",
+    "date": "Sat, Feb 13 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Usman vs Burns"
+  },
+  {
+    "name": "UFC Fight Night: Overeem vs Volkov",
+    "date": "Sat, Feb 6 / 8:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Overeem vs Volkov"
+  },
+  {
+    "name": "UFC 257: Poirier vs McGregor",
+    "date": "Sat, Jan 23 / 10:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Poirier vs McGregor"
+  },
+  {
+    "name": "UFC Fight Night: Chiesa vs Magny",
+    "date": "Wed, Jan 20 / 12:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Chiesa vs Magny"
+  },
+  {
+    "name": "UFC Fight Night: Holloway vs Kattar",
+    "date": "Sat, Jan 16 / 3:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Holloway vs Kattar"
+  },
+  {
+    "name": "UFC Fight Night: Thompson vs Neal",
+    "date": "Sat, Dec 19 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Thompson vs Neal"
+  },
+  {
+    "name": "UFC 256: Figueiredo vs Moreno",
+    "date": "Sat, Dec 12 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Figueiredo vs Moreno"
+  },
+  {
+    "name": "UFC Fight Night: Hermansson vs Vettori",
+    "date": "Sat, Dec 5 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Hermansson vs Vettori"
+  },
+  {
+    "name": "UFC Fight Night: Smith vs Clark",
+    "date": "Sat, Nov 28 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Smith vs Clark"
+  },
+  {
+    "name": "UFC 255: Figueiredo vs Perez",
+    "date": "Sat, Nov 21 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Figueiredo vs Perez"
+  },
+  {
+    "name": "UFC Fight Night: Felder vs Dos Anjos",
+    "date": "Sat, Nov 14 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Felder vs Dos Anjos"
+  },
+  {
+    "name": "UFC Fight Night: Santos vs Teixeira",
+    "date": "Sat, Nov 7 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Santos vs Teixeira"
+  },
+  {
+    "name": "UFC Fight Night: Hall vs Silva",
+    "date": "Sat, Oct 31 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Hall vs Silva"
+  },
+  {
+    "name": "UFC 254: Khabib vs Gaethje",
+    "date": "Sat, Oct 24 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Nurmagomedov vs Gaethje"
+  },
+  {
+    "name": "UFC Fight Night: Ortega vs Jung",
+    "date": "Sat, Oct 17 / 7:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Ortega vs Jung"
+  },
+  {
+    "name": "UFC Fight Night: Moraes vs Sandhagen",
+    "date": "Sat, Oct 10 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Moraes vs Sandhagen"
+  },
+  {
+    "name": "UFC Fight Night: Holm vs Aldana",
+    "date": "Sat, Oct 3 / 10:30 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Holm vs Aldana"
+  },
+  {
+    "name": "UFC 253: Adesanya vs Costa",
+    "date": "Sat, Sep 26 / 10:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Adesanya vs Costa"
+  },
+  {
+    "name": "UFC Fight Night: Covington vs Woodley",
+    "date": "Sat, Sep 19 / 8:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Covington vs Woodley"
+  },
+  {
+    "name": "UFC Fight Night: Waterson vs Hill",
+    "date": "Sat, Sep 12 / 8:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Waterson-Gomez vs Hill"
+  },
+  {
+    "name": "UFC Fight Night: Overeem vs Sakai",
+    "date": "Sat, Sep 5 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Overeem vs Sakai"
+  },
+  {
+    "name": "UFC Fight Night: Smith vs Rakic",
+    "date": "Sat, Aug 29 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Smith vs Rakic"
+  },
+  {
+    "name": "UFC Fight Night: Munhoz vs Edgar",
+    "date": "Sat, Aug 22 / 8:30 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Munhoz vs Edgar"
+  },
+  {
+    "name": "UFC 252: Miocic vs Cormier",
+    "date": "Sat, Aug 15 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Miocic vs Cormier"
+  },
+  {
+    "name": "UFC Fight Night: Lewis vs Oleinik",
+    "date": "Sat, Aug 8 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lewis vs Oleinik"
+  },
+  {
+    "name": "UFC Fight Night: Brunson vs Shahbazyan",
+    "date": "Sat, Aug 1 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Brunson vs Shahbazyan"
+  },
+  {
+    "name": "UFC Fight Night: Whittaker vs Till",
+    "date": "Sat, Jul 25 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Whittaker vs Till"
+  },
+  {
+    "name": "UFC Fight Night: Figueiredo vs Benavidez",
+    "date": "Sat, Jul 18 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Figueiredo vs Benavidez"
+  },
+  {
+    "name": "UFC Fight Night: Kattar vs Ige",
+    "date": "Wed, Jul 15 / 10:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Kattar vs Ige"
+  },
+  {
+    "name": "UFC 251: Usman vs Masvidal",
+    "date": "Sat, Jul 11 / 10:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Usman vs Masvidal"
+  },
+  {
+    "name": "UFC Fight Night: Poirier vs Hooker",
+    "date": "Sat, Jun 27 / 8:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Poirier vs Hooker"
+  },
+  {
+    "name": "UFC Fight Night: Blaydes vs Volkov",
+    "date": "Sat, Jun 20 / 8:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Blaydes vs Volkov"
+  },
+  {
+    "name": "UFC Fight Night: Eye vs Calvillo",
+    "date": "Sat, Jun 13 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Eye vs Calvillo"
+  },
+  {
+    "name": "UFC 250: Nunes vs Spencer",
+    "date": "Sat, Jun 6 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Nunes vs Spencer"
+  },
+  {
+    "name": "UFC Fight Night: Woodley vs Burns",
+    "date": "Sat, May 30 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Woodley vs Burns"
+  },
+  {
+    "name": "UFC Fight Night: Overeem vs Harris",
+    "date": "Sat, May 16 / 9:00 PM EDT / Main Card",
+    "location": "Jacksonville, FL, United States",
+    "main_event": "Overeem vs Harris"
+  },
+  {
+    "name": "UFC Fight Night: Smith vs Teixeira",
+    "date": "Wed, May 13 / 9:00 PM EDT / Main Card",
+    "location": "Jacksonville, FL, United States",
+    "main_event": "Smith vs Teixeira"
+  },
+  {
+    "name": "UFC 249: Ferguson vs Gaethje",
+    "date": "Sat, May 9 / 10:00 PM EDT / Main Card",
+    "location": "Jacksonville, FL, United States",
+    "main_event": "Ferguson vs Gaethje"
+  },
+  {
+    "name": "UFC Fight Night: Lee vs Oliveira",
+    "date": "Sat, Mar 14 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Lee vs Oliveira"
+  },
+  {
+    "name": "UFC 248: Adesanya vs Romero",
+    "date": "Sat, Mar 7 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Adesanya vs Romero"
+  },
+  {
+    "name": "UFC Fight Night: Benavidez vs Figueiredo",
+    "date": "Sat, Feb 29 / 8:00 PM EST / Main Card",
+    "location": "Norfolk, VA, United States",
+    "main_event": "Benavidez vs Figueiredo"
+  },
+  {
+    "name": "UFC Fight Night: Felder vs Hooker",
+    "date": "Sat, Feb 22 / 7:00 PM EST / Main Card",
+    "location": "Auckland, New Zealand",
+    "main_event": "Felder vs Hooker"
+  },
+  {
+    "name": "UFC Fight Night: Anderson vs Blachowicz",
+    "date": "Sat, Feb 15 / 8:00 PM EST / Main Card",
+    "location": "Rio Rancho, NM, United States",
+    "main_event": "Anderson vs Blachowicz"
+  },
+  {
+    "name": "UFC 247: Jones vs Reyes",
+    "date": "Sat, Feb 8 / 10:00 PM EST / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Jones vs Reyes"
+  },
+  {
+    "name": "UFC Fight Night: Blaydes vs Dos Santos",
+    "date": "Sat, Jan 25 / 8:00 PM EST / Main Card",
+    "location": "Raleigh, NC, United States",
+    "main_event": "Blaydes vs Dos Santos"
+  },
+  {
+    "name": "UFC 246: McGregor vs Cowboy",
+    "date": "Sat, Jan 18 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "McGregor vs Cerrone"
+  },
+  {
+    "name": "UFC Fight Night: Edgar vs Jung",
+    "date": "Sat, Dec 21 / 5:00 AM EST / Main Card",
+    "location": "Busan, Busan, South Korea",
+    "main_event": "Edgar vs Jung"
+  },
+  {
+    "name": "UFC 245: Usman vs Covington",
+    "date": "Sat, Dec 14 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Usman vs Covington"
+  },
+  {
+    "name": "UFC Fight Night: Overeem vs Rozenstruik",
+    "date": "Sat, Dec 7 / 9:00 PM EST / Main Card",
+    "location": "Washington, DC, United States",
+    "main_event": "Overeem vs Rozenstruik"
+  },
+  {
+    "name": "UFC Fight Night: Blachowicz vs Souza",
+    "date": "Sat, Nov 16 / 8:00 PM EST / Main Card",
+    "location": "São Paulo, Brazil",
+    "main_event": "Blachowicz vs Souza"
+  },
+  {
+    "name": "UFC Fight Night: Magomedsharipov vs Kattar",
+    "date": "Sat, Nov 9 / 2:00 PM EST / Main Card",
+    "location": "Moscow, Russia",
+    "main_event": "Magomedsharipov vs Kattar"
+  },
+  {
+    "name": "UFC 244: Masvidal vs Diaz",
+    "date": "Sat, Nov 2 / 10:00 PM EDT / Main Card",
+    "location": "New York, NY, United States",
+    "main_event": "Masvidal vs Diaz"
+  },
+  {
+    "name": "UFC Fight Night: Maia vs Askren",
+    "date": "Sat, Oct 26 / 8:00 AM EDT / Main Card",
+    "location": "Singapore, Singapore",
+    "main_event": "Maia vs Askren"
+  },
+  {
+    "name": "UFC Fight Night: Reyes vs Weidman",
+    "date": "Fri, Oct 18 / 9:00 PM EDT / Main Card",
+    "location": "Boston, MA, United States",
+    "main_event": "Reyes vs Weidman"
+  },
+  {
+    "name": "UFC Fight Night: Joanna vs Waterson",
+    "date": "Sat, Oct 12 / 8:00 PM EDT / Main Card",
+    "location": "Tampa, FL, United States",
+    "main_event": "Jedrzejczyk vs Waterson-Gomez"
+  },
+  {
+    "name": "UFC 243: Whittaker vs Adesanya",
+    "date": "Sat, Oct 5 / 10:00 PM EDT / Main Card",
+    "location": "Melbourne, VIC, Australia",
+    "main_event": "Whittaker vs Adesanya"
+  },
+  {
+    "name": "UFC Fight Night: Hermansson vs Cannonier",
+    "date": "Sat, Sep 28 / 2:00 PM EDT / Main Card",
+    "location": "Copenhagen, Denmark",
+    "main_event": "Hermansson vs Cannonier"
+  },
+  {
+    "name": "UFC Fight Night: Rodriguez vs Stephens",
+    "date": "Sat, Sep 21 / 8:00 PM EDT / Main Card",
+    "location": "Mexico City, Méx., Mexico",
+    "main_event": "Rodriguez vs Stephens"
+  },
+  {
+    "name": "UFC Fight Night: Cowboy vs Gaethje",
+    "date": "Sat, Sep 14 / 8:00 PM EDT / Main Card",
+    "location": "Vancouver, BC, Canada",
+    "main_event": "Cerrone vs Gaethje"
+  },
+  {
+    "name": "UFC 242: Khabib vs Poirier",
+    "date": "Sat, Sep 7 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Nurmagomedov vs Poirier"
+  },
+  {
+    "name": "UFC Fight Night: Andrade vs Zhang",
+    "date": "Sat, Aug 31 / 6:00 AM EDT / Main Card",
+    "location": "Shenzhen, China",
+    "main_event": "Andrade vs Weili"
+  },
+  {
+    "name": "UFC 241: Cormier vs Miocic",
+    "date": "Sat, Aug 17 / 10:00 PM EDT / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Cormier vs Miocic"
+  },
+  {
+    "name": "UFC Fight Night: Shevchenko vs Carmouche",
+    "date": "Sat, Aug 10 / 8:00 PM EDT / Main Card",
+    "location": "Montevideo, Montevideo, Uruguay",
+    "main_event": "Shevchenko vs Carmouche"
+  },
+  {
+    "name": "UFC Fight Night: Covington vs Lawler",
+    "date": "Sat, Aug 3 / 3:00 PM EDT / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Covington vs Lawler"
+  },
+  {
+    "name": "UFC 240: Holloway vs Edgar",
+    "date": "Sat, Jul 27 / 10:00 PM EDT / Main Card",
+    "location": "Edmonton, AB, Canada",
+    "main_event": "Holloway vs Edgar"
+  },
+  {
+    "name": "UFC Fight Night: Dos Anjos vs Edwards",
+    "date": "Sat, Jul 20 / 9:00 PM EDT / Main Card",
+    "location": "San Antonio, TX, United States",
+    "main_event": "Dos Anjos vs Edwards"
+  },
+  {
+    "name": "UFC Fight Night: de Randamie vs Ladd",
+    "date": "Sat, Jul 13 / 8:00 PM EDT / Main Card",
+    "location": "Sacramento, CA, United States",
+    "main_event": "de Randamie vs Ladd"
+  },
+  {
+    "name": "UFC 239: Jones vs Santos",
+    "date": "Sat, Jul 6 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Jones vs Santos"
+  },
+  {
+    "name": "UFC Fight Night: Ngannou vs Dos Santos",
+    "date": "Sat, Jun 29 / 9:00 PM EDT / Main Card",
+    "location": "Minneapolis, MN, United States",
+    "main_event": "Ngannou vs Dos Santos"
+  },
+  {
+    "name": "UFC Fight Night: Moicano vs The Korean Zombie",
+    "date": "Sat, Jun 22 / 7:00 PM EDT / Main Card",
+    "location": "Greenville, SC, United States",
+    "main_event": "Moicano vs Jung"
+  },
+  {
+    "name": "UFC 238: Cejudo vs Moraes",
+    "date": "Sat, Jun 8 / 10:00 PM EDT / Main Card",
+    "location": "Chicago, IL, United States",
+    "main_event": "Cejudo vs Moraes"
+  },
+  {
+    "name": "UFC Fight Night: Gustafsson vs Smith",
+    "date": "Sat, Jun 1 / 1:00 PM EDT / Main Card",
+    "location": "Stockholm, Sweden",
+    "main_event": "Gustafsson vs Smith"
+  },
+  {
+    "name": "UFC Fight Night: Dos Anjos vs Lee",
+    "date": "Sat, May 18 / 8:00 PM EDT / Main Card",
+    "location": "Rochester, NY, United States",
+    "main_event": "Dos Anjos vs Lee"
+  },
+  {
+    "name": "UFC 237: Namajunas vs Andrade",
+    "date": "Sat, May 11 / 10:00 PM EDT / Main Card",
+    "location": "Rio de Janeiro, Brazil",
+    "main_event": "Namajunas vs Andrade"
+  },
+  {
+    "name": "UFC Fight Night: Iaquinta vs Cowboy",
+    "date": "Sat, May 4 / 8:00 PM EDT / Main Card",
+    "location": "Ottawa, ON, Canada",
+    "main_event": "Iaquinta vs Cerrone"
+  },
+  {
+    "name": "UFC Fight Night: Jacare vs Hermansson",
+    "date": "Sat, Apr 27 / 9:00 PM EDT / Main Card",
+    "location": "Sunrise, FL, United States",
+    "main_event": "Souza vs Hermansson"
+  },
+  {
+    "name": "UFC Fight Night: Overeem vs Oleinik",
+    "date": "Sat, Apr 20 / 1:00 PM EDT / Main Card",
+    "location": "Saint Petersburg, Russia",
+    "main_event": "Overeem vs Oleinik"
+  },
+  {
+    "name": "UFC 236: Holloway vs Poirier 2",
+    "date": "Sat, Apr 13 / 10:00 PM EDT / Main Card",
+    "location": "Atlanta, GA, United States",
+    "main_event": "Holloway vs Poirier"
+  },
+  {
+    "name": "UFC Fight Night: Barboza vs Gaethje",
+    "date": "Sat, Mar 30 / 7:00 PM EDT / Main Card",
+    "location": "Philadelphia, PA, United States",
+    "main_event": "Barboza vs Gaethje"
+  },
+  {
+    "name": "UFC Fight Night: Thompson vs Pettis",
+    "date": "Sat, Mar 23 / 8:00 PM EDT / Main Card",
+    "location": "Nashville, TN, United States",
+    "main_event": "Thompson vs Pettis"
+  },
+  {
+    "name": "UFC Fight Night: Till vs Masvidal",
+    "date": "Sat, Mar 16 / 4:00 PM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Till vs Masvidal"
+  },
+  {
+    "name": "UFC Fight Night: Lewis vs Dos Santos",
+    "date": "Sat, Mar 9 / 8:00 PM EST / Main Card",
+    "location": "Wichita, KS, United States",
+    "main_event": "Lewis vs Dos Santos"
+  },
+  {
+    "name": "UFC 235: Jones vs Smith",
+    "date": "Sat, Mar 2 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Jones vs Smith"
+  },
+  {
+    "name": "UFC Fight Night: Blachowicz vs Santos",
+    "date": "Sat, Feb 23 / 2:00 PM EST / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Blachowicz vs Santos"
+  },
+  {
+    "name": "UFC Fight Night: Ngannou vs Velasquez",
+    "date": "Sun, Feb 17 / 9:00 PM EST / Main Card",
+    "location": "Phoenix, AZ, United States",
+    "main_event": "Ngannou vs Velasquez"
+  },
+  {
+    "name": "UFC 234: Adesanya vs Silva",
+    "date": "Sat, Feb 9 / 10:00 PM EST / Main Card",
+    "location": "Melbourne, VIC, Australia",
+    "main_event": "Adesanya vs Silva"
+  },
+  {
+    "name": "UFC Fight Night: UFC Fight Night: Assuncao vs Moraes 2",
+    "date": "Sat, Feb 2 / 8:00 PM EST / Main Card",
+    "location": "Castelão, Brazil",
+    "main_event": "Assuncao vs Moraes"
+  },
+  {
+    "name": "UFC Fight Night: Cejudo vs Dillashaw",
+    "date": "Sat, Jan 19 / 10:00 PM EST / Main Card",
+    "location": "Brooklyn, NY, United States",
+    "main_event": "Cejudo vs Dillashaw"
+  },
+  {
+    "name": "UFC 232: Jones vs Gustafsson 2",
+    "date": "Sat, Dec 29 / 10:00 PM EST / Main Card",
+    "location": "Inglewood, CA, United States",
+    "main_event": "Jones vs Gustafsson"
+  },
+  {
+    "name": "UFC milwaukee-2018: Lee vs Iaquinta 2",
+    "date": "Sat, Dec 15 / 8:00 PM EST / Main Card",
+    "location": "Milwaukee, WI, United States",
+    "main_event": "Lee vs Iaquinta"
+  },
+  {
+    "name": "UFC 231: Holloway vs Ortega",
+    "date": "Sat, Dec 8 / 10:00 PM EST / Main Card",
+    "location": "Toronto, ON, Canada",
+    "main_event": "Holloway vs Ortega"
+  },
+  {
+    "name": "UFC australia-2018: Dos Santos vs Tuivasa",
+    "date": "Sat, Dec 1 / 10:00 PM EST / Main Card",
+    "location": "Adelaide, SA, Australia",
+    "main_event": "Dos Santos vs Tuivasa"
+  },
+  {
+    "name": "UFC /event/tuf-28-finale-2018: Dos Anjos vs Usman",
+    "date": "Fri, Nov 30 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dos Anjos vs Usman"
+  },
+  {
+    "name": "UFC china-2018: Blaydes vs Ngannou 2",
+    "date": "Sat, Nov 24 / 6:30 AM EST / Main Card",
+    "location": "Haidian Qu, Beijing Shi, China",
+    "main_event": "Blaydes vs Ngannou"
+  },
+  {
+    "name": "UFC south-america-2018: Magny vs Ponzinibbio",
+    "date": "Sat, Nov 17 / 10:00 PM EST / Main Card",
+    "location": "Villa Soldati, Buenos Aires, Argentina",
+    "main_event": "Magny vs Ponzinibbio"
+  },
+  {
+    "name": "UFC denver-2018: The Korean Zombie vs Rodriguez",
+    "date": "Sat, Nov 10 / 10:00 PM EST / Main Card",
+    "location": "Denver, CO, United States",
+    "main_event": "Jung vs Rodriguez"
+  },
+  {
+    "name": "UFC 230: Cormier vs Lewis",
+    "date": "Sat, Nov 3 / 10:00 PM EDT / Main Card",
+    "location": "New York, NY, United States",
+    "main_event": "Cormier vs Lewis"
+  },
+  {
+    "name": "UFC moncton-2018: Volkan vs Smith",
+    "date": "Sat, Oct 27 / 10:00 PM EDT / Main Card",
+    "location": "Moncton, NB, Canada",
+    "main_event": "Oezdemir vs Smith"
+  },
+  {
+    "name": "UFC 229: Khabib vs McGregor",
+    "date": "Sat, Oct 6 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Nurmagomedov vs McGregor"
+  },
+  {
+    "name": "UFC /event/fight-night-sao-paulo-sept-22-2018: Santos vs Anders",
+    "date": "Sat, Sep 22 / 10:30 PM EDT / Main Card",
+    "location": "São Paulo, Brazil",
+    "main_event": "Santos vs Anders"
+  },
+  {
+    "name": "UFC /event/fight-night-moscow-sept-15-2018: Hunt vs Oleinik",
+    "date": "Sat, Sep 15 / 2:00 PM EDT / Main Card",
+    "location": "Moskva, Russia",
+    "main_event": "Hunt vs Oleinik"
+  },
+  {
+    "name": "UFC 228: Woodley vs Till",
+    "date": "Sat, Sep 8 / 2:15 PM EDT / Main Card",
+    "location": "Dallas, TX, United States",
+    "main_event": "Woodley vs Till"
+  },
+  {
+    "name": "UFC /event/fight-night-lincoln-2018: Gaethje vs Vick",
+    "date": "Sat, Aug 25 / 2:30 PM EDT / Main Card",
+    "location": "Lincoln, NE, United States",
+    "main_event": "Gaethje vs Vick"
+  },
+  {
+    "name": "UFC 227: Dillashaw vs Garbrandt 2",
+    "date": "Sat, Aug 4 / 2:30 PM EDT / Main Card",
+    "location": "Los Angeles, CA, United States",
+    "main_event": "Dillashaw vs Garbrandt"
+  },
+  {
+    "name": "UFC /event/fight-night-canada-july-28-2018: Alvarez vs Poirier 2",
+    "date": "Sat, Jul 28 / 12:00 PM EDT / Main Card",
+    "location": "Calgary, AB, Canada",
+    "main_event": "Alvarez vs Poirier"
+  },
+  {
+    "name": "UFC /event/fight-night-hamburg-2018: Shogun vs Smith",
+    "date": "Sun, Jul 22 / 6:30 AM EDT / Main Card",
+    "location": "Hamburg, Germany",
+    "main_event": "Rua vs Smith"
+  },
+  {
+    "name": "UFC /event/fight-night-boise-2018: Dos Santos vs Ivanov",
+    "date": "Sat, Jul 14 / 7:00 PM EDT / Main Card",
+    "location": "Boise, ID, United States",
+    "main_event": "Dos Santos vs Ivanov"
+  },
+  {
+    "name": "UFC 226: Miocic vs Cormier",
+    "date": "Sat, Jul 7 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Miocic vs Cormier"
+  },
+  {
+    "name": "UFC /event/the-ultimate-fighter-finale-july-6-2018: Tavares vs Adesanya",
+    "date": "Fri, Jul 6 / 7:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Tavares vs Adesanya"
+  },
+  {
+    "name": "UFC /event/fight-night-asia-june-2018: Cowboy vs Edwards",
+    "date": "Sat, Jun 23 / 7:00 PM EDT / Main Card",
+    "location": "Singapore, Singapore",
+    "main_event": "Cerrone vs Edwards"
+  },
+  {
+    "name": "UFC 225: Whittaker vs Romero",
+    "date": "Sat, Jun 9 / 7:00 PM EDT / Main Card",
+    "location": "Chicago, IL, United States",
+    "main_event": "Whittaker vs Romero"
+  },
+  {
+    "name": "UFC /event/fight-night-utica-2018: Rivera vs Moraes",
+    "date": "Fri, Jun 1 / 10:00 PM EDT / Main Card",
+    "location": "Utica, NY, United States",
+    "main_event": "Rivera vs Moraes"
+  },
+  {
+    "name": "UFC /event/fight-night-liverpool-2018: Thompson vs Till",
+    "date": "Sun, May 27 / 6:30 AM EDT / Main Card",
+    "location": "Liverpool, United Kingdom",
+    "main_event": "Thompson vs Till"
+  },
+  {
+    "name": "UFC /event/fight-night-santiago-2018: Maia vs Usman",
+    "date": "Sat, May 19 / 2:30 PM EDT / Main Card",
+    "location": "Santiago, Región Metropolitana, Chile",
+    "main_event": "Maia vs Usman"
+  },
+  {
+    "name": "UFC 224: Nunes vs Pennington",
+    "date": "Sat, May 12 / 10:00 PM EDT / Main Card",
+    "location": "Rio de Janeiro, Brazil",
+    "main_event": "Nunes vs Pennington"
+  },
+  {
+    "name": "UFC /event/fight-night-atlantic-city-2018: Barboza vs Lee",
+    "date": "Sat, Apr 21 / 10:00 PM EDT / Main Card",
+    "location": "Atlantic City, NJ, United States",
+    "main_event": "Barboza vs Lee"
+  },
+  {
+    "name": "UFC Fight Night: Poirier vs Gaethje",
+    "date": "Sat, Apr 14 / 8:00 PM EDT / Main Card",
+    "location": "Glendale, AZ, United States",
+    "main_event": "Poirier vs Gaethje"
+  },
+  {
+    "name": "UFC 223: Khabib vs Iaquinta",
+    "date": "Sat, Apr 7 / 4:00 PM EDT / Main Card",
+    "location": "Brooklyn, NY, United States",
+    "main_event": "Nurmagomedov vs Iaquinta"
+  },
+  {
+    "name": "UFC Fight Night: Werdum vs Volkov",
+    "date": "Sat, Mar 17 / 5:00 PM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Werdum vs Volkov"
+  },
+  {
+    "name": "UFC 222: Cyborg vs Kunitskaya",
+    "date": "Sat, Mar 3 / 1:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Cyborg vs Santos"
+  },
+  {
+    "name": "UFC Fight Night: Emmett vs Stephens",
+    "date": "Sat, Feb 24 / 11:15 AM EST / Main Card",
+    "location": "Orlando, FL, United States",
+    "main_event": "Emmett vs Stephens"
+  },
+  {
+    "name": "UFC Fight Night: Cowboy vs Medeiros",
+    "date": "Sun, Feb 18 / 1:00 PM EST / Main Card",
+    "location": "Austin, TX, United States",
+    "main_event": "Cerrone vs Medeiros"
+  },
+  {
+    "name": "UFC 221: Romero vs Rockhold",
+    "date": "Sat, Feb 10 / 1:30 PM EST / Main Card",
+    "location": "Perth, WA, Australia",
+    "main_event": "Romero vs Rockhold"
+  },
+  {
+    "name": "UFC Fight Night: Machida vs Anders",
+    "date": "Sat, Feb 3 / 10:00 PM EST / Main Card",
+    "location": "Belem, Brazil",
+    "main_event": "Machida vs Anders"
+  },
+  {
+    "name": "UFC Fight Night: Jacare vs Brunson 2",
+    "date": "Sat, Jan 27 / 8:00 PM EST / Main Card",
+    "location": "Charlotte, NC, United States",
+    "main_event": "Souza vs Brunson"
+  },
+  {
+    "name": "UFC 220: Miocic vs Ngannou",
+    "date": "Sat, Jan 20 / 10:00 PM EST / Main Card",
+    "location": "Boston, MA, United States",
+    "main_event": "Miocic vs Ngannou"
+  },
+  {
+    "name": "UFC Fight Night: Stephens vs Choi",
+    "date": "Sun, Jan 14 / 1:30 PM EST / Main Card",
+    "location": "St. Louis, MO, United States",
+    "main_event": "Stephens vs Choi"
+  },
+  {
+    "name": "UFC 219: Cyborg vs Holm",
+    "date": "Sat, Dec 30 / 2:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Cyborg vs Holm"
+  },
+  {
+    "name": "UFC Fight Night: Lawler vs Dos Anjos",
+    "date": "Sat, Dec 16 / 8:00 PM EST / Main Card",
+    "location": "Winnipeg, MB, Canada",
+    "main_event": "Lawler vs Dos Anjos"
+  },
+  {
+    "name": "UFC Fight Night: Swanson vs Ortega",
+    "date": "Sat, Dec 9 / 1:30 PM EST / Main Card",
+    "location": "Fresno, CA, United States",
+    "main_event": "Swanson vs Ortega"
+  },
+  {
+    "name": "UFC 218: Holloway vs Aldo 2",
+    "date": "Sat, Dec 2 / 1:15 PM EST / Main Card",
+    "location": "Detroit, MI, United States",
+    "main_event": "Holloway vs Aldo"
+  },
+  {
+    "name": "UFC /event/the-ultimate-fighter-finale-dec-1-2017: Montano vs Modafferi",
+    "date": "Fri, Dec 1 / 2:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Montano vs Modafferi"
+  },
+  {
+    "name": "UFC Fight Night: Bisping vs Gastelum",
+    "date": "Fri, Nov 24 / 10:45 PM EST / Main Card",
+    "location": "Pudong Xinqu, Shanghai Shi, China",
+    "main_event": "Bisping vs Gastelum"
+  },
+  {
+    "name": "UFC Fight Night: Werdum vs Tybura",
+    "date": "Sat, Nov 18 / 1:30 PM EST / Main Card",
+    "location": "Sydney Olympic Park, NSW, Australia",
+    "main_event": "Werdum vs Tybura"
+  },
+  {
+    "name": "UFC Fight Night: Poirier vs Pettis",
+    "date": "Sat, Nov 11 / 2:00 PM EST / Main Card",
+    "location": "Norfolk, VA, United States",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 217: Bisping vs St-Pierre",
+    "date": "Sat, Nov 4 / 10:00 PM EDT / Main Card",
+    "location": "New York, NY, United States",
+    "main_event": "Bisping vs St-Pierre"
+  },
+  {
+    "name": "UFC Fight Night: Brunson vs Machida",
+    "date": "Sat, Oct 28 / 10:00 PM EDT / Main Card",
+    "location": "São Paulo, Brazil",
+    "main_event": "Brunson vs Machida"
+  },
+  {
+    "name": "UFC Fight Night: Cerrone vs Till",
+    "date": "Sat, Oct 21 / 3:00 PM EDT / Main Card",
+    "location": "Gdansk, Poland",
+    "main_event": "Cerrone vs Till"
+  },
+  {
+    "name": "UFC 216: Ferguson vs Lee",
+    "date": "Sat, Oct 7 / 3:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Ferguson vs Lee"
+  },
+  {
+    "name": "UFC Fight Night: Saint Preux vs Okami",
+    "date": "Fri, Sep 22 / 4:00 PM EDT / Main Card",
+    "location": "Tokyo, Saitama, Japan",
+    "main_event": "Saint Preux vs Okami"
+  },
+  {
+    "name": "UFC Fight Night: Rockhold vs Branch",
+    "date": "Sat, Sep 16 / 4:00 PM EDT / Main Card",
+    "location": "Pittsburgh, PA, United States",
+    "main_event": "Rockhold vs Branch"
+  },
+  {
+    "name": "UFC 215: Nunes vs Shevchenko 2",
+    "date": "Sat, Sep 9 / 3:00 PM EDT / Main Card",
+    "location": "Edmonton, AB, Canada",
+    "main_event": "Nunes vs Shevchenko"
+  },
+  {
+    "name": "UFC Fight Night: Volkov vs Struve",
+    "date": "Sat, Sep 2 / 7:45 AM EDT / Main Card",
+    "location": "Rotterdam, Netherlands",
+    "main_event": "Volkov vs Struve"
+  },
+  {
+    "name": "UFC Fight Night: Pettis vs Moreno",
+    "date": "Sat, Aug 5 / 10:00 PM EDT / Main Card",
+    "location": "Mexico City, Méx., Mexico",
+    "main_event": "Pettis vs Moreno"
+  },
+  {
+    "name": "UFC 214: Cormier vs Jones 2",
+    "date": "Sat, Jul 29 / 10:00 PM EDT / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Cormier vs Jones"
+  },
+  {
+    "name": "UFC Fight Night: Weidman vs Gastelum",
+    "date": "Sat, Jul 22 / 8:00 PM EDT / Main Card",
+    "location": "Uniondale, NY, United States",
+    "main_event": "Weidman vs Gastelum"
+  },
+  {
+    "name": "UFC Fight Night: Nelson vs Ponzinibbio",
+    "date": "Sun, Jul 16 / 3:00 PM EDT / Main Card",
+    "location": "Glasgow, United Kingdom",
+    "main_event": "Nelson vs Ponzinibbio"
+  },
+  {
+    "name": "UFC 213: Romero vs Whittaker",
+    "date": "Sat, Jul 8 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Romero vs Whittaker"
+  },
+  {
+    "name": "UFC /event/the-ultimate-fighter-redemption-finale: Johnson vs Gaethje",
+    "date": "Fri, Jul 7 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Johnson vs Gaethje"
+  },
+  {
+    "name": "UFC Fight Night: Chiesa vs Lee",
+    "date": "Sun, Jun 25 / 9:00 PM EDT / Main Card",
+    "location": "Oklahoma City, OK, United States",
+    "main_event": "Chiesa vs Lee"
+  },
+  {
+    "name": "UFC Fight Night: Holm vs Correia",
+    "date": "Sat, Jun 17 / 12:45 AM EDT / Main Card",
+    "location": "Singapore, Singapore",
+    "main_event": "Holm vs Correia"
+  },
+  {
+    "name": "UFC Fight Night: Lewis vs Hunt",
+    "date": "Sat, Jun 10 / 10:00 PM EDT / Main Card",
+    "location": "Auckland, New Zealand",
+    "main_event": "Lewis vs Hunt"
+  },
+  {
+    "name": "UFC 212: Aldo vs Holloway",
+    "date": "Fri, Jun 2 / 10:00 PM EDT / Main Card",
+    "location": "Rio de Janeiro, RJ, Brazil",
+    "main_event": "Aldo vs Holloway"
+  },
+  {
+    "name": "UFC Fight Night: Gustafsson vs Teixeira",
+    "date": "Sun, May 28 / 1:00 PM EDT / Main Card",
+    "location": "Stockholm, Sweden",
+    "main_event": "Gustafsson vs Teixeira"
+  },
+  {
+    "name": "UFC 211: Miocic vs Dos Santos 2",
+    "date": "Sat, May 13 / 10:00 PM EDT / Main Card",
+    "location": "Dallas, TX, United States",
+    "main_event": "Miocic vs Dos Santos"
+  },
+  {
+    "name": "UFC Fight Night: Swanson vs Lobov",
+    "date": "Sat, Apr 22 / 10:00 PM EDT / Main Card",
+    "location": "Nashville, TN, United States",
+    "main_event": "Swanson vs Lobov"
+  },
+  {
+    "name": "UFC Fight Night: Johnson vs Reis",
+    "date": "Sat, Apr 15 / 8:00 PM EDT / Main Card",
+    "location": "Kansas City, MO, United States",
+    "main_event": "Johnson vs Reis"
+  },
+  {
+    "name": "UFC 210: Cormier vs Johnson 2",
+    "date": "Sat, Apr 8 / 10:00 PM EDT / Main Card",
+    "location": "Buffalo, NY, United States",
+    "main_event": "Cormier vs Johnson"
+  },
+  {
+    "name": "UFC Fight Night: Manuwa vs Anderson",
+    "date": "Sat, Mar 18 / 9:30 AM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Manuwa vs Anderson"
+  },
+  {
+    "name": "UFC Fight Night: Belfort vs Gastelum",
+    "date": "Sat, Mar 11 / 10:00 PM EST / Main Card",
+    "location": "Castelão, Fortaleza, CE, Brazil",
+    "main_event": "Belfort vs Gastelum"
+  },
+  {
+    "name": "UFC 209: Woodley vs Thompson 2",
+    "date": "Sat, Mar 4 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Woodley vs Thompson"
+  },
+  {
+    "name": "UFC Fight Night: Lewis vs Browne",
+    "date": "Sun, Feb 19 / 9:00 PM EST / Main Card",
+    "location": "Halifax, NS, Canada",
+    "main_event": "Lewis vs Browne"
+  },
+  {
+    "name": "UFC 208: Holm vs de Randamie",
+    "date": "Sat, Feb 11 / 10:00 PM EST / Main Card",
+    "location": "Brooklyn, NY, United States",
+    "main_event": "Holm vs de Randamie"
+  },
+  {
+    "name": "UFC Fight Night: Bermudez vs Korean Zombie",
+    "date": "Sat, Feb 4 / 10:00 PM EST / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Bermudez vs Jung"
+  },
+  {
+    "name": "UFC Fight Night: Shevchenko vs Peña",
+    "date": "Sat, Jan 28 / 8:00 PM EST / Main Card",
+    "location": "Denver, CO, United States",
+    "main_event": "Shevchenko vs Peña"
+  },
+  {
+    "name": "UFC Fight Night: Rodriguez vs Penn",
+    "date": "Sun, Jan 15 / 10:00 PM EST / Main Card",
+    "location": "Phoenix, AZ, United States",
+    "main_event": "Rodriguez vs Penn"
+  },
+  {
+    "name": "UFC 207: Nunes vs Rousey",
+    "date": "Fri, Dec 30 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Nunes vs Rousey"
+  },
+  {
+    "name": "UFC Fight Night: VanZant vs Waterson",
+    "date": "Sat, Dec 17 / 8:00 PM EST / Main Card",
+    "location": "Sacramento, CA, United States",
+    "main_event": "VanZant vs Waterson-Gomez"
+  },
+  {
+    "name": "UFC 206: Holloway vs Pettis",
+    "date": "Sat, Dec 10 / 10:00 PM EST / Main Card",
+    "location": "Toronto, ON, Canada",
+    "main_event": "Holloway vs Pettis"
+  },
+  {
+    "name": "UFC Fight Night: Lewis vs Abdurakhimov",
+    "date": "Fri, Dec 9 / 9:00 PM EST / Main Card",
+    "location": "Albany, NY, United States",
+    "main_event": "Lewis vs Abdurakhimov"
+  },
+  {
+    "name": "UFC /event/the-ultimate-fighter-24-finale: A Tournament of Champions",
+    "date": "Sat, Dec 3 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Johnson vs Elliott"
+  },
+  {
+    "name": "UFC Fight Night: Whittaker vs Brunson",
+    "date": "Fri, Nov 25 / 10:00 PM EST / Main Card",
+    "location": "Melbourne, VIC, Australia",
+    "main_event": "Whittaker vs Brunson"
+  },
+  {
+    "name": "UFC Fight Night: Bader vs Nogueira",
+    "date": "Sat, Nov 19 / 9:00 PM EST / Main Card",
+    "location": "São Paulo, Brazil",
+    "main_event": "Bader vs Nogueira"
+  },
+  {
+    "name": "UFC Fight Night: Mousasi vs Hall 2",
+    "date": "Sat, Nov 19 / 12:00 PM EST / Main Card",
+    "location": "Glasgow, United Kingdom",
+    "main_event": "Mousasi vs Hall"
+  },
+  {
+    "name": "UFC 205: Alvarez vs McGregor",
+    "date": "Sat, Nov 12 / 10:00 PM EST / Main Card",
+    "location": "New York, NY, United States",
+    "main_event": "Alvarez vs McGregor"
+  },
+  {
+    "name": "UFC Fight Night: Dos Anjos vs Ferguson",
+    "date": "Sat, Nov 5 / 10:00 PM EDT / Main Card",
+    "location": "Mexico City, Méx., Mexico",
+    "main_event": "Dos Anjos vs Ferguson"
+  },
+  {
+    "name": "UFC 204: Bisping vs Henderson 2",
+    "date": "Sat, Oct 8 / 10:00 PM EDT / Main Card",
+    "location": "Manchester, United Kingdom",
+    "main_event": "Bisping vs Henderson"
+  },
+  {
+    "name": "UFC Fight Night: Lineker vs Dodson",
+    "date": "Sat, Oct 1 / 11:00 PM EDT / Main Card",
+    "location": "Portland, OR, United States",
+    "main_event": "Lineker vs Dodson"
+  },
+  {
+    "name": "UFC Fight Night: Cyborg vs Lansberg",
+    "date": "Sat, Sep 24 / 10:00 PM EDT / Main Card",
+    "location": "Brasilia, DF, Brazil",
+    "main_event": "Cyborg vs Lansberg"
+  },
+  {
+    "name": "UFC Fight Night: Poirier vs Johnson",
+    "date": "Sat, Sep 17 / 10:00 PM EDT / Main Card",
+    "location": "Hidalgo, TX, United States",
+    "main_event": "Poirier vs Johnson"
+  },
+  {
+    "name": "UFC 203: Miocic vs Overeem",
+    "date": "Sat, Sep 10 / 10:00 PM EDT / Main Card",
+    "location": "Cleveland, OH, United States",
+    "main_event": "Miocic vs Overeem"
+  },
+  {
+    "name": "UFC Fight Night: Arlovski vs Barnett",
+    "date": "Sat, Sep 3 / 7:45 AM EDT / Main Card",
+    "location": "Hamburg, Germany",
+    "main_event": "Arlovski vs Barnett"
+  },
+  {
+    "name": "UFC Fight Night: Maia vs Condit",
+    "date": "Sat, Aug 27 / 8:00 PM EDT / Main Card",
+    "location": "Vancouver, BC, Canada",
+    "main_event": "Maia vs Condit"
+  },
+  {
+    "name": "UFC 202: Diaz vs McGregor 2",
+    "date": "Sat, Aug 20 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Diaz vs McGregor"
+  },
+  {
+    "name": "UFC Fight Night: Rodriguez vs Caceres",
+    "date": "Sat, Aug 6 / 10:00 PM EDT / Main Card",
+    "location": "Salt Lake City, UT, United States",
+    "main_event": "Rodriguez vs Caceres"
+  },
+  {
+    "name": "UFC 201: Lawler vs Woodley",
+    "date": "Sat, Jul 30 / 10:00 PM EDT / Main Card",
+    "location": "Atlanta, GA, United States",
+    "main_event": "Lawler vs Woodley"
+  },
+  {
+    "name": "UFC Fight Night: Holm vs Shevchenko",
+    "date": "Sat, Jul 23 / 8:00 PM EDT / Main Card",
+    "location": "Chicago, IL, United States",
+    "main_event": "Holm vs Shevchenko"
+  },
+  {
+    "name": "UFC Fight Night: McDonald vs Lineker",
+    "date": "Wed, Jul 13 / 9:00 PM EDT / Main Card",
+    "location": "Sioux Falls, SD, United States",
+    "main_event": "McDonald vs Lineker"
+  },
+  {
+    "name": "UFC 200: Tate vs Nunes",
+    "date": "Sat, Jul 9 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Tate vs Nunes"
+  },
+  {
+    "name": "UFC /event/the-ultimate-fighter-finale-team-joanna-team-claudia: Team Joanna vs Team Claudia",
+    "date": "Fri, Jul 8 / 10:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Jedrzejczyk vs Gadelha"
+  },
+  {
+    "name": "UFC Fight Night: Dos Anjos vs Alvarez",
+    "date": "Thu, Jul 7 / 2:30 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dos Anjos vs Alvarez"
+  },
+  {
+    "name": "UFC Fight Night: MacDonald vs Thompson",
+    "date": "Sat, Jun 18 / 10:30 PM EDT / Main Card",
+    "location": "Ottawa, ON, Canada",
+    "main_event": "MacDonald vs Thompson"
+  },
+  {
+    "name": "UFC 199: Rockhold vs Bisping 2",
+    "date": "Sat, Jun 4 / 10:00 PM EDT / Main Card",
+    "location": "Inglewood, CA, United States",
+    "main_event": "Rockhold vs Bisping"
+  },
+  {
+    "name": "UFC Fight Night: Almeida vs Garbrandt",
+    "date": "Sun, May 29 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Almeida vs Garbrandt"
+  },
+  {
+    "name": "UFC 198: Werdum vs Miocic",
+    "date": "Sat, May 14 / 10:00 PM EDT / Main Card",
+    "location": "Curitiba, PR, Brazil",
+    "main_event": "Werdum vs Miocic"
+  },
+  {
+    "name": "UFC Fight Night: Overeem vs Arlovski",
+    "date": "Sun, May 8 / 2:00 PM EDT / Main Card",
+    "location": "Rotterdam, Netherlands",
+    "main_event": "Overeem vs Arlovski"
+  },
+  {
+    "name": "UFC 197: Jones vs Saint Preux",
+    "date": "Sat, Apr 23 / 2:30 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Jones vs Saint Preux"
+  },
+  {
+    "name": "UFC Fight Night: Teixeira vs Evans",
+    "date": "Sat, Apr 16 / 8:00 PM EDT / Main Card",
+    "location": "Tampa, FL, United States",
+    "main_event": "Teixeira vs Evans"
+  },
+  {
+    "name": "UFC Fight Night: Rothwell vs Dos Santos",
+    "date": "Sun, Apr 10 / 2:00 PM EDT / Main Card",
+    "location": "Zagreb, Croatia",
+    "main_event": "Rothwell vs Dos Santos"
+  },
+  {
+    "name": "UFC Fight Night: Hunt vs Mir",
+    "date": "Sat, Mar 19 / 10:00 PM EDT / Main Card",
+    "location": "Brisbane, QLD, Australia",
+    "main_event": "Hunt vs Mir"
+  },
+  {
+    "name": "UFC 196: McGregor vs Diaz",
+    "date": "Sat, Mar 5 / 1:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "McGregor vs Diaz"
+  },
+  {
+    "name": "UFC Fight Night: Silva vs Bisping",
+    "date": "Sat, Feb 27 / 6:45 AM EST / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Silva vs Bisping"
+  },
+  {
+    "name": "UFC Fight Night: Cowboy vs Cowboy",
+    "date": "Sun, Feb 21 / 9:00 PM EST / Main Card",
+    "location": "Pittsburgh, PA, United States",
+    "main_event": "Cerrone vs Oliveira"
+  },
+  {
+    "name": "UFC /event/fight-night-hendricks-vs-thompson: Hendricks vs Thompson",
+    "date": "Sat, Feb 6 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Hendricks vs Thompson"
+  },
+  {
+    "name": "UFC Fight Night: Johnson vs Bader",
+    "date": "Sat, Jan 30 / 8:00 PM EST / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Johnson vs Bader"
+  },
+  {
+    "name": "UFC Fight Night: Dillashaw vs Cruz",
+    "date": "Sun, Jan 17 / 10:00 PM EST / Main Card",
+    "location": "Boston, MA, United States",
+    "main_event": "Dillashaw vs Cruz"
+  },
+  {
+    "name": "UFC 195: Lawler vs Condit",
+    "date": "Sat, Jan 2 / 1:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lawler vs Condit"
+  },
+  {
+    "name": "UFC Fight Night: Dos Anjos vs Cowboy 2",
+    "date": "Sat, Dec 19 / 3:00 PM EST / Main Card",
+    "location": "Orlando, FL, United States",
+    "main_event": "Dos Anjos vs Cerrone"
+  },
+  {
+    "name": "UFC 194: Aldo vs McGregor",
+    "date": "Sat, Dec 12 / 1:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Aldo vs McGregor"
+  },
+  {
+    "name": "UFC /event/the-ultimate-fighter-finale-team-mcgregor-team-faber: Team McGregor vs Teab Faber",
+    "date": "Fri, Dec 11 / 6:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Edgar vs Mendes"
+  },
+  {
+    "name": "UFC Fight Night: Namajunas vs VanZant",
+    "date": "Thu, Dec 10 / 1:45 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Namajunas vs VanZant"
+  },
+  {
+    "name": "UFC Fight Night: Henderson vs Masvidal",
+    "date": "Sat, Nov 28 / 12:00 AM EST / Main Card",
+    "location": "Seoul, Seoul, South Korea",
+    "main_event": "Henderson vs Masvidal"
+  },
+  {
+    "name": "UFC Fight Night: Magny vs Gastelum",
+    "date": "Sat, Nov 21 / 1:30 PM EST / Main Card",
+    "location": "Monterrey, NL, Mexico",
+    "main_event": "Magny vs Gastelum"
+  },
+  {
+    "name": "UFC 193: Rousey vs Holm",
+    "date": "Sat, Nov 14 / 1:15 PM EST / Main Card",
+    "location": "Melbourne, VIC, Australia",
+    "main_event": "Rousey vs Holm"
+  },
+  {
+    "name": "UFC Fight Night: Belfort vs Henderson",
+    "date": "Sat, Nov 7 / 6:00 PM EST / Main Card",
+    "location": "Sao Paulo, Brazil",
+    "main_event": "Belfort vs Henderson"
+  },
+  {
+    "name": "UFC Fight Night: Holohan vs Smolka",
+    "date": "Sat, Oct 24 / 9:15 AM EDT / Main Card",
+    "location": "Dublin, Ireland",
+    "main_event": "Holohan vs Smolka"
+  },
+  {
+    "name": "UFC 192: Cormier vs Gustafsson",
+    "date": "Sat, Oct 3 / 2:15 PM EDT / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Cormier vs Gustafsson"
+  },
+  {
+    "name": "UFC Fight Night: Barnett vs Nelson",
+    "date": "Sun, Sep 27 / 10:00 PM EDT / Main Card",
+    "location": "Tokyo, Saitama, Japan",
+    "main_event": "Barnett vs Nelson"
+  },
+  {
+    "name": "UFC 191: Johnson vs Dodson 2",
+    "date": "Sat, Sep 5 / 3:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Johnson vs Dodson"
+  },
+  {
+    "name": "UFC Fight Night: Holloway vs Oliveira",
+    "date": "Sun, Aug 23 / 2:00 PM EDT / Main Card",
+    "location": "Saskatoon, SK, Canada",
+    "main_event": "Holloway vs Oliveira"
+  },
+  {
+    "name": "UFC Fight Night: Teixeira vs Saint Preux",
+    "date": "Sat, Aug 8 / 2:30 PM EDT / Main Card",
+    "location": "Nashville, TN, United States",
+    "main_event": "Teixeira vs Saint Preux"
+  },
+  {
+    "name": "UFC 190: Rousey vs Correia",
+    "date": "Sat, Aug 1 / 3:00 PM EDT / Main Card",
+    "location": "Rio de Janeiro, RJ, Brazil",
+    "main_event": "Rousey vs Correia"
+  },
+  {
+    "name": "UFC Fight Night: Dillashaw vs Barao 2",
+    "date": "Sat, Jul 25 / 4:15 PM EDT / Main Card",
+    "location": "Chicago, IL, United States",
+    "main_event": "Dillashaw vs Barao"
+  },
+  {
+    "name": "UFC Fight Night: Bisping vs Leites",
+    "date": "Sat, Jul 18 / 6:00 AM EDT / Main Card",
+    "location": "Glasgow, United Kingdom",
+    "main_event": "Bisping vs Leites"
+  },
+  {
+    "name": "UFC Fight Night: Mir vs Duffee",
+    "date": "Wed, Jul 15 / 3:00 PM EDT / Main Card",
+    "location": "San Diego, CA, United States",
+    "main_event": "Mir vs Duffee"
+  },
+  {
+    "name": "UFC /event/the-ultimate-fighter-team-att-team-blackzilians: American Top Team vs. Blackzilians",
+    "date": "Sun, Jul 12 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Ellenberger vs Thompson"
+  },
+  {
+    "name": "UFC 189: Mendes vs McGregor",
+    "date": "Sat, Jul 11 / 3:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Mendes vs McGregor"
+  },
+  {
+    "name": "UFC Fight Night: Machida vs Romero",
+    "date": "Sat, Jun 27 / 4:00 PM EDT / Main Card",
+    "location": "Hollywood, FL, United States",
+    "main_event": "Machida vs Romero"
+  },
+  {
+    "name": "UFC Fight Night: Jedrzejczyk vs Penne",
+    "date": "Sat, Jun 20 / 8:00 AM EDT / Main Card",
+    "location": "Pudong Xinqu, Shanghai Shi, China",
+    "main_event": "Jedrzejczyk vs Penne"
+  },
+  {
+    "name": "UFC 188: Velasquez vs Werdum",
+    "date": "Sat, Jun 13 / 3:00 PM EDT / Main Card",
+    "location": "Mexico City, Méx., Mexico",
+    "main_event": "Velasquez vs Werdum"
+  },
+  {
+    "name": "UFC Fight Night: Boetsch vs Henderson",
+    "date": "Sat, Jun 6 / 3:00 PM EDT / Main Card",
+    "location": "New Orleans, LA, United States",
+    "main_event": "Boetsch vs Henderson"
+  },
+  {
+    "name": "UFC Fight Night: Condit vs Alves",
+    "date": "Sat, May 30 / 3:00 PM EDT / Main Card",
+    "location": "Centro, Barueri, SP, Brazil",
+    "main_event": "Condit vs Alves"
+  },
+  {
+    "name": "UFC 187: Johnson vs Cormier",
+    "date": "Sat, May 23 / 2:30 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Johnson vs Cormier"
+  },
+  {
+    "name": "UFC Fight Night: Edgar vs Faber",
+    "date": "Sat, May 16 / 10:00 PM EDT / Main Card",
+    "location": "Pasay, Metro Manila, Philippines",
+    "main_event": "Edgar vs Faber"
+  },
+  {
+    "name": "UFC Fight Night: Miocic vs Hunt",
+    "date": "Sat, May 9 / 3:45 PM EDT / Main Card",
+    "location": "Adelaide, SA, Australia",
+    "main_event": "Miocic vs Hunt"
+  },
+  {
+    "name": "UFC 186: Johnson vs Horiguchi",
+    "date": "Sat, Apr 25 / 2:30 PM EDT / Main Card",
+    "location": "Montréal, QC, Canada",
+    "main_event": "Johnson vs Horiguchi"
+  },
+  {
+    "name": "UFC Fight Night: Machida vs Rockhold",
+    "date": "Sat, Apr 18 / 12:30 PM EDT / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Machida vs Rockhold"
+  },
+  {
+    "name": "UFC Fight Night: Gonzaga vs Cro Cop 2",
+    "date": "Sat, Apr 11 / 11:45 AM EDT / Main Card",
+    "location": "Krakow, Poland",
+    "main_event": "Gonzaga vs Cro Cop"
+  },
+  {
+    "name": "UFC Fight Night: Mendes vs Lamas",
+    "date": "Sat, Apr 4 / 7:00 AM EDT / Main Card",
+    "location": "Fairfax, VA, United States",
+    "main_event": "Mendes vs Lamas"
+  },
+  {
+    "name": "UFC Fight Night: Maia vs LaFlare",
+    "date": "Sat, Mar 21 / 3:00 PM EDT / Main Card",
+    "location": "Maracanã, RJ, Brazil",
+    "main_event": "Maia vs LaFlare"
+  },
+  {
+    "name": "UFC 185: Pettis vs Dos Anjos",
+    "date": "Sat, Mar 14 / 2:30 PM EDT / Main Card",
+    "location": "Dallas, TX, United States",
+    "main_event": "Pettis vs Dos Anjos"
+  },
+  {
+    "name": "UFC 184: Rousey vs Zingano",
+    "date": "Sat, Feb 28 / 2:00 PM EST / Main Card",
+    "location": "Los Angeles, CA, United States",
+    "main_event": "Rousey vs Zingano"
+  },
+  {
+    "name": "UFC Fight Night: Bigfoot vs Mir",
+    "date": "Sun, Feb 22 / 5:00 PM EST / Main Card",
+    "location": "Porto Alegre, Brazil",
+    "main_event": "Silva vs Mir"
+  },
+  {
+    "name": "UFC Fight Night: Henderson vs Thatch",
+    "date": "Sat, Feb 14 / 3:00 PM EST / Main Card",
+    "location": "Broomfield, CO, United States",
+    "main_event": "Henderson vs Thatch"
+  },
+  {
+    "name": "UFC 183: Silva vs Diaz",
+    "date": "Sat, Jan 31 / 1:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Silva vs Diaz"
+  },
+  {
+    "name": "UFC Fight Night: Gustafsson vs Johnson",
+    "date": "Sat, Jan 24 / 11:00 AM EST / Main Card",
+    "location": "Johanneshov, Sweden",
+    "main_event": "Gustafsson vs Johnson"
+  },
+  {
+    "name": "UFC Fight Night: McGregor vs Siver",
+    "date": "Sun, Jan 18 / 12:00 PM EST / Main Card",
+    "location": "Boston, MA, United States",
+    "main_event": "McGregor vs Siver"
+  },
+  {
+    "name": "UFC 182: Jones vs Cormier",
+    "date": "Sat, Jan 3 / 2:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Jones vs Cormier"
+  },
+  {
+    "name": "UFC Fight Night: Machida vs Dollaway",
+    "date": "Sat, Dec 20 / 2:00 PM EST / Main Card",
+    "location": "Centro, Barueri, SP, Brazil",
+    "main_event": "Machida vs Dollaway"
+  },
+  {
+    "name": "UFC Fight Night: Dos Santos vs Miocic",
+    "date": "Sat, Dec 13 / 10:30 AM EST / Main Card",
+    "location": "Phoenix, AZ, United States",
+    "main_event": "Dos Santos vs Miocic"
+  },
+  {
+    "name": "UFC /event/the-ultimate-fighter-a-champion-will-be-crowned: A Champion Will Be Crowned",
+    "date": "Fri, Dec 12 / 6:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Esparza vs Namajunas"
+  },
+  {
+    "name": "UFC 181: Hendricks vs Lawler II",
+    "date": "Sat, Dec 6 / 2:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Hendricks vs Lawler"
+  },
+  {
+    "name": "UFC Fight Night: Edgar vs Swanson",
+    "date": "Sat, Nov 22 / 2:00 PM EST / Main Card",
+    "location": "Austin, TX, United States",
+    "main_event": "Edgar vs Swanson"
+  },
+  {
+    "name": "UFC 180: Werdum vs Hunt",
+    "date": "Sat, Nov 15 / 12:00 AM EST / Main Card",
+    "location": "Mexico City, Méx., Mexico",
+    "main_event": "Werdum vs Hunt"
+  },
+  {
+    "name": "UFC Fight Night: Shogun vs Saint Preux",
+    "date": "Sat, Nov 8 / 7:30 PM EST / Main Card",
+    "location": "Uberlandia, Brazil",
+    "main_event": "Rua vs Saint Preux"
+  },
+  {
+    "name": "UFC Fight Night: Rockhold vs Bisping",
+    "date": "Fri, Nov 7 / 2:00 PM EST / Main Card",
+    "location": "Sydney Olympic Park, NSW, Australia",
+    "main_event": "Rockhold vs Bisping"
+  },
+  {
+    "name": "UFC 179: Aldo vs Mendes 2",
+    "date": "Sat, Oct 25 / 3:00 PM EDT / Main Card",
+    "location": "Maracanã, RJ, Brazil",
+    "main_event": "Aldo vs Mendes"
+  },
+  {
+    "name": "UFC Fight Night: Saffiedine vs MacDonald",
+    "date": "Sat, Oct 4 / 3:00 PM EDT / Main Card",
+    "location": "Halifax, NS, Canada",
+    "main_event": "MacDonald vs Saffiedine"
+  },
+  {
+    "name": "UFC Fight Night: Nelson vs Story",
+    "date": "Sat, Oct 4 / 8:10 AM EDT / Main Card",
+    "location": "Stockholm, Sweden",
+    "main_event": "Nelson vs Story"
+  },
+  {
+    "name": "UFC 178: Johnson vs Cariaso",
+    "date": "Sat, Sep 27 / 3:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Johnson vs Cariaso"
+  },
+  {
+    "name": "UFC Fight Night: Hunt vs Nelson",
+    "date": "Fri, Sep 19 / 2:00 PM EDT / Main Card",
+    "location": "Tokyo, Saitama, Japan",
+    "main_event": "Hunt vs Nelson"
+  },
+  {
+    "name": "UFC Fight Night: Bigfoot vs Arlovski",
+    "date": "Sat, Sep 13 / 5:45 PM EDT / Main Card",
+    "location": "Brasilia, DF, Brazil",
+    "main_event": "Silva vs Arlovski"
+  },
+  {
+    "name": "UFC Fight Night: Jacare vs Mousasi",
+    "date": "Fri, Sep 5 / 7:00 PM EDT / Main Card",
+    "location": "Mashantucket, CT, United States",
+    "main_event": "Souza vs Mousasi"
+  },
+  {
+    "name": "UFC 177: Dillashaw vs Soto",
+    "date": "Sat, Aug 30 / 7:30 PM EDT / Main Card",
+    "location": "Sacramento, CA, United States",
+    "main_event": "Dillashaw vs Soto"
+  },
+  {
+    "name": "UFC Fight Night: Henderson vs Dos Anjos",
+    "date": "Sat, Aug 23 / 3:30 PM EDT / Main Card",
+    "location": "Tulsa, OK, United States",
+    "main_event": "Henderson vs Dos Anjos"
+  },
+  {
+    "name": "UFC Fight Night: Bisping vs Le",
+    "date": "Sat, Aug 23 / 2:30 AM EDT / Main Card",
+    "location": "",
+    "main_event": "Bisping vs Le"
+  },
+  {
+    "name": "UFC Fight Night: Bader vs Saint Preux",
+    "date": "Sun, Aug 17 / 10:00 PM EDT / Main Card",
+    "location": "Bangor, ME, United States",
+    "main_event": "Bader vs Saint Preux"
+  },
+  {
+    "name": "UFC /event/FOX12: Lawler vs Brown",
+    "date": "Sat, Jul 26 / 12:15 PM EDT / Main Card",
+    "location": "San Jose, CA, United States",
+    "main_event": "Lawler vs Brown"
+  },
+  {
+    "name": "UFC /event/ufn-dublin-ireland: McGregor vs Brandao",
+    "date": "Sat, Jul 19 / 8:30 AM EDT / Main Card",
+    "location": "Dublin, Ireland",
+    "main_event": "McGregor vs Brandao"
+  },
+  {
+    "name": "UFC Fight Night: Cerrone vs Miller",
+    "date": "Wed, Jul 16 / 2:30 PM EDT / Main Card",
+    "location": "Atlantic City, NJ, United States",
+    "main_event": "Cerrone vs Miller"
+  },
+  {
+    "name": "UFC /event/TUF19-Finale: Edgar vs Penn",
+    "date": "Sun, Jul 6 / 2:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Edgar vs Penn"
+  },
+  {
+    "name": "UFC 175: Weidman vs Machida",
+    "date": "Sat, Jul 5 / 3:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Weidman vs Machida"
+  },
+  {
+    "name": "UFC /event/ufn-san-antonio-fs1: Stephens vs Swanson",
+    "date": "Sat, Jun 28 / 3:30 PM EDT / Main Card",
+    "location": "San Antonio, TX, United States",
+    "main_event": "Swanson vs Stephens"
+  },
+  {
+    "name": "UFC /event/ufn-auckland-nz: Te Huna vs Marquardt",
+    "date": "Fri, Jun 27 / 10:30 PM EDT / Main Card",
+    "location": "Auckland, New Zealand",
+    "main_event": "Te Huna vs Marquardt"
+  },
+  {
+    "name": "UFC 174: Johnson vs Bagautinov",
+    "date": "Sat, Jun 14 / 3:00 PM EDT / Main Card",
+    "location": "Vancouver, BC, Canada",
+    "main_event": "Johnson vs Bagautinov"
+  },
+  {
+    "name": "UFC /event/ufn-albuquerque-fs1: Henderson vs Khabilov",
+    "date": "Sat, Jun 7 / 3:30 PM EDT / Main Card",
+    "location": "Albuquerque, NM, United States",
+    "main_event": "Henderson vs Khabilov"
+  },
+  {
+    "name": "UFC /event/ufn-sao-paulo-tuf-brazil: Miocic vs Maldonado",
+    "date": "Sat, May 31 / 6:30 PM EDT / Main Card",
+    "location": "São Paulo, Brazil",
+    "main_event": "Miocic vs Maldonado"
+  },
+  {
+    "name": "UFC /event/fight-night-berlin: Munoz vs Mousasi",
+    "date": "Sat, May 31 / 8:30 AM EDT / Main Card",
+    "location": "Pudong Xinqu, Shanghai Shi, China",
+    "main_event": "Munoz vs Mousasi"
+  },
+  {
+    "name": "UFC 173: Barao vs Dillashaw",
+    "date": "Sat, May 24 / 2:30 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Barao vs Dillashaw"
+  },
+  {
+    "name": "UFC /event/ufn-cincinnati-fs1: Brown vs Silva",
+    "date": "Sat, May 10 / 2:30 PM EDT / Main Card",
+    "location": "Cincinnati, OH, United States",
+    "main_event": "Brown vs Silva"
+  },
+  {
+    "name": "UFC 172: Jones vs Teixeira",
+    "date": "Sat, Apr 26 / 3:30 PM EDT / Main Card",
+    "location": "Baltimore, MD, United States",
+    "main_event": "Jones vs Teixeira"
+  },
+  {
+    "name": "UFC /event/FOX11: Werdum vs Browne",
+    "date": "Sat, Apr 19 / 11:30 AM EDT / Main Card",
+    "location": "Orlando, FL, United States",
+    "main_event": "Werdum vs Browne"
+  },
+  {
+    "name": "UFC Fight Night: Bisping vs Kennedy",
+    "date": "Wed, Apr 16 / 11:15 AM EDT / Main Card",
+    "location": "Ville de Québec, QC, Canada",
+    "main_event": "Bisping vs Kennedy"
+  },
+  {
+    "name": "UFC abu-dhabi-nogueira-nelson: Nogueira vs Nelson",
+    "date": "Fri, Apr 11 / 6:00 AM EDT / Main Card",
+    "location": "",
+    "main_event": "Nogueira vs Nelson"
+  },
+  {
+    "name": "UFC /event/ufn-natal-brazil: Shogun vs Henderson 2",
+    "date": "Sun, Mar 23 / 12:00 PM EDT / Main Card",
+    "location": "Lagoa Azul, Natal, RN, Brazil",
+    "main_event": "Rua vs Henderson"
+  },
+  {
+    "name": "UFC 171: Hendricks vs Lawler",
+    "date": "Sat, Mar 15 / 2:00 PM EDT / Main Card",
+    "location": "Dallas, TX, United States",
+    "main_event": "Hendricks vs Lawler"
+  },
+  {
+    "name": "UFC london: Gustafsson vs Manuwa",
+    "date": "Sat, Mar 8 / 9:00 AM EST / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Gustafsson vs Manuwa"
+  },
+  {
+    "name": "UFC /event/ufn-macao-kim-hathaway: Kim vs Hathaway",
+    "date": "Fri, Feb 28 / 7:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Ma vs Hathaway"
+  },
+  {
+    "name": "UFC 170: Rousey vs McMann",
+    "date": "Sat, Feb 22 / 2:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Rousey vs McMann"
+  },
+  {
+    "name": "UFC /event/ufn-jaragua-do-sul: Machida vs Mousasi",
+    "date": "Sat, Feb 15 / 2:30 PM EST / Main Card",
+    "location": "Nova Brasília, Jaraguá do Sul, SC, Brazil",
+    "main_event": "Machida vs Mousasi"
+  },
+  {
+    "name": "UFC 169: Barao vs Faber 2",
+    "date": "Sat, Feb 1 / 1:30 PM EST / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Barao vs Faber"
+  },
+  {
+    "name": "UFC /event/FOX10: Henderson vs Thomson",
+    "date": "Sat, Jan 25 / 11:30 AM EST / Main Card",
+    "location": "Chicago, IL, United States",
+    "main_event": "Henderson vs Thomson"
+  },
+  {
+    "name": "UFC Fight Night: Rockhold vs Philippou",
+    "date": "Wed, Jan 15 / 11:00 AM EST / Main Card",
+    "location": "Duluth, GA, United States",
+    "main_event": "Rockhold vs Philippou"
+  },
+  {
+    "name": "UFC /event/ufn-singapore: Saffiedine vs Lim",
+    "date": "Sat, Jan 4 / 1:30 AM EST / Main Card",
+    "location": "Singapore, Singapore",
+    "main_event": "Saffiedine vs Lim"
+  },
+  {
+    "name": "UFC 168: Weidman vs Silva 2",
+    "date": "Sat, Dec 28 / 2:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Weidman vs Silva"
+  },
+  {
+    "name": "UFC /event/FOX9: Johnson vs. Benavidez 2",
+    "date": "Sat, Dec 14 / 8:00 PM EST / Main Card",
+    "location": "Sacramento, CA, United States",
+    "main_event": "Johnson vs Benavidez"
+  },
+  {
+    "name": "UFC Fight Night: Hunt vs Bigfoot",
+    "date": "Fri, Dec 6 / 9:00 PM EST / Main Card",
+    "location": "Brisbane, QLD, Australia",
+    "main_event": "Hunt vs Silva"
+  },
+  {
+    "name": "UFC /event/TUF18-Finale: Maynard vs. Diaz",
+    "date": "Sat, Nov 30 / 10:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Maynard vs Diaz"
+  },
+  {
+    "name": "UFC 167: St-Pierre vs Hendricks",
+    "date": "Sat, Nov 16 / 1:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "St-Pierre vs Hendricks"
+  },
+  {
+    "name": "UFC /event/ufn-belfort-henderson: Belfort vs Henderson",
+    "date": "Sat, Nov 9 / 12:30 PM EST / Main Card",
+    "location": "Jardim Goiás, GO, Brazil",
+    "main_event": "Belfort vs Henderson"
+  },
+  {
+    "name": "UFC Fight Night: Kennedy vs Natal",
+    "date": "Wed, Nov 6 / 10:10 AM EST / Main Card",
+    "location": "Fort Campbell, KY, United States",
+    "main_event": "Kennedy vs Natal"
+  },
+  {
+    "name": "UFC Fight Night: Machida vs Munoz",
+    "date": "Sat, Oct 26 / 11:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Machida vs Munoz"
+  },
+  {
+    "name": "UFC 166: Velasquez vs Dos Santos III",
+    "date": "Sat, Oct 19 / 2:15 PM EDT / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Velasquez vs Dos Santos"
+  },
+  {
+    "name": "UFC Fight Night: Maia vs Shields",
+    "date": "Wed, Oct 9 / 1:00 PM EDT / Main Card",
+    "location": "Centro, Barueri, SP, Brazil",
+    "main_event": "Maia vs Shields"
+  },
+  {
+    "name": "UFC 165: Jones vs Gustafsson",
+    "date": "Sat, Sep 21 / 2:15 PM EDT / Main Card",
+    "location": "Toronto, ON, Canada",
+    "main_event": "Jones vs Gustafsson"
+  },
+  {
+    "name": "UFC Fight Night: Teixeira vs Bader",
+    "date": "Wed, Sep 4 / 12:30 PM EDT / Main Card",
+    "location": "Belo Horizonte, MG, Brazil",
+    "main_event": "Teixeira vs Bader"
+  },
+  {
+    "name": "UFC 164: Henderson vs Pettis 2",
+    "date": "Sat, Aug 31 / 2:30 PM EDT / Main Card",
+    "location": "Milwaukee, WI, United States",
+    "main_event": "Henderson vs Pettis"
+  },
+  {
+    "name": "UFC Fight Night: Condit vs Kampmann 2",
+    "date": "Wed, Aug 28 / 10:00 PM EDT / Main Card",
+    "location": "Indianapolis, IN, United States",
+    "main_event": "Condit vs Kampmann"
+  },
+  {
+    "name": "UFC Fight Night: Shogun vs Sonnen",
+    "date": "Sat, Aug 17 / 11:00 PM EDT / Main Card",
+    "location": "Boston, MA, United States",
+    "main_event": "Rua vs Sonnen"
+  },
+  {
+    "name": "UFC 163: Aldo vs Korean Zombie",
+    "date": "Sat, Aug 3 / 2:30 PM EDT / Main Card",
+    "location": "Rio de Janeiro, RJ, Brazil",
+    "main_event": "Aldo vs Jung"
+  },
+  {
+    "name": "UFC /event/FOX8: Johnson vs Moraga",
+    "date": "Sat, Jul 27 / 11:55 AM EDT / Main Card",
+    "location": "Seattle, WA, United States",
+    "main_event": "Johnson vs Moraga"
+  },
+  {
+    "name": "UFC 162: Silva vs Weidman",
+    "date": "Sat, Jul 6 / 3:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Silva vs Weidman"
+  },
+  {
+    "name": "UFC 161: Evans vs Henderson",
+    "date": "Sat, Jun 15 / 3:00 PM EDT / Main Card",
+    "location": "Winnipeg, MB, Canada",
+    "main_event": "Evans vs Henderson"
+  },
+  {
+    "name": "UFC /event/FUEL10: Nogueira vs Werdum",
+    "date": "Sat, Jun 8 / 12:45 PM EDT / Main Card",
+    "location": "Castelão, Fortaleza, CE, Brazil",
+    "main_event": "Nogueira vs Werdum"
+  },
+  {
+    "name": "UFC 160: Velasquez vs Bigfoot 2",
+    "date": "Sat, May 25 / 2:30 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Velasquez vs Silva"
+  },
+  {
+    "name": "UFC /event/FX8: Belfort vs. Rockhold",
+    "date": "Sat, May 18 / 9:00 PM EDT / Main Card",
+    "location": "Nova Brasília, Jaraguá do Sul, SC, Brazil",
+    "main_event": "Belfort vs Rockhold"
+  },
+  {
+    "name": "UFC 159: Jones vs Sonnen",
+    "date": "Sat, Apr 27 / 2:30 PM EDT / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Jones vs Sonnen"
+  },
+  {
+    "name": "UFC /event/FOX7: Henderson vs Melendez",
+    "date": "Sat, Apr 20 / 12:00 PM EDT / Main Card",
+    "location": "San Jose, CA, United States",
+    "main_event": "Henderson vs Melendez"
+  },
+  {
+    "name": "UFC /event/TUF17-Finale: Faber vs. Jorgensen",
+    "date": "Sat, Apr 13 / 9:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Faber vs Jorgensen"
+  },
+  {
+    "name": "UFC /event/FUEL9: Mousasi vs. Latifi",
+    "date": "Sat, Apr 6 / 2:00 PM EDT / Main Card",
+    "location": "Stockholm, Sweden",
+    "main_event": "Mousasi vs Latifi"
+  },
+  {
+    "name": "UFC 158: St-Pierre vs Diaz",
+    "date": "Sat, Mar 16 / 2:30 PM EDT / Main Card",
+    "location": "Montréal, QC, Canada",
+    "main_event": "St-Pierre vs Diaz"
+  },
+  {
+    "name": "UFC /event/FUEL8: Silva vs Stann",
+    "date": "Sat, Mar 2 / 2:00 PM EST / Main Card",
+    "location": "Tokyo, Saitama, Japan",
+    "main_event": "Silva vs Stann"
+  },
+  {
+    "name": "UFC 157: Rousey vs Carmouche",
+    "date": "Sat, Feb 23 / 1:30 PM EST / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Rousey vs Carmouche"
+  },
+  {
+    "name": "UFC /event/FUEL7: Barao vs McDonald",
+    "date": "Sat, Feb 16 / 7:00 AM EST / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Barao vs McDonald"
+  },
+  {
+    "name": "UFC 156: Aldo vs Edgar",
+    "date": "Sat, Feb 2 / 2:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Aldo vs Edgar"
+  },
+  {
+    "name": "UFC /event/FOX6: Johnson vs Dodson",
+    "date": "Sat, Jan 26 / 11:00 AM EST / Main Card",
+    "location": "Chicago, IL, United States",
+    "main_event": "Johnson vs Dodson"
+  },
+  {
+    "name": "UFC /event/FX7: Belfort vs. Bisping",
+    "date": "Sat, Jan 19 / 9:00 PM EST / Main Card",
+    "location": "Sao Paulo, Brazil",
+    "main_event": "Belfort vs Bisping"
+  },
+  {
+    "name": "UFC 155: Dos Santos vs. Velasquez II",
+    "date": "Sat, Dec 29 / 10:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Dos Santos vs Velasquez"
+  },
+  {
+    "name": "UFC fx1: Sotiropoulos vs. Pearson",
+    "date": "Sat, Dec 15 / 10:00 PM EST / Main Card",
+    "location": "Gold Coast, QLD, Australia",
+    "main_event": "Sotiropoulos vs Pearson"
+  },
+  {
+    "name": "UFC /event/TUF16-Finale: Team Carwin vs Team Nelson",
+    "date": "Sat, Dec 15 / 12:30 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Nelson vs Mitrione"
+  },
+  {
+    "name": "UFC /event/FOX5: Henderson vs Diaz",
+    "date": "Sat, Dec 8 / 11:20 AM EST / Main Card",
+    "location": "Seattle, WA, United States",
+    "main_event": "Henderson vs Diaz"
+  },
+  {
+    "name": "UFC 154-live-pay-view: St-Pierre vs. Condit",
+    "date": "Sat, Nov 17 / 10:00 PM EST / Main Card",
+    "location": "Montréal, QC, Canada",
+    "main_event": "St-Pierre vs Condit"
+  },
+  {
+    "name": "UFC 154: St-Pierre vs Condit",
+    "date": "Sat, Nov 17 / 1:30 PM EST / Main Card",
+    "location": "Montréal, QC, Canada",
+    "main_event": "St-Pierre vs Condit"
+  },
+  {
+    "name": "UFC /event/FUEL6: Franklin vs Le",
+    "date": "Sat, Nov 10 / 2:00 AM EST / Main Card",
+    "location": "",
+    "main_event": "Franklin vs Le"
+  },
+  {
+    "name": "UFC 153: Silva vs Bonnar",
+    "date": "Sat, Oct 13 / 3:00 PM EDT / Main Card",
+    "location": "Rio de Janeiro, RJ, Brazil",
+    "main_event": "Silva vs Bonnar"
+  },
+  {
+    "name": "UFC /event/FX5: Browne vs Bigfoot",
+    "date": "Fri, Oct 5 / 1:00 PM EDT / Main Card",
+    "location": "Minneapolis, MN, United States",
+    "main_event": "Browne vs Silva"
+  },
+  {
+    "name": "UFC /event/FUEL5: Struve vs Miocic",
+    "date": "Sat, Sep 29 / 9:30 AM EDT / Main Card",
+    "location": "Nottingham, United Kingdom",
+    "main_event": "Struve vs Miocic"
+  },
+  {
+    "name": "UFC 152: Jones vs Belfort",
+    "date": "Sat, Sep 22 / 2:45 PM EDT / Main Card",
+    "location": "Toronto, ON, Canada",
+    "main_event": "Jones vs Belfort"
+  },
+  {
+    "name": "UFC 150: Henderson vs. Edgar II",
+    "date": "Sat, Aug 11 / 10:00 PM EDT / Main Card",
+    "location": "Denver, CO, United States",
+    "main_event": "Henderson vs Edgar"
+  },
+  {
+    "name": "UFC /event/FOX4: Shogun vs Vera",
+    "date": "Sat, Aug 4 / 8:00 PM EDT / Main Card",
+    "location": "Los Angeles, CA, United States",
+    "main_event": "Rua vs Vera"
+  },
+  {
+    "name": "UFC 149: Faber vs Barao",
+    "date": "Sat, Jul 21 / 3:00 PM EDT / Main Card",
+    "location": "Calgary, AB, Canada",
+    "main_event": "Faber vs Barao"
+  },
+  {
+    "name": "UFC /event/FUEL4: Munoz vs Weidman",
+    "date": "Wed, Jul 11 / 1:00 PM EDT / Main Card",
+    "location": "San Jose, CA, United States",
+    "main_event": "Munoz vs Weidman"
+  },
+  {
+    "name": "UFC 148: Silva vs. Sonnen II",
+    "date": "Sat, Jul 7 / 10:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Silva vs Sonnen"
+  },
+  {
+    "name": "UFC 147: Silva vs. Franklin II",
+    "date": "Sat, Jun 23 / 10:00 PM EDT / Main Card",
+    "location": "Belo Horizonte, MG, Brazil",
+    "main_event": "Silva vs Franklin"
+  },
+  {
+    "name": "UFC /event/FX4: Maynard vs. Guida",
+    "date": "Fri, Jun 22 / 9:00 PM EDT / Main Card",
+    "location": "Atlantic City, NJ, United States",
+    "main_event": "Maynard vs Guida"
+  },
+  {
+    "name": "UFC /event/FX3: Johnson vs. McCall",
+    "date": "Fri, Jun 8 / 9:00 PM EDT / Main Card",
+    "location": "Sunrise, FL, United States",
+    "main_event": "Johnson vs McCall"
+  },
+  {
+    "name": "UFC /event/TUF-Live-1-Finale: Ellenberger vs Kampmann",
+    "date": "Fri, Jun 1 / 9:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Ellenberger vs Kampmann"
+  },
+  {
+    "name": "UFC 146: Dos Santos vs Mir",
+    "date": "Sat, May 26 / 2:45 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Dos Santos vs Mir"
+  },
+  {
+    "name": "UFC /event/strikeforcer-heavyweight-grand-prix-final: Barnett vs. Cormier",
+    "date": "Sat, May 19 / 10:00 PM EDT / Main Card",
+    "location": "San Jose, CA, United States",
+    "main_event": "Barnett vs Cormier"
+  },
+  {
+    "name": "UFC /event/FUEL3: Korean Zombie vs. Poirier",
+    "date": "Tue, May 15 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Jung vs Poirier"
+  },
+  {
+    "name": "UFC /event/FOX3: Diaz vs Miller",
+    "date": "Sat, May 5 / 12:00 PM EDT / Main Card",
+    "location": "East Rutherford, NJ, United States",
+    "main_event": "Diaz vs Miller"
+  },
+  {
+    "name": "UFC 145: Jones vs Evans",
+    "date": "Sat, Apr 21 / 3:00 PM EDT / Main Card",
+    "location": "Atlanta, GA, United States",
+    "main_event": "Jones vs Evans"
+  },
+  {
+    "name": "UFC /event/UFCSweden: Gustafsson vs Silva",
+    "date": "Sat, Apr 14 / 8:00 AM EDT / Main Card",
+    "location": "Stockholm, Sweden",
+    "main_event": "Gustafsson vs Silva"
+  },
+  {
+    "name": "UFC /event/UFCFX2: Alves vs. Kampmann",
+    "date": "Fri, Mar 2 / 9:00 PM EST / Main Card",
+    "location": "Sydney, Australia",
+    "main_event": "Alves vs Kampmann"
+  },
+  {
+    "name": "UFC 144: Edgar vs Henderson",
+    "date": "Sat, Feb 25 / 2:00 PM EST / Main Card",
+    "location": "Tokyo, Saitama, Japan",
+    "main_event": "Edgar vs Henderson"
+  },
+  {
+    "name": "UFC /event/UFCFUEL1: Sanchez vs Ellenberger",
+    "date": "Wed, Feb 15 / 1:00 PM EST / Main Card",
+    "location": "Omaha, NE, United States",
+    "main_event": "Sanchez vs Ellenberger"
+  },
+  {
+    "name": "UFC 143: Diaz vs Condit",
+    "date": "Sat, Feb 4 / 2:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Diaz vs Condit"
+  },
+  {
+    "name": "UFC /event/UFCFox2: Evans vs Davis",
+    "date": "Sat, Jan 28 / 12:00 PM EST / Main Card",
+    "location": "Chicago, IL, United States",
+    "main_event": "Evans vs Davis"
+  },
+  {
+    "name": "UFC /event/UFCFX1: Guillard vs Miller",
+    "date": "Fri, Jan 20 / 2:00 PM EST / Main Card",
+    "location": "Nashville, TN, United States",
+    "main_event": "Guillard vs Miller"
+  },
+  {
+    "name": "UFC 142: Aldo vs Mendes",
+    "date": "Sat, Jan 14 / 2:30 PM EST / Main Card",
+    "location": "Rio de Janeiro, RJ, Brazil",
+    "main_event": "Aldo vs Mendes"
+  },
+  {
+    "name": "UFC 141: Lesnar vs Overeem",
+    "date": "Fri, Dec 30 / 2:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lesnar vs Overeem"
+  },
+  {
+    "name": "UFC 140: Jones vs Machida",
+    "date": "Sat, Dec 10 / 12:30 PM EST / Main Card",
+    "location": "Toronto, ON, Canada",
+    "main_event": "Jones vs Machida"
+  },
+  {
+    "name": "UFC /event/TUF14-Finale: Team Bisping vs. Team Miller",
+    "date": "Sat, Dec 3 / 9:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Bisping vs Miller"
+  },
+  {
+    "name": "UFC 139: Shogun vs. Henderson",
+    "date": "Sat, Nov 19 / 9:00 PM EST / Main Card",
+    "location": "San Jose, CA, United States",
+    "main_event": "Rua vs Henderson"
+  },
+  {
+    "name": "UFC /event/UFC-on-Fox: Velasquez vs Dos Santos",
+    "date": "Sat, Nov 12 / 11:55 AM EST / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Velasquez vs Dos Santos"
+  },
+  {
+    "name": "UFC 138: Leben vs Munoz",
+    "date": "Sat, Nov 5 / 7:00 AM EDT / Main Card",
+    "location": "Marston Green, United Kingdom",
+    "main_event": "Leben vs Munoz"
+  },
+  {
+    "name": "UFC 137: Penn vs Diaz",
+    "date": "Sat, Oct 29 / 2:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Penn vs Diaz"
+  },
+  {
+    "name": "UFC 136: EDGAR vs. MAYNARD III",
+    "date": "Sat, Oct 8 / 9:00 PM EDT / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Edgar vs Maynard"
+  },
+  {
+    "name": "UFC /event/UVS6: Cruz vs Johnson",
+    "date": "Sat, Oct 1 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Cruz vs Johnson"
+  },
+  {
+    "name": "UFC 135: JONES vs. RAMPAGE",
+    "date": "Sat, Sep 24 / 9:00 PM EDT / Main Card",
+    "location": "Denver, CO, United States",
+    "main_event": "Jones vs Jackson"
+  },
+  {
+    "name": "UFC /event/UFN25: Shields vs Ellenberger",
+    "date": "Sat, Sep 17 / 1:30 PM EDT / Main Card",
+    "location": "New Orleans, LA, United States",
+    "main_event": "Shields vs Ellenberger"
+  },
+  {
+    "name": "UFC 134: Silva vs Okami",
+    "date": "Sat, Aug 27 / 2:00 PM EDT / Main Card",
+    "location": "Rio de Janeiro, RJ, Brazil",
+    "main_event": "Silva vs Okami"
+  },
+  {
+    "name": "UFC /event/UVS5: Hardy vs. Lytle",
+    "date": "Sun, Aug 14 / 8:00 PM EDT / Main Card",
+    "location": "Milwaukee, WI, United States",
+    "main_event": "Hardy vs Lytle"
+  },
+  {
+    "name": "UFC 133: Evans vs. Ortiz",
+    "date": "Sat, Aug 6 / 9:00 PM EDT / Main Card",
+    "location": "Philadelphia, PA, United States",
+    "main_event": "Evans vs Ortiz"
+  },
+  {
+    "name": "UFC 132: Cruz vs Faber",
+    "date": "Sat, Jul 2 / 2:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Cruz vs Faber"
+  },
+  {
+    "name": "UFC /event/UFCLive4: KONGO vs BARRY",
+    "date": "Sun, Jun 26 / 9:00 PM EDT / Main Card",
+    "location": "Pittsburgh, PA, United States",
+    "main_event": "Kongo vs Barry"
+  },
+  {
+    "name": "UFC 131: DOS SANTOS vs. CARWIN",
+    "date": "Sat, Jun 11 / 9:00 PM EDT / Main Card",
+    "location": "Vancouver, BC, Canada",
+    "main_event": "Carwin vs Dos Santos"
+  },
+  {
+    "name": "UFC /event/TUF13-finale: Team Lesnar vs. Team Dos Santos",
+    "date": "Sat, Jun 4 / 9:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Nijem vs Ferguson"
+  },
+  {
+    "name": "UFC 130: Rampage vs. Hamill",
+    "date": "Sat, May 28 / 9:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Jackson vs Hamill"
+  },
+  {
+    "name": "UFC 129: St-Pierre vs Shields",
+    "date": "Sat, Apr 30 / 2:00 PM EDT / Main Card",
+    "location": "Toronto, ON, Canada",
+    "main_event": "St-Pierre vs Shields"
+  },
+  {
+    "name": "UFC /event/UFN24: NOGUEIRA vs. DAVIS",
+    "date": "Sat, Mar 26 / 10:00 PM EDT / Main Card",
+    "location": "Seattle, WA, United States",
+    "main_event": "Davis vs Nogueira"
+  },
+  {
+    "name": "UFC 128: SHOGUN vs JONES",
+    "date": "Sat, Mar 19 / 10:00 PM EDT / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Rua vs Jones"
+  },
+  {
+    "name": "UFC /event/UFCLive3: SANCHEZ vs. KAMPMANN",
+    "date": "Thu, Mar 3 / 9:00 PM EST / Main Card",
+    "location": "Louisville, KY, United States",
+    "main_event": "Sanchez vs Kampmann"
+  },
+  {
+    "name": "UFC 127: Penn vs Fitch",
+    "date": "Sat, Feb 26 / 2:00 PM EST / Main Card",
+    "location": "Sydney Olympic Park, NSW, Australia",
+    "main_event": "Penn vs Fitch"
+  },
+  {
+    "name": "UFC 126: Silva vs Belfort",
+    "date": "Sat, Feb 5 / 2:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Silva vs Belfort"
+  },
+  {
+    "name": "UFC /event/fight-for-the-troops-2: Dunham vs Guillard",
+    "date": "Sat, Jan 22 / 9:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Guillard vs Dunham"
+  },
+  {
+    "name": "UFC 125: RESOLUTION",
+    "date": "Sat, Jan 1 / 10:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Edgar vs Maynard"
+  },
+  {
+    "name": "UFC 124: ST-PIERRE vs KOSCHECK",
+    "date": "Sat, Dec 11 / 10:00 PM EST / Main Card",
+    "location": "Montréal, QC, Canada",
+    "main_event": "St-Pierre vs Koscheck"
+  },
+  {
+    "name": "UFC /event/TUF12-Finale: Team GSP vs Team Koscheck Finale",
+    "date": "Sat, Dec 4 / 9:00 PM EST / Main Card",
+    "location": "",
+    "main_event": " vs Johnson"
+  },
+  {
+    "name": "UFC 123: RAMPAGE vs MACHIDA",
+    "date": "Sat, Nov 20 / 10:00 PM EST / Main Card",
+    "location": "Auburn Hills, MI, United States",
+    "main_event": "Jackson vs Machida"
+  },
+  {
+    "name": "UFC 122: Marquardt vs Okami",
+    "date": "Sat, Nov 13 / 7:00 AM EST / Main Card",
+    "location": "Oberhausen, Germany",
+    "main_event": "Marquardt vs Okami"
+  },
+  {
+    "name": "UFC 121: Lesnar vs Velasquez",
+    "date": "Sat, Oct 23 / 3:00 PM EDT / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Lesnar vs Velasquez"
+  },
+  {
+    "name": "UFC 120: Bisping vs Akiyama",
+    "date": "Sat, Oct 16 / 8:00 AM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Bisping vs Akiyama"
+  },
+  {
+    "name": "UFC 119: Mir vs Cro Cop",
+    "date": "Sat, Sep 25 / 3:00 PM EDT / Main Card",
+    "location": "Indianapolis, IN, United States",
+    "main_event": "Mir vs Cro Cop"
+  },
+  {
+    "name": "UFC Fight Night: Marquardt vs Palhares",
+    "date": "Wed, Sep 15 / 1:00 PM EDT / Main Card",
+    "location": "Austin, TX, United States",
+    "main_event": "Marquardt vs Palhares"
+  },
+  {
+    "name": "UFC 118: EDGAR vs PENN 2",
+    "date": "Sat, Aug 28 / 10:00 PM EDT / Main Card",
+    "location": "Boston, MA, United States",
+    "main_event": "Edgar vs Penn"
+  },
+  {
+    "name": "UFC 117: Silva vs Sonnen",
+    "date": "Sat, Aug 7 / 3:00 PM EDT / Main Card",
+    "location": "Oakland, CA, United States",
+    "main_event": "Silva vs Sonnen"
+  },
+  {
+    "name": "UFC /event/UFC-Live-JONES-vs-MATYUSHENKO: JONES vs MATYUSHENKO",
+    "date": "Sun, Aug 1 / 10:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Jones vs Matyushenko"
+  },
+  {
+    "name": "UFC 116: Lesnar vs Carwin",
+    "date": "Sat, Jul 3 / 3:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lesnar vs Carwin"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-Team-Liddell-vs-Team-Ortiz-FINALE: Team Liddell vs Team Ortiz",
+    "date": "Sat, Jun 19 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "McGee vs McCray"
+  },
+  {
+    "name": "UFC 115: Liddell vs Franklin",
+    "date": "Sat, Jun 12 / 3:00 PM EDT / Main Card",
+    "location": "Vancouver, BC, Canada",
+    "main_event": "Liddell vs Franklin"
+  },
+  {
+    "name": "UFC 114: RAMPAGE vs EVANS",
+    "date": "Sat, May 29 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Jackson vs Evans"
+  },
+  {
+    "name": "UFC 113: MACHIDA vs SHOGUN 2",
+    "date": "Sat, May 8 / 6:00 PM EDT / Main Card",
+    "location": "Montréal, QC, Canada",
+    "main_event": "Machida vs Rua"
+  },
+  {
+    "name": "UFC 112: INVINCIBLE",
+    "date": "Sat, Apr 10 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Silva vs Maia"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Florian-vs-Gomi: Florian vs Gomi",
+    "date": "Wed, Mar 31 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Florian vs Gomi"
+  },
+  {
+    "name": "UFC 111: St-Pierre vs Hardy",
+    "date": "Sat, Mar 27 / 3:00 PM EDT / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "St-Pierre vs Hardy"
+  },
+  {
+    "name": "UFC /event/UFC-on-Versus--Vera-vs-Jones: VERA vs JONES",
+    "date": "Sun, Mar 21 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Vera vs Jones"
+  },
+  {
+    "name": "UFC 110: NOGUEIRA vs VELASQUEZ",
+    "date": "Sat, Feb 20 / 5:00 PM EST / Main Card",
+    "location": "Sydney, NSW, Australia",
+    "main_event": "Velasquez vs Nogueira"
+  },
+  {
+    "name": "UFC 109: RELENTLESS",
+    "date": "Sat, Feb 6 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Couture vs Coleman"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Maynard-vs-Diaz: Maynard vs Diaz",
+    "date": "Mon, Jan 11 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Maynard vs Diaz"
+  },
+  {
+    "name": "UFC 108: Evans vs Silva",
+    "date": "Fri, Jan 1 / 7:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Evans vs "
+  },
+  {
+    "name": "UFC 107: Penn vs Sanchez",
+    "date": "Fri, Dec 11 / 7:00 PM EST / Main Card",
+    "location": "Memphis, TN, United States",
+    "main_event": "Penn vs Sanchez"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-HEAVYWEIGHTS-Finale: Heavyweights FINALE",
+    "date": "Sat, Dec 5 / 4:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Nelson vs Schaub"
+  },
+  {
+    "name": "UFC 106: ORTIZ vs GRIFFIN 2",
+    "date": "Sat, Nov 21 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Griffin vs Ortiz"
+  },
+  {
+    "name": "UFC 105: Couture vs Vera",
+    "date": "Fri, Nov 13 / 7:00 PM EST / Main Card",
+    "location": "Manchester, United Kingdom",
+    "main_event": "Couture vs Vera"
+  },
+  {
+    "name": "UFC 104: MACHIDA v SHOGUN",
+    "date": "Sat, Oct 24 / 6:00 PM EDT / Main Card",
+    "location": "Los Angeles, CA, United States",
+    "main_event": "Machida vs Rua"
+  },
+  {
+    "name": "UFC 103: FRANKLIN vs BELFORT",
+    "date": "Sat, Sep 19 / 6:00 PM EDT / Main Card",
+    "location": "Dallas, TX, United States",
+    "main_event": "Belfort vs Franklin"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-DIAZ-vs-GUILLARD: Diaz vs Guillard",
+    "date": "Tue, Sep 15 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Diaz vs Guillard"
+  },
+  {
+    "name": "UFC 102: COUTURE vs NOGUEIRA",
+    "date": "Sat, Aug 29 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Nogueira vs Couture"
+  },
+  {
+    "name": "UFC 101: DECLARATION",
+    "date": "Sat, Aug 8 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Penn vs Florian"
+  },
+  {
+    "name": "UFC 100: Lesnar vs. Mir II",
+    "date": "Sat, Jul 11 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Lesnar vs Mir"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-Team-US-vs-Team-UK-FINALE: Team US vs Team UK FINALE",
+    "date": "Sat, Jun 20 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Sanchez vs Guida"
+  },
+  {
+    "name": "UFC 99: THE COMEBACK",
+    "date": "Sat, Jun 13 / 11:00 AM EDT / Main Card",
+    "location": "",
+    "main_event": "Franklin vs Silva"
+  },
+  {
+    "name": "UFC 98: EVANS vs MACHIDA",
+    "date": "Sat, May 23 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Machida vs Evans"
+  },
+  {
+    "name": "UFC 97: REDEMPTION",
+    "date": "Sat, Apr 18 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Silva vs Leites"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Condit-vs-Kampmann: CONDIT vs KAMPMANN",
+    "date": "Wed, Apr 1 / 4:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Kampmann vs Condit"
+  },
+  {
+    "name": "UFC 96: Jackson vs Jardine",
+    "date": "Fri, Mar 6 / 7:00 PM EST / Main Card",
+    "location": "Columbus, OH, United States",
+    "main_event": "Jackson vs Jardine"
+  },
+  {
+    "name": "UFC 95: Sanchez vs Stevenson",
+    "date": "Fri, Feb 20 / 7:00 PM EST / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Sanchez vs Stevenson"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Lauzon-vs-Stephens: Lauzon vs Stephens",
+    "date": "Fri, Feb 6 / 7:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Lauzon vs Stephens"
+  },
+  {
+    "name": "UFC 94: ST-PIERRE VS PENN 2",
+    "date": "Sat, Jan 31 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "St-Pierre vs Penn"
+  },
+  {
+    "name": "UFC 93: FRANKLIN vs HENDERSON",
+    "date": "Sat, Jan 17 / 10:00 AM EST / Main Card",
+    "location": "",
+    "main_event": "Henderson vs Franklin"
+  },
+  {
+    "name": "UFC 92: THE ULTIMATE 2008",
+    "date": "Sat, Dec 27 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Evans vs Griffin"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-Finale-Team-Nog-vs-Team-Mir: Team Nog vs Team Mir",
+    "date": "Sat, Dec 13 / 4:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Escudero vs Nover"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-FIGHT-FOR-THE-TROOPS: FIGHT FOR THE TROOPS",
+    "date": "Wed, Dec 10 / 4:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Koscheck vs "
+  },
+  {
+    "name": "UFC 91: COUTURE vs LESNAR",
+    "date": "Sat, Nov 15 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Lesnar vs Couture"
+  },
+  {
+    "name": "UFC 90: Silva vs Cote",
+    "date": "Fri, Oct 24 / 8:00 PM EDT / Main Card",
+    "location": "Rosemont, IL, United States",
+    "main_event": "Silva vs Cote"
+  },
+  {
+    "name": "UFC 89: Bisping vs Leben",
+    "date": "Fri, Oct 17 / 8:00 PM EDT / Main Card",
+    "location": "Birmingham, United Kingdom",
+    "main_event": "Bisping vs Leben"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Diaz-vs-Neer: Diaz vs Neer",
+    "date": "Tue, Sep 16 / 8:00 PM EDT / Main Card",
+    "location": "Omaha, NE, United States",
+    "main_event": "Diaz vs Neer"
+  },
+  {
+    "name": "UFC 88: BREAKTHROUGH",
+    "date": "Sat, Sep 6 / 6:00 PM EDT / Main Card",
+    "location": "Atlanta, GA, United States",
+    "main_event": "Evans vs Liddell"
+  },
+  {
+    "name": "UFC 87: SEEK AND DESTROY",
+    "date": "Sat, Aug 9 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "St-Pierre vs Fitch"
+  },
+  {
+    "name": "UFC /event/UFC-Silva-vs-Irvin: Silva vs Irvin",
+    "date": "Fri, Jul 18 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Silva vs Irvin"
+  },
+  {
+    "name": "UFC 86: JACKSON vs GRIFFIN",
+    "date": "Sat, Jul 5 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Griffin vs Jackson"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-T-Rampage-vs-T-Forrest-Finale: Team Rampage vs Team Forrest",
+    "date": "Sat, Jun 21 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Grove vs Tanner"
+  },
+  {
+    "name": "UFC 85: BEDLAM",
+    "date": "Sat, Jun 7 / 11:00 AM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Alves vs Hughes"
+  },
+  {
+    "name": "UFC 84: ILL WILL",
+    "date": "Sat, May 24 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Penn vs Sherk"
+  },
+  {
+    "name": "UFC 83: SERRA vs ST-PIERRE 2",
+    "date": "Sat, Apr 19 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "St-Pierre vs Serra"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Kenny-Florian-vs-Joe-Lauzon: Florian vs Lauzon",
+    "date": "Tue, Apr 1 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Florian vs Lauzon"
+  },
+  {
+    "name": "UFC 82: PRIDE OF A CHAMPION",
+    "date": "Sat, Mar 1 / 5:00 PM EST / Main Card",
+    "location": "Columbus, OH, United States",
+    "main_event": "Silva vs Henderson"
+  },
+  {
+    "name": "UFC 81: BREAKING POINT",
+    "date": "Sat, Feb 2 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Nogueira vs Sylvia"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Swick-vs-Burkman: Swick vs Burkman",
+    "date": "Tue, Jan 22 / 7:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Swick vs Burkman"
+  },
+  {
+    "name": "UFC 80: RAPID FIRE",
+    "date": "Sat, Jan 19 / 10:00 AM EST / Main Card",
+    "location": "",
+    "main_event": "Penn vs Stevenson"
+  },
+  {
+    "name": "UFC 79: NEMESIS",
+    "date": "Sat, Dec 29 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "St-Pierre vs Hughes"
+  },
+  {
+    "name": "UFC /event/ultimate-fighterUltimate-Fighter-Team-Serra-vs-Team-Hughes-Finale: Team Serra vs Team Hughes FINALE",
+    "date": "Sun, Dec 9 / 12:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Huerta vs Guida"
+  },
+  {
+    "name": "UFC 78: VALIDATION",
+    "date": "Sat, Nov 17 / 5:00 PM EST / Main Card",
+    "location": "Newark, NJ, United States",
+    "main_event": "Evans vs Bisping"
+  },
+  {
+    "name": "UFC 77: HOSTILE TERRITORY",
+    "date": "Sat, Oct 20 / 6:00 PM EDT / Main Card",
+    "location": "Cincinnati, OH, United States",
+    "main_event": "Silva vs Franklin"
+  },
+  {
+    "name": "UFC 76: KNOCKOUT",
+    "date": "Sat, Sep 22 / 6:00 PM EDT / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Jardine vs Liddell"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Din-Thomas-vs-Kenny-Florian: THOMAS vs FLORIAN",
+    "date": "Wed, Sep 19 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Florian vs Thomas"
+  },
+  {
+    "name": "UFC 75: CHAMPION VS CHAMPION",
+    "date": "Sat, Sep 8 / 5:00 PM EDT / Main Card",
+    "location": "London, United Kingdom",
+    "main_event": "Jackson vs Henderson"
+  },
+  {
+    "name": "UFC 74: RESPECT",
+    "date": "Sat, Aug 25 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Couture vs Gonzaga"
+  },
+  {
+    "name": "UFC 73: STACKED",
+    "date": "Sat, Jul 7 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Silva vs Marquardt"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-5-Finale: Team Pulver vs Team Penn",
+    "date": "Sat, Jun 23 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Penn vs Pulver"
+  },
+  {
+    "name": "UFC 72: VICTORY",
+    "date": "Sat, Jun 16 / 11:00 AM EDT / Main Card",
+    "location": "Glasgow, United Kingdom",
+    "main_event": "Franklin vs Okami"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Sam-Stout-vs-Spencer-Fisher: STOUT vs FISHER",
+    "date": "Tue, Jun 12 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Fisher vs Stout"
+  },
+  {
+    "name": "UFC 71: LIDDELL vs JACKSON",
+    "date": "Sun, May 27 / 12:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Jackson vs Liddell"
+  },
+  {
+    "name": "UFC 70: NATIONS COLLIDE",
+    "date": "Sat, Apr 21 / 11:00 AM EDT / Main Card",
+    "location": "",
+    "main_event": "Gonzaga vs Cro Cop"
+  },
+  {
+    "name": "UFC 69: SHOOTOUT",
+    "date": "Sat, Apr 7 / 6:00 PM EDT / Main Card",
+    "location": "Houston, TX, United States",
+    "main_event": "Serra vs St-Pierre"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Stevenson-vs-Guillard: Stevenson vs Guillard",
+    "date": "Wed, Apr 4 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Stevenson vs Guillard"
+  },
+  {
+    "name": "UFC 68: THE UPRISING",
+    "date": "Sat, Mar 3 / 5:00 PM EST / Main Card",
+    "location": "Columbus, OH, United States",
+    "main_event": "Couture vs Sylvia"
+  },
+  {
+    "name": "UFC 67: ALL OR NOTHING",
+    "date": "Sat, Feb 3 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Silva vs Lutter"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Rashad-Evans-vs-Sean-Salmon: Evans vs Salmon",
+    "date": "Wed, Jan 24 / 7:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Evans vs Salmon"
+  },
+  {
+    "name": "UFC 66: Liddell vs Ortiz 2",
+    "date": "Sat, Dec 30 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Liddell vs Ortiz"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-Sanchez-vs-Riggs: Sanchez vs Riggs",
+    "date": "Tue, Dec 12 / 7:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Sanchez vs Riggs"
+  },
+  {
+    "name": "UFC 65: BAD INTENTIONS",
+    "date": "Sat, Nov 18 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "St-Pierre vs Hughes"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-4-Finale: The Comeback",
+    "date": "Sat, Nov 11 / 4:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Serra vs Lytle"
+  },
+  {
+    "name": "UFC 64: UNSTOPPABLE",
+    "date": "Sat, Oct 14 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Silva vs Franklin"
+  },
+  {
+    "name": "UFC /event/Ortiz-vs-Shamrock-3--The-Final-Chapter: The Final Chapter",
+    "date": "Tue, Oct 10 / 4:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Ortiz vs Shamrock"
+  },
+  {
+    "name": "UFC 63: Hughes vs Penn",
+    "date": "Fri, Sep 22 / 8:00 PM EDT / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Hughes vs Penn"
+  },
+  {
+    "name": "UFC 62: Liddell vs Sobral",
+    "date": "Fri, Aug 25 / 8:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Liddell vs Sobral"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-6: Sanchez vs Parisyan",
+    "date": "Wed, Aug 16 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Sanchez vs Parisyan"
+  },
+  {
+    "name": "UFC 61: Bitter Rivals",
+    "date": "Sat, Jul 8 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Sylvia vs Arlovski"
+  },
+  {
+    "name": "UFC Fight Night: Goulet vs Cummo",
+    "date": "Wed, Jun 28 / 10:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Goulet vs Cummo"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-3-Finale: Team Ortiz vs Team Shamrock",
+    "date": "Sat, Jun 24 / 2:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Florian vs Stout"
+  },
+  {
+    "name": "UFC 60: Hughes vs Gracie",
+    "date": "Fri, May 26 / 8:00 PM EDT / Main Card",
+    "location": "Los Angeles, CA, United States",
+    "main_event": "Hughes vs Gracie"
+  },
+  {
+    "name": "UFC 59: Reality Check",
+    "date": "Sat, Apr 15 / 6:00 PM EDT / Main Card",
+    "location": "Anaheim, CA, United States",
+    "main_event": "Sylvia vs Arlovski"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-4: Bonnar vs Jardine",
+    "date": "Wed, Apr 5 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Bonnar vs Jardine"
+  },
+  {
+    "name": "UFC 58: USA vs. Canada",
+    "date": "Sat, Mar 4 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Franklin vs Loiseau"
+  },
+  {
+    "name": "UFC 57: Liddell vs Couture 3",
+    "date": "Sat, Feb 4 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Liddell vs Couture"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-3: Sylvia vs Silva",
+    "date": "Sun, Jan 15 / 7:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Sylvia vs Silva"
+  },
+  {
+    "name": "UFC 56: Full Force",
+    "date": "Sat, Nov 19 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Franklin vs Quarry"
+  },
+  {
+    "name": "UFC /event/The-Ultimate-Fighter-2-Finale: Team Hughes vs Team Franklin",
+    "date": "Sat, Nov 5 / 3:00 PM EST / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 55: Fury",
+    "date": "Fri, Oct 7 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Arlovski vs Buentello"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-2: Loiseau vs Tanner",
+    "date": "Sun, Oct 2 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Loiseau vs Tanner"
+  },
+  {
+    "name": "UFC 54: Boiling Point",
+    "date": "Sat, Aug 20 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Liddell vs Horn"
+  },
+  {
+    "name": "UFC /event/UFC-Fight-Night-1: Marquardt vs Salaverry",
+    "date": "Fri, Aug 5 / 8:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Marquardt vs Salaverry"
+  },
+  {
+    "name": "UFC 53: Heavy Hitters",
+    "date": "Sat, Jun 4 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Arlovski vs Eilers"
+  },
+  {
+    "name": "UFC 52: Couture vs Liddell II",
+    "date": "Sat, Apr 16 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Liddell vs Couture"
+  },
+  {
+    "name": "UFC /event/Ultimate-Fighter-I-Finale: Finale",
+    "date": "Sat, Apr 9 / 5:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Franklin vs Shamrock"
+  },
+  {
+    "name": "UFC 51: Super Saturday",
+    "date": "Sat, Feb 5 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Ortiz vs Belfort"
+  },
+  {
+    "name": "UFC 50: The War of 04",
+    "date": "Fri, Oct 22 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Ortiz vs Cote"
+  },
+  {
+    "name": "UFC 49: Unfinished Business",
+    "date": "Fri, Aug 20 / 8:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Couture vs Belfort"
+  },
+  {
+    "name": "UFC 48: Payback",
+    "date": "Sat, Jun 19 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Shamrock vs Leopoldo"
+  },
+  {
+    "name": "UFC 47: IT'S ON",
+    "date": "Fri, Apr 2 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Liddell vs Ortiz"
+  },
+  {
+    "name": "UFC 46: Super Natural",
+    "date": "Sat, Jan 31 / 5:00 PM EST / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Belfort vs Couture"
+  },
+  {
+    "name": "UFC 45: Revolution",
+    "date": "Fri, Nov 21 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Hughes vs Trigg"
+  },
+  {
+    "name": "UFC 44: Undisputed",
+    "date": "Fri, Sep 26 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Couture vs Ortiz"
+  },
+  {
+    "name": "UFC 43: Meltdown",
+    "date": "Fri, Jun 6 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Couture vs Liddell"
+  },
+  {
+    "name": "UFC 42: Sudden Impact",
+    "date": "Fri, Apr 25 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Hughes vs Sherk"
+  },
+  {
+    "name": "UFC 41: Onslaught",
+    "date": "Fri, Feb 28 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Sylvia vs Rodriguez"
+  },
+  {
+    "name": "UFC 40: Vendetta",
+    "date": "Fri, Nov 22 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Ortiz vs Shamrock"
+  },
+  {
+    "name": "UFC 39: The Warriors Return",
+    "date": "Fri, Sep 27 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Rodriguez vs Couture"
+  },
+  {
+    "name": "UFC 38: Brawl At The Hall",
+    "date": "Sat, Jul 13 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Hughes vs Newton"
+  },
+  {
+    "name": "UFC 375: As Real As It Gets®",
+    "date": "Sat, Jun 22 / 3:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Liddell vs Belfort"
+  },
+  {
+    "name": "UFC 37: High Impact",
+    "date": "Fri, May 10 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Bustamante vs Lindland"
+  },
+  {
+    "name": "UFC 36: Worlds Collide",
+    "date": "Fri, Mar 22 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Barnett vs Couture"
+  },
+  {
+    "name": "UFC 35: Throwdown",
+    "date": "Fri, Jan 11 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Pulver vs Penn"
+  },
+  {
+    "name": "UFC 34: High Voltage",
+    "date": "Fri, Nov 2 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Couture vs Rizzo"
+  },
+  {
+    "name": "UFC 33: Victory In Vegas",
+    "date": "Fri, Sep 28 / 6:00 PM EDT / Main Card",
+    "location": "Las Vegas, NV, United States",
+    "main_event": "Ortiz vs Matyushenko"
+  },
+  {
+    "name": "UFC 32: Showdown In The Meadowlands",
+    "date": "Fri, Jun 29 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Ortiz vs Sinosic"
+  },
+  {
+    "name": "UFC 31: Locked \u0026 Loaded",
+    "date": "Fri, May 4 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": "Couture vs Rizzo"
+  },
+  {
+    "name": "UFC 30: The Battle On The Boardwalk",
+    "date": "Fri, Feb 23 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": "Ortiz vs Tanner"
+  },
+  {
+    "name": "UFC 29: Defense Of The Belts",
+    "date": "Sat, Dec 16 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 28: High Stakes",
+    "date": "Fri, Nov 17 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 27: Ultimate Bad Boyz",
+    "date": "Fri, Sep 22 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 26: Ultimate Field Of Dreams",
+    "date": "Fri, Jun 9 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 25: Ultimate Japan 3",
+    "date": "Fri, Apr 14 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 24: First Defense",
+    "date": "Fri, Mar 10 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 23: Ultimate Japan 2",
+    "date": "Fri, Nov 19 / 5:00 PM EST / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 22: There Can Be Only One Champion",
+    "date": "Fri, Sep 24 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": ""
+  },
+  {
+    "name": "UFC 21: Return Of The Champions",
+    "date": "Fri, Jul 16 / 6:00 PM EDT / Main Card",
+    "location": "",
+    "main_event": ""
+  }
+]
