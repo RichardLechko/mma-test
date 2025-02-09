@@ -1,28 +1,25 @@
 package models
 
-import (
-	"time"
-)
+import "time"
 
 type Fighter struct {
-    ID              string     `json:"id"`
-    FullName        string     `json:"full_name"`
-    Nickname        string    `json:"nickname,omitempty"`
-    Gender          string    `json:"gender"`
-    WeightClass     string    `json:"weight_class"`
-    DateOfBirth     time.Time `json:"date_of_birth,omitempty"`
-    Height          float64   `json:"height,omitempty"`
-    Weight          float64   `json:"weight,omitempty"`
-    Reach          float64   `json:"reach,omitempty"`
-    Stance         string    `json:"stance,omitempty"`
-    Active         bool      `json:"active"`
-    Record         Record    `json:"record"`
-	LastFightDate   *time.Time `json:"last_fight_date,omitempty"`
+    ID           string    `json:"id"`
+    UFCID        string    `json:"ufc_id"`        // New: from UFC.com URL
+    Name         string    `json:"name"`
+    Nickname     string    `json:"nickname"`
+    Record       Record    `json:"record"`
+    WeightClass  string    `json:"weight_class"`
+    Rank         string    `json:"rank"`          // New: e.g., "#3"
+    Status       string    `json:"status"`        // New: "Active" or not
+    FirstRound   int       `json:"first_round"`   // New: First round finishes
+    CreatedAt    time.Time `json:"created_at"`    // New: for tracking
+    UpdatedAt    time.Time `json:"updated_at"`    // New: for tracking
 }
 
 type Record struct {
-    Wins        int `json:"wins"`
-    Losses      int `json:"losses"`
-    Draws       int `json:"draws"`
-    NoContests  int `json:"no_contests"`
+    Wins         int `json:"wins"`
+    Losses       int `json:"losses"`
+    Draws        int `json:"draws"`
+    KOWins       int `json:"ko_wins"`
+    SubWins      int `json:"sub_wins"`
 }

@@ -25,11 +25,4 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 frontend/.vscode/
-
-config.json
-
-backend/config/
-backend/pkg/
-backend/prometheus/
-backend/scripts/
-backend/tests/
+.json*
