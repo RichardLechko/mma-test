@@ -1,0 +1,111 @@
+-- First drop existing tables and types
+DROP TABLE IF EXISTS fights CASCADE;
+DROP TABLE IF EXISTS events CASCADE;
+DROP TYPE IF EXISTS event_status CASCADE;
+
+-- Enable UUID generation
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create event status enum
+CREATE TYPE event_status AS ENUM ('announced', 'scheduled', 'completed', 'canceled');
+
+-- Create events table
+CREATE TABLE events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    event_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    venue TEXT,
+    city TEXT,
+    country TEXT,
+    status event_status DEFAULT 'announced',
+    poster_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT unique_event_name UNIQUE (name)
+);
+
+-- Create fights table
+CREATE TABLE fights (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_id UUID REFERENCES events(id),
+    fighter1_name TEXT NOT NULL,
+    fighter2_name TEXT NOT NULL,
+    weight_class TEXT NOT NULL,
+    is_main_event BOOLEAN DEFAULT false,
+    fight_order INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes
+CREATE INDEX idx_events_date ON events(event_date);
+CREATE INDEX idx_events_status ON events(status);
+CREATE INDEX idx_fights_event ON fights(event_id);
+
+-- Create updated_at trigger function
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add triggers
+CREATE TRIGGER update_events_updated_at
+    BEFORE UPDATE ON events
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_fights_updated_at
+    BEFORE UPDATE ON fights
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE fights DROP COLUMN IF EXISTS fighter1_id;
+ALTER TABLE fights DROP COLUMN IF EXISTS fighter2_id;
+DROP TABLE IF EXISTS fighters CASCADE;
+
+-- Create fighters table
+CREATE TABLE fighters (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    ufc_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    nickname TEXT,
+    weight_class TEXT,
+    rank TEXT,
+    status TEXT,
+    wins INTEGER DEFAULT 0,
+    losses INTEGER DEFAULT 0,
+    draws INTEGER DEFAULT 0,
+    ko_wins INTEGER DEFAULT 0,
+    sub_wins INTEGER DEFAULT 0,
+    first_round INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT unique_ufc_id UNIQUE (ufc_id),
+    CONSTRAINT unique_fighter_name UNIQUE (name)
+);
+
+-- Create index for faster lookups
+CREATE INDEX idx_fighters_name ON fighters(name);
+CREATE INDEX idx_fighters_ufc_id ON fighters(ufc_id);
+
+-- Add the same updated_at trigger we have on other tables
+CREATE TRIGGER update_fighters_updated_at
+    BEFORE UPDATE ON fighters
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Re-add foreign key references to fighters in fights table
+ALTER TABLE fights 
+    ADD COLUMN fighter1_id UUID REFERENCES fighters(id),
+    ADD COLUMN fighter2_id UUID REFERENCES fighters(id);
+
+-- Create index for the foreign keys
+CREATE INDEX idx_fights_fighter1 ON fights(fighter1_id);
+CREATE INDEX idx_fights_fighter2 ON fights(fighter2_id);
+
+ALTER TABLE fights 
+ADD CONSTRAINT uq_fights_event_fighters 
+UNIQUE (event_id, fighter1_id, fighter2_id);
