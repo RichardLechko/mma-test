@@ -69,27 +69,6 @@ func main() {
     if err != nil {
         log.Fatalf("Error scraping events: %v", err)
     }
-
-    log.Printf("Successfully scraped %d events\n", len(events))
-    for _, event := range events {
-        fmt.Printf("\nEvent Details:\n")
-        fmt.Printf("Name: %s\n", event.Name)
-        fmt.Printf("Date: %s\n", event.Date)
-        fmt.Printf("Location: %s\n", event.Location)
-        if event.MainEvent != "" {
-            fmt.Printf("Main Event: %s\n", event.MainEvent)
-        }
-        fmt.Println("----------------------------------------")
-    }
-
-    fmt.Println("\nDo you want to proceed with saving these events to the database? (y/n)")
-    var response string
-    fmt.Scanln(&response)
-    if response != "y" {
-        log.Println("Database operations skipped.")
-        return
-    }
-
     
     dbCtx, dbCancel := context.WithTimeout(context.Background(), 5*time.Minute)
     defer dbCancel()
@@ -139,13 +118,6 @@ if err != nil {
             }
         }
 
-        
-        log.Printf("Attempting to insert/update event: %s", event.Name)
-        log.Printf("Date: %v", eventDate)
-        log.Printf("Venue: %s", venue)
-        log.Printf("City: %s", city)
-        log.Printf("Country: %s", country)
-
         err = db.QueryRowContext(dbCtx, query,
             event.Name,
             eventDate,
@@ -162,9 +134,6 @@ if err != nil {
             log.Printf("Failed event data: %+v", event)
             continue
         }
-
-        fmt.Printf("Successfully saved/updated event with ID: %s\n", eventID)
-        fmt.Println("----------------------------------------")
     }
 
     log.Println("Scraping and database update completed!")

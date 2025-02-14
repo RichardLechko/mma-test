@@ -3,12 +3,12 @@ package scrapers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"log"
 
 	"mma-scheduler/internal/models"
 	"mma-scheduler/pkg/databases"
@@ -27,105 +27,100 @@ func NewEventScraper(config ScraperConfig) *EventScraper {
 }
 
 func (s *EventScraper) ScrapeEvents() ([]*databases.Event, error) {
-    var allEvents []*databases.Event
-    currentYear := time.Now().Year()
-    
-    // Start from current year and go back to 1993
-    for year := currentYear; year >= 1993; year-- {
-        events, err := s.scrapeEventsPage(year)
-        if err != nil {
-            return nil, fmt.Errorf("error scraping year %d: %v", year, err)
-        }
-        
-        // Add events only if they were successfully scraped
-        if len(events) > 0 {
-            allEvents = append(allEvents, events...)
-        }
-        
-        // Add a small delay between requests to be respectful
-        time.Sleep(time.Second * 2)
-    }
+	var allEvents []*databases.Event
+	currentYear := time.Now().Year()
 
-    return allEvents, nil
+	for year := currentYear; year >= 1993; year-- {
+		events, err := s.scrapeEventsPage(year)
+		if err != nil {
+			return nil, fmt.Errorf("error scraping year %d: %v", year, err)
+		}
+
+		if len(events) > 0 {
+			for _, event := range events {
+				if number, ok := extractPPVNumber(event.Name); ok && number < 229 {
+					log.Printf("Reached UFC 229 cutoff point. Stopping scraper.")
+					return allEvents, nil
+				}
+				allEvents = append(allEvents, event)
+			}
+		}
+
+		time.Sleep(time.Second * 2)
+	}
+
+	return allEvents, nil
 }
 
 func (s *EventScraper) scrapeEventsPage(year int) ([]*databases.Event, error) {
-    // ESPN UFC events page with year and league parameters
-    url := fmt.Sprintf("https://www.espn.com/mma/schedule/_/year/%d/league/ufc", year)
-    
-    req, err := http.NewRequest("GET", url, nil)
-    if err != nil {
-        return nil, fmt.Errorf("error creating request: %v", err)
-    }
+	url := fmt.Sprintf("https://www.espn.com/mma/schedule/_/year/%d/league/ufc", year)
 
-    req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/123.0")
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
+	}
 
-    resp, err := s.client.Do(req)
-    if err != nil {
-        return nil, fmt.Errorf("error fetching page: %v", err)
-    }
-    defer resp.Body.Close()
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/123.0")
 
-    doc, err := goquery.NewDocumentFromReader(resp.Body)
-    if err != nil {
-        return nil, fmt.Errorf("error parsing HTML: %v", err)
-    }
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching page: %v", err)
+	}
+	defer resp.Body.Close()
 
-    var events []*databases.Event
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing HTML: %v", err)
+	}
 
-    doc.Find("tr.Table__TR").Each(func(i int, tr *goquery.Selection) {
-        dateText := strings.TrimSpace(tr.Find("td.date__col span.date__innerCell").Text())
-        eventName := strings.TrimSpace(tr.Find("td.event__col a.AnchorLink").Text())
-        location := strings.TrimSpace(tr.Find("td.location__col div").Text())
+	var events []*databases.Event
 
-        // Skip only if name is missing (we need at least this)
-        if (eventName == "" || !strings.HasPrefix(eventName, "UFC")) {
-            return
-        }
+	doc.Find("tr.Table__TR").Each(func(i int, tr *goquery.Selection) {
+		dateText := strings.TrimSpace(tr.Find("td.date__col span.date__innerCell").Text())
+		eventName := strings.TrimSpace(tr.Find("td.event__col a.AnchorLink").Text())
+		location := strings.TrimSpace(tr.Find("td.location__col div").Text())
 
-        var dateStr string
-        // Try to parse the date, but if it fails, create a fallback date
-        parsedDate, err := time.Parse("Jan 2", dateText)
-        if err != nil {
-            parsedDate, err = time.Parse("Jan. 2", dateText)
-            if err != nil {
-                // If date parsing fails, use January 1st of the year as fallback
-                // This ensures we still capture the event with at least the correct year
-                parsedDate = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
-                log.Printf("Warning: Could not parse date '%s' for event '%s', using fallback date", dateText, eventName)
-            }
-        }
+		if eventName == "" || !strings.HasPrefix(eventName, "UFC") {
+			return
+		}
 
-        // Set the date string in the required format
-        dateStr = time.Date(year, parsedDate.Month(), parsedDate.Day(), 0, 0, 0, 0, time.UTC).Format("2006-01-02 15:04:05 -0700 MST")
+		var dateStr string
+		parsedDate, err := time.Parse("Jan 2", dateText)
+		if err != nil {
+			parsedDate, err = time.Parse("Jan. 2", dateText)
+			if err != nil {
+				parsedDate = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+				log.Printf("Warning: Could not parse date '%s' for event '%s', using fallback date", dateText, eventName)
+			}
+		}
 
-        // Extract main event if available
-        mainEvent := tr.Find("td.event__col div.matchup").Text()
-        if mainEvent == "" {
-            mainEvent = "TBD"
-        }
+		dateStr = time.Date(year, parsedDate.Month(), parsedDate.Day(), 0, 0, 0, 0, time.UTC).Format("2006-01-02 15:04:05 -0700 MST")
 
-        // If location is empty, use "TBD"
-        if location == "" {
-            location = "TBD"
-        }
+		mainEvent := tr.Find("td.event__col div.matchup").Text()
+		if mainEvent == "" {
+			mainEvent = "TBD"
+		}
 
-        event := &databases.Event{
-            Name:      eventName,
-            Date:      dateStr,
-            Location:  location,
-            MainEvent: mainEvent,
-        }
+		if location == "" {
+			location = "TBD"
+		}
 
-        events = append(events, event)
-    })
+		event := &databases.Event{
+			Name:      eventName,
+			Date:      dateStr,
+			Location:  location,
+			MainEvent: mainEvent,
+		}
 
-    return events, nil
+		events = append(events, event)
+	})
+
+	return events, nil
 }
 
 func (s *EventScraper) ScrapeEvent(ctx context.Context, url string) (*models.Event, error) {
 	event := &models.Event{
-		Promotion: "UFC", // Since this is a UFC scraper
+		Promotion: "UFC",
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -144,22 +139,18 @@ func (s *EventScraper) ScrapeEvent(ctx context.Context, url string) (*models.Eve
 		return nil, fmt.Errorf("error parsing HTML: %v", err)
 	}
 
-	// Parse event details
 	doc.Find(".event-header").Each(func(i int, s *goquery.Selection) {
 		event.Name = strings.TrimSpace(s.Find(".event-title").Text())
 
-		// Parse date
 		dateStr := s.Find(".event-date").Text()
 		if parsedDate, err := time.Parse("January 2, 2006", dateStr); err == nil {
 			event.Date = parsedDate
 		}
 
-		// Combine venue and location information
 		venue := strings.TrimSpace(s.Find(".event-venue").Text())
 		city := strings.TrimSpace(s.Find(".event-city").Text())
 		country := strings.TrimSpace(s.Find(".event-country").Text())
 
-		// Build location string
 		var locationParts []string
 		if venue != "" {
 			locationParts = append(locationParts, venue)
@@ -173,7 +164,6 @@ func (s *EventScraper) ScrapeEvent(ctx context.Context, url string) (*models.Eve
 		event.Location = strings.Join(locationParts, ", ")
 	})
 
-	// Parse main card fights
 	doc.Find(".fight-card .main-card .fight").Each(func(i int, s *goquery.Selection) {
 		fight := models.Fight{
 			EventID:     event.ID,
@@ -186,7 +176,6 @@ func (s *EventScraper) ScrapeEvent(ctx context.Context, url string) (*models.Eve
 		event.MainCard = append(event.MainCard, fight)
 	})
 
-	// Parse prelim card fights
 	doc.Find(".fight-card .prelim-card .fight").Each(func(i int, s *goquery.Selection) {
 		fight := models.Fight{
 			EventID:     event.ID,
@@ -206,7 +195,6 @@ func (s *EventScraper) ScrapeEvent(ctx context.Context, url string) (*models.Eve
 }
 
 func extractPPVNumber(name string) (int, bool) {
-	// Common PPV format patterns
 	patterns := []string{
 		`UFC (\d+)`,
 		`UFC(\d+)`,
@@ -225,30 +213,29 @@ func extractPPVNumber(name string) (int, bool) {
 }
 
 func (s *EventScraper) ScrapeUpcomingEvents(ctx context.Context) ([]models.Event, error) {
-    var events []models.Event
-    dbEvents, err := s.scrapeEventsPage(0)
-    if err != nil {
-        return nil, err
-    }
+	var events []models.Event
+	dbEvents, err := s.scrapeEventsPage(0)
+	if err != nil {
+		return nil, err
+	}
 
-    for _, dbEvent := range dbEvents {
-        // Parse date string with correct format
-        parsedDate, err := time.Parse("2006-01-02 15:04:05 -0700 MST", dbEvent.Date)
-        if err != nil {
-            fmt.Printf("Failed to parse date for event %s: %v\n", dbEvent.Name, err)
-            continue 
-        }
+	for _, dbEvent := range dbEvents {
+		parsedDate, err := time.Parse("2006-01-02 15:04:05 -0700 MST", dbEvent.Date)
+		if err != nil {
+			fmt.Printf("Failed to parse date for event %s: %v\n", dbEvent.Name, err)
+			continue
+		}
 
-        event := models.Event{
-            Name:      dbEvent.Name,
-            Date:      parsedDate,
-            Location:  dbEvent.Location,
-            Promotion: "UFC",
-            CreatedAt: time.Now(),
-            UpdatedAt: time.Now(),
-        }
-        events = append(events, event)
-    }
+		event := models.Event{
+			Name:      dbEvent.Name,
+			Date:      parsedDate,
+			Location:  dbEvent.Location,
+			Promotion: "UFC",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		events = append(events, event)
+	}
 
-    return events, nil
+	return events, nil
 }
