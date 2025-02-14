@@ -71,27 +71,9 @@ func main() {
 
     log.Printf("Successfully scraped %d fighters\n", len(fighters))
     for _, fighter := range fighters {
-        fmt.Printf("\nFighter Details:\n")
         fmt.Printf("Name: %s\n", fighter.Name)
-        if fighter.Nickname != "" {
-            fmt.Printf("Nickname: %s\n", fighter.Nickname)
-        }
-        fmt.Printf("Weight Class: %s\n", fighter.WeightClass)
-        fmt.Printf("Record: %d-%d-%d\n", fighter.Record.Wins, fighter.Record.Losses, fighter.Record.Draws)
-        if fighter.Rank != "" {
-            fmt.Printf("Rank: %s\n", fighter.Rank)
-        }
-        fmt.Printf("Status: %s\n", fighter.Status)
-        fmt.Println("----------------------------------------")
     }
 
-    fmt.Println("\nDo you want to proceed with saving these fighters to the database? (y/n)")
-    var response string
-    fmt.Scanln(&response)
-    if response != "y" {
-        log.Println("Database operations skipped.")
-        return
-    }
 
     
     dbCtx, dbCancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -149,9 +131,6 @@ func main() {
             log.Printf("Failed fighter data: %+v", fighter)
             continue
         }
-
-        fmt.Printf("Successfully saved/updated fighter with ID: %s\n", fighterID)
-        fmt.Println("----------------------------------------")
     }
 
     log.Println("Fighter scraping and database update completed!")
