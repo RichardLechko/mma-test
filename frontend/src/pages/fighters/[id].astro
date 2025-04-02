@@ -1,0 +1,381 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { supabase } from '../../lib/supabase';
+
+// Define interfaces for type safety
+interface Fighter {
+  id: string;
+  ufc_id: string;
+  name: string;
+  nickname: string | null;
+  weight_class: string | null;
+  rank: string | null;
+  status: string | null;
+  fighting_out_of: string | null;
+  height: string | null;
+  weight: string | null;
+  age: number | null;
+  nationality: string | null;
+  wiki_url: string | null;
+  ufc_url: string | null;
+  reach: string | null;
+  wins: number | null;
+  losses: number | null;
+  draws: number | null;
+  no_contests: number | null;
+  ko_wins: number | null;
+  sub_wins: number | null;
+  dec_wins: number | null;
+  loss_by_ko: number | null;
+  loss_by_sub: number | null;
+  loss_by_dec: number | null;
+}
+
+interface Fight {
+  id: string;
+  event_id: string;
+  event: {
+    id: string;
+    name: string;
+    event_date: string;
+  };
+  fighter1_id: string;
+  fighter2_id: string;
+  fighter1_name: string;
+  fighter2_name: string;
+  weight_class: string;
+  is_main_event: boolean;
+}
+
+interface FighterRanking {
+  id: string;
+  fighter_id: string;
+  weight_class: string;
+  rank: string;
+}
+
+// Get the fighter ID from the URL
+const { id } = Astro.params;
+const fighterId = id;
+
+if (!fighterId) {
+  return Astro.redirect('/fighters');
+}
+
+// Fetch the fighter details
+const { data: fighter, error: fighterError } = await supabase
+  .from('fighters')
+  .select('*')
+  .eq('id', fighterId)
+  .single();
+
+if (fighterError) {
+  console.error('Error fetching fighter:', fighterError);
+}
+
+const fighterData = fighter as Fighter | null;
+
+// Fetch the fighter's multiple rankings
+const { data: rankings, error: rankingsError } = await supabase
+  .from('fighter_rankings')
+  .select('*')
+  .eq('fighter_id', fighterId);
+
+if (rankingsError) {
+  console.error('Error fetching fighter rankings:', rankingsError);
+}
+
+const fighterRankings = rankings as FighterRanking[] || [];
+
+// Fetch the fighter's fights (both as fighter1 and fighter2)
+const { data: fights1, error: fights1Error } = await supabase
+  .from('fights')
+  .select(
+    `
+    *,
+    event:event_id(id, name, event_date)
+  `,
+  )
+  .eq('fighter1_id', fighterId);
+
+const { data: fights2, error: fights2Error } = await supabase
+  .from('fights')
+  .select(
+    `
+    *,
+    event:event_id(id, name, event_date)
+  `,
+  )
+  .eq('fighter2_id', fighterId);
+
+if (fights1Error) {
+  console.error('Error fetching fights as fighter1:', fights1Error);
+}
+
+if (fights2Error) {
+  console.error('Error fetching fights as fighter2:', fights2Error);
+}
+
+// Combine and sort fights by date (most recent first)
+const allFights = [...(fights1 || []), ...(fights2 || [])];
+const sortedFights = allFights.sort((a, b) => {
+  const dateA = new Date(a.event.event_date);
+  const dateB = new Date(b.event.event_date);
+  return dateB.getTime() - dateA.getTime();
+});
+---
+
+<Layout title={fighterData ? fighterData.name : 'Fighter Details'}>
+  <main class="fighter-page">
+    {
+      fighterData ? (
+        <div class="fighter-container">
+          <div class="fighter-header">
+            <div class="fighter-info">
+              <h1>{fighterData.name}</h1>
+              
+              {/* Display multiple rankings if available */}
+              {fighterRankings.length > 0 ? (
+                <div class="fighter-rankings">
+                  {fighterRankings.map((ranking) => (
+                    <div class="fighter-rank">
+                      {ranking.rank === 'Champion' ? (
+                        <span class="champion-badge">Champion</span>
+                      ) : (
+                        <>Ranked {ranking.rank}</>
+                      )}
+                      <span class="rank-division"> at {ranking.weight_class}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* Fall back to single weight class and rank if no multiple rankings */
+                <>
+                  {fighterData.weight_class && (
+                    <p class="fighter-weight-class">{fighterData.weight_class}</p>
+                  )}
+                  {fighterData.rank && fighterData.rank !== 'NR' && (
+                    <div class="fighter-rank">
+                      {fighterData.rank === 'Champion' ? (
+                        <span class="champion-badge">Champion</span>
+                      ) : (
+                        <>Ranked {fighterData.rank}</>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {fighterData.ufc_url && (
+              <a
+                href={fighterData.ufc_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="ufc-profile-link"
+              >
+                UFC Profile
+              </a>
+            )}
+          </div>
+
+          <div class="fighter-profile">
+            <div class="fighter-stats">
+              <h2>Fighter Stats</h2>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Status</span>
+                  <span class="stat-value">
+                    {fighterData.status || 'Unknown'}
+                  </span>
+                </div>
+                {fighterData.age && (
+                  <div class="stat-item">
+                    <span class="stat-label">Age</span>
+                    <span class="stat-value">{fighterData.age}</span>
+                  </div>
+                )}
+                {fighterData.height && (
+                  <div class="stat-item">
+                    <span class="stat-label">Height</span>
+                    <span class="stat-value">{fighterData.height}</span>
+                  </div>
+                )}
+                {fighterData.weight && (
+                  <div class="stat-item">
+                    <span class="stat-label">Weight</span>
+                    <span class="stat-value">{fighterData.weight}</span>
+                  </div>
+                )}
+                {fighterData.reach && (
+                  <div class="stat-item">
+                    <span class="stat-label">Reach</span>
+                    <span class="stat-value">{fighterData.reach}</span>
+                  </div>
+                )}
+                {fighterData.nationality && (
+                  <div class="stat-item">
+                    <span class="stat-label">Nationality</span>
+                    <span class="stat-value">{fighterData.nationality}</span>
+                  </div>
+                )}
+                {fighterData.fighting_out_of && (
+                  <div class="stat-item">
+                    <span class="stat-label">Fighting Out Of</span>
+                    <span class="stat-value">
+                      {fighterData.fighting_out_of}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div class="fighter-record">
+              <h2>Fight Record</h2>
+              <div class="record-summary">
+                <div class="record-total">
+                  <span class="record-value">
+                    {fighterData.wins || 0}-{fighterData.losses || 0}-{fighterData.draws || 0}
+                  </span>
+                  <span class="record-label">W-L-D</span>
+                  <span class="record-nc">
+                    {fighterData.no_contests || 0} NC
+                  </span>
+                </div>
+              </div>
+
+              <div class="win-methods">
+                {fighterData.ko_wins !== null &&
+                  fighterData.sub_wins !== null &&
+                  fighterData.dec_wins !== null && (
+                    <div class="methods-container">
+                      <h3>Win Methods</h3>
+                      <div class="method-items">
+                        <div class="method-item">
+                          <span class="method-value">
+                            {fighterData.ko_wins}
+                          </span>
+                          <span class="method-label">KO/TKO</span>
+                        </div>
+                        <div class="method-item">
+                          <span class="method-value">
+                            {fighterData.sub_wins}
+                          </span>
+                          <span class="method-label">Submission</span>
+                        </div>
+                        <div class="method-item">
+                          <span class="method-value">
+                            {fighterData.dec_wins}
+                          </span>
+                          <span class="method-label">Decision</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                {fighterData.loss_by_ko !== null &&
+                  fighterData.loss_by_sub !== null &&
+                  fighterData.loss_by_dec !== null && (
+                    <div class="methods-container">
+                      <h3>Loss Methods</h3>
+                      <div class="method-items">
+                        <div class="method-item">
+                          <span class="method-value">
+                            {fighterData.loss_by_ko}
+                          </span>
+                          <span class="method-label">KO/TKO</span>
+                        </div>
+                        <div class="method-item">
+                          <span class="method-value">
+                            {fighterData.loss_by_sub}
+                          </span>
+                          <span class="method-label">Submission</span>
+                        </div>
+                        <div class="method-item">
+                          <span class="method-value">
+                            {fighterData.loss_by_dec}
+                          </span>
+                          <span class="method-label">Decision</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          </div>
+
+          <!-- Updated Fight History Section -->
+<div class="fighter-fights">
+  <h2>Fight History</h2>
+  {sortedFights.length > 0 ? (
+    <div class="fights-list">
+      {sortedFights.map(fight => {
+        const isMainEvent = fight.is_main_event;
+        const opponent =
+          fight.fighter1_id === fighterId
+            ? fight.fighter2_name
+            : fight.fighter1_name;
+        const opponentId =
+          fight.fighter1_id === fighterId
+            ? fight.fighter2_id
+            : fight.fighter1_id;
+        const eventDate = new Date(fight.event.event_date);
+
+        return (
+          <div class={`fight-card ${isMainEvent ? 'main-event' : ''}`}>
+            <a href={`/events/event/${fight.event_id}`} class="event-link">
+              <div class="fight-date">
+                <span>{eventDate.toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}</span>
+                {isMainEvent && <span class="main-event-badge">Main Event</span>}
+              </div>
+              
+              <div class="fight-details">
+                <span class="event-name">
+                  {fight.event.name}
+                </span>
+                
+                <div class="matchup">
+                  <span class="vs-label">vs</span>
+                  <a 
+                    href={`/fighters/${opponentId}`} 
+                    class="opponent-link"
+                  >
+                    {opponent}
+                  </a>
+                </div>
+                
+                <div class="fight-meta">
+                  <span class="weight-class-pill">{fight.weight_class}</span>
+                </div>
+              </div>
+            </a>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <div class="no-fights">
+      <p>No fights on record.</p>
+    </div>
+  )}
+</div>
+        </div>
+      ) : (
+        <div class="fighter-not-found">
+          <h1>Fighter Not Found</h1>
+          <p>
+            Sorry, the fighter you're looking for doesn't exist or has been
+            removed.
+          </p>
+          <a href="/fighters" class="back-button">
+            Back to Fighters
+          </a>
+        </div>
+      )
+    }
+  </main>
+</Layout>

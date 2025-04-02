@@ -1,0 +1,841 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { supabase } from '../../lib/supabase';
+import FilterDropdown from '../../components/FilterDropdown.astro';
+
+// Define interfaces and get data (this part remains unchanged)
+interface Fighter {
+  id: string;
+  name: string;
+  weight_class: string | null | undefined;
+  nationality: string | null;
+  wins: number | null;
+  losses: number | null;
+  draws: number | null;
+  rank: string | null;
+  status: string | null;
+  no_contests: number | null;
+}
+
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
+// Get all fighters (unchanged)
+const {
+  data: allFighters,
+  error,
+  count,
+} = await supabase
+  .from('fighters')
+  .select('*', { count: 'exact' })
+  .order('name', { ascending: true });
+
+if (error) {
+  console.error('Error fetching fighters:', error);
+}
+
+const fightersList = (allFighters as Fighter[]) || [];
+const totalFighters = count || 0;
+
+// Weight class ordering (unchanged)
+const weightClassOrderMap: Record<string, number> = {
+  // Men's divisions (lightest to heaviest)
+  Flyweight: 1,
+  Bantamweight: 2,
+  Featherweight: 3,
+  Lightweight: 4,
+  Welterweight: 5,
+  Middleweight: 6,
+  'Light Heavyweight': 7,
+  Heavyweight: 8,
+
+  // Women's divisions (lightest to heaviest)
+  "Women's Strawweight": 9,
+  "Women's Flyweight": 10,
+  "Women's Bantamweight": 11,
+  "Women's Featherweight": 12,
+};
+
+// Get unique weight classes (unchanged)
+const weightClasses = Array.from(
+  new Set(
+    fightersList
+      .filter((fighter: Fighter) => fighter.weight_class)
+      .map((fighter: Fighter) => fighter.weight_class),
+  ),
+)
+  .filter((wc): wc is string => Boolean(wc))
+  .sort((a, b) => {
+    // Check if weight classes exist in our order map
+    const aExists = a in weightClassOrderMap;
+    const bExists = b in weightClassOrderMap;
+
+    // If both weight classes are in our order list, sort by their position
+    if (aExists && bExists) {
+      return weightClassOrderMap[a] - weightClassOrderMap[b];
+    }
+
+    // If only one is in our order list, prioritize the known one
+    if (aExists) return -1;
+    if (bExists) return 1;
+
+    // If neither is in our list, sort alphabetically as fallback
+    return a.localeCompare(b);
+  });
+
+// Get unique nationalities (unchanged)
+const nationalities = [
+  ...new Set(
+    fightersList
+      .filter(fighter => fighter.nationality)
+      .map(fighter => fighter.nationality),
+  ),
+]
+  .filter(Boolean)
+  .sort();
+
+// Initial visible batch of fighters (unchanged)
+const initialVisible = 10;
+
+// JSON stringify the fighters data to pass to client (unchanged)
+const fightersData = JSON.stringify(fightersList);
+
+// Create filter options for dropdowns (CHANGED: combined Retired and Not Fighting)
+const statusOptions: FilterOption[] = [
+  { value: '', label: 'All' },
+  { value: 'Active', label: 'Active' },
+  { value: 'Retired', label: 'Retired' },
+];
+
+const championOptions: FilterOption[] = [
+  { value: '', label: 'All' },
+  { value: 'champion', label: 'Champions Only' },
+];
+
+const weightClassOptions: FilterOption[] = [
+  { value: '', label: 'All' },
+  ...weightClasses.map(wc => ({
+    value: wc || '',
+    label: wc || 'Unknown',
+  })),
+];
+
+// Convert nationalities from string[] to FilterOption[] (unchanged)
+const nationalityOptions: FilterOption[] = [
+  { value: '', label: 'All' },
+  ...nationalities.map(nat => ({
+    value: nat || '',
+    label: nat || 'Unknown',
+  })),
+];
+---
+
+<Layout title="UFC Fighters">
+  <main class="fighters-page">
+    <section class="fighters-container">
+      <h1>UFC Fighters</h1>
+
+      <div class="filters-section">
+        <div class="search-container">
+          <input
+            type="text"
+            id="fighter-search"
+            class="search-input"
+            placeholder="Search fighter name..."
+            autocomplete="off"
+          />
+          <button
+            id="clear-search"
+            class="clear-search-button"
+            style="display: none;">×</button
+          >
+        </div>
+
+        <div class="filters-container">
+          <!-- Hidden original selects for JS compatibility -->
+          <select id="status-filter" class="filter-select hidden-select">
+            <option value="">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Retired">Retired</option>
+          </select>
+
+          <select id="champion-filter" class="filter-select hidden-select">
+            <option value="">All Fighters</option>
+            <option value="champion">Champions Only</option>
+          </select>
+
+          <select id="weight-class-filter" class="filter-select hidden-select">
+            <option value="">All Weight Classes</option>
+            {
+              weightClasses.map(weightClass => (
+                <option value={weightClass || ''}>
+                  {weightClass || 'Unknown'}
+                </option>
+              ))
+            }
+          </select>
+
+          <select id="nationality-filter" class="filter-select hidden-select">
+            <option value="">All Nationalities</option>
+            {
+              nationalities.map(nationality => (
+                <option value={nationality || ''}>
+                  {nationality || 'Unknown'}
+                </option>
+              ))
+            }
+          </select>
+
+          <!-- Custom filter dropdowns -->
+          <div class="custom-filters">
+            <FilterDropdown
+              label="Status"
+              options={statusOptions}
+              currentValue=""
+              id="status-filter"
+            />
+
+            <FilterDropdown
+              label="Champion"
+              options={championOptions}
+              currentValue=""
+              id="champion-filter"
+            />
+
+            <FilterDropdown
+              label="Weight Class"
+              options={weightClassOptions}
+              currentValue=""
+              id="weight-class-filter"
+            />
+
+            <FilterDropdown
+              label="Nationality"
+              options={nationalityOptions}
+              currentValue=""
+              id="nationality-filter"
+            />
+
+            <button id="reset-filters" class="reset-button"
+              >Reset Filters</button
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Added: Selected filters pool -->
+      <div id="selected-filters-pool" class="selected-filters-pool"></div>
+
+      <div class="fighters-grid" id="fighters-grid">
+        {
+          fightersList.slice(0, initialVisible).map(fighter => (
+            <a
+              href={`/fighters/${fighter.id}`}
+              class="fighter-card"
+              data-weight-class={fighter.weight_class || ''}
+              data-nationality={fighter.nationality || ''}
+              data-status={fighter.status || ''}
+              data-rank={fighter.rank || ''}
+            >
+              <div class="fighter-header">
+                <h2>{fighter.name}</h2>
+                {fighter.rank === 'Champion' ? (
+                  <span class="champion-badge">Champion</span>
+                ) : fighter.status === 'Active' ? (
+                  <span class="active-badge">Active</span>
+                ) : fighter.status === 'Retired' ||
+                  fighter.status === 'Not Fighting' ? (
+                  <span class="retired-badge">Retired</span>
+                ) : null}
+              </div>
+              <div class="fighter-details">
+                {fighter.weight_class && (
+                  <p class="fighter-weight-class">{fighter.weight_class}</p>
+                )}
+                <div class="fighter-record">
+                  <span class="record-value">
+                    {fighter.wins || 0}-{fighter.losses || 0}-
+                    {fighter.draws || 0}
+                  </span>
+                  <span class="record-label">W-L-D</span>
+                  <span class="record-nc">{fighter.no_contests || 0} NC</span>
+                </div>
+                {fighter.rank &&
+                  fighter.rank !== 'NR' &&
+                  fighter.rank !== 'Unranked' && (
+                    <div class="fighter-rank">Rank: {fighter.rank}</div>
+                  )}
+                {fighter.nationality && (
+                  <p class="fighter-nationality">{fighter.nationality}</p>
+                )}
+              </div>
+            </a>
+          ))
+        }
+      </div>
+
+      <div id="no-results" class="no-results" style="display: none;">
+        <p>
+          No fighters match your current filters. Try adjusting your criteria.
+        </p>
+      </div>
+
+      <div class="load-more-container">
+        <button
+          id="load-more"
+          class="load-more-button"
+          data-current-count={initialVisible}
+        >
+          Load More Fighters
+        </button>
+        <p class="fighters-count">
+          Showing <span id="shown-count"
+            >{Math.min(initialVisible, fightersList.length)}</span
+          > of <span id="total-count">{totalFighters}</span> fighters
+          <span id="filtered-text" style="display: none;"> (filtered)</span>
+        </p>
+      </div>
+      <div id="fighters-data" style="display: none;">{fightersData}</div>
+    </section>
+  </main>
+</Layout>
+
+<!-- SCRIPT TAG -->
+<script is:inline>
+  // Load More and Filter functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing fighter filters');
+
+    // Elements for searching
+    const searchInput = document.getElementById('fighter-search');
+    const clearSearchBtn = document.getElementById('clear-search');
+
+    // Filter elements
+    const statusFilter = document.getElementById('status-filter');
+    const championFilter = document.getElementById('champion-filter');
+    const resetFiltersButton = document.getElementById('reset-filters');
+    const selectedFiltersPool = document.getElementById(
+      'selected-filters-pool',
+    );
+
+    // Display elements
+    const loadMoreButton = document.getElementById('load-more');
+    const fightersGrid = document.getElementById('fighters-grid');
+    const shownCountSpan = document.getElementById('shown-count');
+    const totalCountSpan = document.getElementById('total-count');
+    const filteredTextSpan = document.getElementById('filtered-text');
+    const noResultsDiv = document.getElementById('no-results');
+
+    // Parse fighters data from server
+    const allFighters = JSON.parse(
+      document.getElementById('fighters-data').textContent,
+    );
+
+    // Standardize status - treat "Not Fighting" as "Retired"
+    allFighters.forEach(fighter => {
+      if (fighter.status === 'Not Fighting') {
+        fighter.status = 'Retired';
+      }
+    });
+
+    console.log(`Loaded ${allFighters.length} fighters for filtering`);
+
+    let filteredFighters = [...allFighters];
+    let visibleCount = parseInt(
+      loadMoreButton.getAttribute('data-current-count') || '10',
+    );
+
+    // Search term variable
+    let searchTerm = '';
+
+    // Track multi-select filters
+    const selectedNationalities = new Set();
+    const selectedWeightClasses = new Set();
+
+    // Search input sanitization function
+    function sanitizeInput(input) {
+      if (!input) return '';
+
+      // Remove any HTML tags and SQL injection patterns
+      let sanitized = input
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/['";`]/g, '') // Remove quotes that could be used for SQL injection
+        .replace(/\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b/gi, '') // Remove SQL keywords
+        .replace(/\d+/g, '') // Remove numbers
+        .replace(/--/g, '') // Remove SQL comments
+        .replace(/\s{2,}/g, ' ') // Replace multiple spaces with a single space
+        .trim();
+
+      return sanitized;
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function (e) {
+        // Get current input and cursor position
+        let currentValue = this.value;
+        const cursorPos = this.selectionStart;
+
+        // Only allow letters and a single space between words
+        let sanitized = currentValue.replace(/[^a-zA-Z ]/g, ''); // Only letters and spaces
+
+        // Handle multiple spaces - convert to single space
+        sanitized = sanitized.replace(/\s{2,}/g, ' ');
+
+        // If the value changed after sanitization, update the input
+        if (sanitized !== currentValue) {
+          this.value = sanitized;
+          // Adjust cursor position
+          this.setSelectionRange(
+            Math.min(cursorPos, sanitized.length),
+            Math.min(cursorPos, sanitized.length),
+          );
+        }
+
+        // Only search if 3+ characters or empty
+        if (sanitized.length >= 3 || sanitized.length === 0) {
+          searchTerm = sanitized.toLowerCase();
+
+          // Show/hide clear button
+          clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
+
+          applyFilters();
+        } else if (searchTerm) {
+          // Clear search if less than 3 chars but there was a previous search
+          searchTerm = '';
+          applyFilters();
+        }
+      });
+    }
+
+    // Clear search button
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener('click', function () {
+        searchInput.value = '';
+        searchTerm = '';
+        this.style.display = 'none';
+        applyFilters();
+      });
+    }
+
+    // Apply filters function
+    function applyFilters() {
+      console.log('Applying filters');
+      // Get filter values
+      const status = statusFilter.value;
+      const isChampion = championFilter.value === 'champion';
+
+      // Update filter tags
+      updateFilterTags(status, isChampion, searchTerm);
+
+      // Filter the fighters based on selected criteria
+      filteredFighters = allFighters.filter(fighter => {
+        // Search filter - only apply if search term exists
+        if (searchTerm && !fighter.name.toLowerCase().includes(searchTerm)) {
+          return false;
+        }
+
+        // Status filter
+        if (status && fighter.status !== status) return false;
+
+        // Champion filter - simple exact match
+        if (isChampion && fighter.rank !== 'Champion') {
+          return false;
+        }
+
+        // Weight class filter - if any are selected, fighter must match one
+        if (
+          selectedWeightClasses.size > 0 &&
+          !selectedWeightClasses.has(fighter.weight_class)
+        ) {
+          return false;
+        }
+
+        // Nationality filter - if any are selected, fighter must match one
+        if (
+          selectedNationalities.size > 0 &&
+          !selectedNationalities.has(fighter.nationality)
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+
+      // Reset visible count when filters change
+      visibleCount = 10;
+      loadMoreButton.setAttribute(
+        'data-current-count',
+        visibleCount.toString(),
+      );
+
+      // Update UI
+      updateFightersDisplay();
+
+      // Update filter dropdowns display text
+      const statusDropdown = document.getElementById('status-filter-dropdown');
+      const championDropdown = document.getElementById(
+        'champion-filter-dropdown',
+      );
+      const weightClassDropdown = document.getElementById(
+        'weight-class-filter-dropdown',
+      );
+      const nationalityDropdown = document.getElementById(
+        'nationality-filter-dropdown',
+      );
+
+      // Update the selected text for each dropdown
+      updateDropdownText(statusDropdown, status);
+      updateDropdownText(championDropdown, isChampion ? 'champion' : '');
+
+      // Update multi-select dropdown text
+      if (weightClassDropdown) {
+        const display = weightClassDropdown.querySelector(
+          '.filter-selected span',
+        );
+        if (selectedWeightClasses.size === 0) {
+          display.textContent = 'All';
+        } else {
+          display.textContent = `${selectedWeightClasses.size} selected`;
+        }
+      }
+
+      if (nationalityDropdown) {
+        const display = nationalityDropdown.querySelector(
+          '.filter-selected span',
+        );
+        if (selectedNationalities.size === 0) {
+          display.textContent = 'All';
+        } else {
+          display.textContent = `${selectedNationalities.size} selected`;
+        }
+      }
+    }
+
+    function updateFilterTags(status, isChampion, search) {
+      // Clear existing tags
+      selectedFiltersPool.innerHTML = '';
+
+      // Add search tag if applicable with title case
+      if (search) {
+        // Convert to title case
+        const titleCased = search
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+
+        addFilterTag('search', search, `Search: ${titleCased}`);
+      }
+
+      // Rest of filter tags logic...
+      if (status) {
+        addFilterTag('status', status, status);
+      }
+
+      if (isChampion) {
+        addFilterTag('champion', 'champion', 'Champions Only');
+      }
+
+      selectedWeightClasses.forEach(weightClass => {
+        addFilterTag('weight-class', weightClass, weightClass);
+      });
+
+      selectedNationalities.forEach(nationality => {
+        addFilterTag('nationality', nationality, nationality);
+      });
+    }
+
+    // Function to add a filter tag
+    function addFilterTag(type, value, label) {
+      const filterTag = document.createElement('div');
+      filterTag.className = `filter-tag ${type}`;
+      filterTag.dataset.value = value;
+      filterTag.innerHTML = `
+        ${label}
+        <span class="filter-tag-remove">×</span>
+      `;
+
+      // Add click handler to remove tag
+      filterTag
+        .querySelector('.filter-tag-remove')
+        .addEventListener('click', () => {
+          removeFilter(type, value);
+        });
+
+      selectedFiltersPool.appendChild(filterTag);
+    }
+
+    // Function to remove a filter
+    function removeFilter(type, value) {
+      switch (type) {
+        case 'search':
+          searchInput.value = '';
+          searchTerm = '';
+          clearSearchBtn.style.display = 'none';
+          break;
+        case 'status':
+          statusFilter.value = '';
+          break;
+        case 'champion':
+          championFilter.value = '';
+          break;
+        case 'weight-class':
+          selectedWeightClasses.delete(value);
+          break;
+        case 'nationality':
+          selectedNationalities.delete(value);
+          break;
+      }
+
+      // Apply filters after removal
+      applyFilters();
+    }
+
+    // Helper function to update dropdown display text
+    function updateDropdownText(dropdown, value) {
+      if (!dropdown) return;
+
+      const selectedDisplay = dropdown.querySelector('.filter-selected span');
+      const menuItems = dropdown.querySelectorAll('.filter-item');
+
+      // Reset active state on all items
+      menuItems.forEach(item => {
+        item.classList.remove('active');
+
+        if (item.getAttribute('data-value') === value) {
+          // Update text display and set this item as active
+          selectedDisplay.textContent = item.textContent;
+          item.classList.add('active');
+        }
+      });
+
+      // If no value selected, set to "All"
+      if (!value) {
+        const defaultItem = dropdown.querySelector(
+          '.filter-item[data-value=""]',
+        );
+        if (defaultItem) {
+          selectedDisplay.textContent = defaultItem.textContent;
+          defaultItem.classList.add('active');
+        }
+      }
+    }
+
+    // Update the fighters display based on filters and current count
+    // Update the fighters display based on filters and current count
+    function updateFightersDisplay() {
+      // Clear current display
+      fightersGrid.innerHTML = '';
+
+      // Get fighters to display (respecting current visibility count)
+      const displayFighters = filteredFighters.slice(0, visibleCount);
+
+      // Add fighters to the grid
+      displayFighters.forEach(fighter => {
+        const fighterCard = document.createElement('a');
+        fighterCard.href = `/fighters/${fighter.id}`;
+        fighterCard.className = 'fighter-card';
+        fighterCard.dataset.weightClass = fighter.weight_class || '';
+        fighterCard.dataset.nationality = fighter.nationality || '';
+        fighterCard.dataset.status = fighter.status || '';
+        fighterCard.dataset.rank = fighter.rank || '';
+
+        // Format the record info
+        const wins = fighter.wins || 0;
+        const losses = fighter.losses || 0;
+        const draws = fighter.draws || 0;
+        const noContests = fighter.no_contests || 0;
+
+        // Build the status badge HTML
+        let statusBadgeHTML = '';
+        if (fighter.rank === 'Champion') {
+          statusBadgeHTML = '<span class="champion-badge">Champion</span>';
+        } else if (fighter.status === 'Active') {
+          statusBadgeHTML = '<span class="active-badge">Active</span>';
+        } else if (
+          fighter.status === 'Retired' ||
+          fighter.status === 'Not Fighting'
+        ) {
+          statusBadgeHTML = '<span class="retired-badge">Retired</span>';
+        }
+
+        // Create fighter card HTML
+        fighterCard.innerHTML = `
+      <div class="fighter-header">
+        <h2>${fighter.name}</h2>
+        ${statusBadgeHTML}
+      </div>
+      <div class="fighter-details">
+        ${fighter.weight_class ? `<p class="fighter-weight-class">${fighter.weight_class}</p>` : ''}
+        <div class="fighter-record">
+          <span class="record-value">${wins}-${losses}-${draws}</span>
+          <span class="record-label">W-L-D</span>
+          <span class="record-nc">${noContests} NC</span>
+        </div>
+        ${
+          fighter.status !== 'Retired' &&
+          fighter.rank &&
+          fighter.rank !== 'Champion'
+            ? fighter.rank === 'Unranked'
+              ? `<div class="fighter-rank">Unranked</div>`
+              : `<div class="fighter-rank">Rank: ${fighter.rank}</div>`
+            : ''
+        }
+
+        ${
+          fighter.nationality
+            ? `<p class="fighter-nationality">${fighter.nationality}</p>`
+            : ''
+        }
+        
+      </div>
+    `;
+
+        fightersGrid.appendChild(fighterCard);
+      });
+
+      // Rest of function remains the same...
+      // Update counts and visibility of elements
+      shownCountSpan.textContent = displayFighters.length.toString();
+      totalCountSpan.textContent = filteredFighters.length.toString();
+
+      // Show/hide filtered text
+      if (filteredFighters.length < allFighters.length) {
+        filteredTextSpan.style.display = 'inline';
+      } else {
+        filteredTextSpan.style.display = 'none';
+      }
+
+      // Show/hide no results message
+      if (filteredFighters.length === 0) {
+        noResultsDiv.style.display = 'block';
+        loadMoreButton.style.display = 'none';
+      } else {
+        noResultsDiv.style.display = 'none';
+
+        // Show/hide load more button
+        if (displayFighters.length < filteredFighters.length) {
+          loadMoreButton.style.display = 'block';
+          loadMoreButton.disabled = false;
+          loadMoreButton.innerText = 'Load More Fighters';
+        } else {
+          loadMoreButton.style.display = 'none';
+        }
+      }
+    }
+
+    // Load more fighters
+    if (loadMoreButton) {
+      loadMoreButton.addEventListener('click', () => {
+        console.log('Load more clicked');
+        // Show loading state
+        loadMoreButton.innerText = 'Loading...';
+        loadMoreButton.disabled = true;
+
+        // Increase visible count
+        visibleCount += 10;
+        loadMoreButton.setAttribute(
+          'data-current-count',
+          visibleCount.toString(),
+        );
+
+        // Update display
+        updateFightersDisplay();
+      });
+    }
+
+    // Add event listeners for filters
+    if (statusFilter) {
+      statusFilter.addEventListener('change', function () {
+        applyFilters();
+      });
+    }
+
+    if (championFilter) {
+      championFilter.addEventListener('change', function () {
+        applyFilters();
+      });
+    }
+
+    // Reset filters button
+    if (resetFiltersButton) {
+      resetFiltersButton.addEventListener('click', () => {
+        // Clear search
+        searchInput.value = '';
+        searchTerm = '';
+        clearSearchBtn.style.display = 'none';
+
+        // Clear other filters
+        statusFilter.value = '';
+        championFilter.value = '';
+
+        // Clear multi-select filters
+        selectedNationalities.clear();
+        selectedWeightClasses.clear();
+
+        // Clear filter tags
+        selectedFiltersPool.innerHTML = '';
+
+        // Apply filters
+        applyFilters();
+      });
+    }
+
+    // Initialize and apply filters on page load
+    applyFilters();
+
+    // Connect custom dropdowns to the original select elements
+    document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+      const type = dropdown.id.replace('-filter-dropdown', '');
+      const select = document.getElementById(`${type}-filter`);
+
+      if (select) {
+        dropdown.querySelectorAll('.filter-item').forEach(item => {
+          item.addEventListener('click', function () {
+            const value = this.getAttribute('data-value');
+
+            // Handle multi-select for nationality and weight class
+            if (type === 'nationality') {
+              if (value === '') {
+                // Clear all nationalities if "All" is selected
+                selectedNationalities.clear();
+              } else {
+                // Add/remove from selection
+                if (selectedNationalities.has(value)) {
+                  selectedNationalities.delete(value);
+                } else {
+                  selectedNationalities.add(value);
+                }
+              }
+              // Update active state visually
+              this.classList.toggle('active', selectedNationalities.has(value));
+            } else if (type === 'weight-class') {
+              if (value === '') {
+                // Clear all weight classes if "All" is selected
+                selectedWeightClasses.clear();
+              } else {
+                // Add/remove from selection
+                if (selectedWeightClasses.has(value)) {
+                  selectedWeightClasses.delete(value);
+                } else {
+                  selectedWeightClasses.add(value);
+                }
+              }
+              // Update active state visually
+              this.classList.toggle('active', selectedWeightClasses.has(value));
+            } else {
+              // Normal behavior for other filters
+              select.value = value;
+              const event = new Event('change');
+              select.dispatchEvent(event);
+            }
+            if (type === 'nationality' || type === 'weight-class') {
+              applyFilters();
+            }
+          });
+        });
+      }
+    });
+  });
+</script>

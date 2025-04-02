@@ -1,0 +1,421 @@
+@import '../base/variables';
+@import '../base/mixins';
+
+.fighter-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: $spacing-lg $spacing-sm;
+  
+  .fighter-container {
+    background: $background-dark;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .fighter-header {
+    background: linear-gradient(90deg, $primary-color 0%, $secondary-color 100%);
+    padding: $spacing-lg;
+    color: $text-primary;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    
+    .fighter-info {
+      h1 {
+        font-size: $font-size-xxl;
+        margin: 0 0 $spacing-xs 0;
+        line-height: 1.2;
+      }
+      
+      .fighter-nickname {
+        font-style: italic;
+        font-size: $font-size-md;
+        margin: 0 0 $spacing-sm 0;
+        opacity: 0.9;
+      }
+      
+      .fighter-weight-class {
+        font-size: $font-size-md;
+        margin: $spacing-xs 0;
+        text-transform: uppercase;
+      }
+      
+      .fighter-rank {
+        display: inline-block;
+        background: rgba(0, 0, 0, 0.3);
+        padding: $spacing-xs $spacing-sm;
+        border-radius: $border-radius-sm;
+        font-size: $font-size-sm;
+        font-weight: bold;
+        margin-top: $spacing-xs;
+      }
+    }
+    
+    .ufc-profile-link {
+      display: inline-block;
+      background: rgba(0, 0, 0, 0.3);
+      color: $text-primary;
+      text-decoration: none;
+      padding: $spacing-xs $spacing-sm;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-sm;
+      font-weight: bold;
+      transition: background-color 0.2s ease;
+      
+      &:hover {
+        background: rgba(0, 0, 0, 0.5);
+      }
+    }
+  }
+  
+  .fighter-profile {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-md;
+    padding: $spacing-lg;
+    
+    @media (max-width: $breakpoint-tablet) {
+      grid-template-columns: 1fr;
+    }
+    
+    h2 {
+      font-size: $font-size-xl;
+      margin: 0 0 $spacing-md 0;
+      padding-bottom: $spacing-xs;
+      border-bottom: 2px solid $primary-color;
+      color: $text-primary;
+    }
+    
+    .fighter-stats {
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: $spacing-sm;
+        
+        .stat-item {
+          background: $background-card;
+          padding: $spacing-sm;
+          border-radius: $border-radius-sm;
+          
+          .stat-label {
+            display: block;
+            font-size: $font-size-xs;
+            color: $text-tertiary;
+            margin-bottom: $spacing-xs * 0.5;
+          }
+          
+          .stat-value {
+            display: block;
+            font-size: $font-size-md;
+            color: $text-primary;
+            font-weight: bold;
+          }
+        }
+      }
+    }
+    
+    .fighter-record {
+      .record-summary {
+        background: $background-card;
+        padding: $spacing-md;
+        border-radius: $border-radius-sm;
+        margin-bottom: $spacing-md;
+        
+        .record-total {
+          text-align: center;
+          
+          .record-value {
+            display: block;
+            font-size: $font-size-xxl;
+            font-weight: bold;
+            color: $text-primary;
+          }
+          
+          .record-label {
+            display: block;
+            font-size: $font-size-sm;
+            color: $text-tertiary;
+            margin-top: $spacing-xs * 0.5;
+          }
+          
+          .record-nc {
+            display: block;
+            font-size: $font-size-sm;
+            color: $text-tertiary;
+            margin-top: $spacing-xs;
+          }
+        }
+      }
+      
+      .win-methods {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: $spacing-md;
+        
+        .methods-container {
+          h3 {
+            font-size: $font-size-md;
+            margin: 0 0 $spacing-sm 0;
+            color: $text-secondary;
+          }
+          
+          .method-items {
+            display: flex;
+            justify-content: space-between;
+            gap: $spacing-xs;
+            
+            .method-item {
+              flex: 1;
+              background: $background-card;
+              padding: $spacing-sm;
+              border-radius: $border-radius-sm;
+              text-align: center;
+              
+              .method-value {
+                display: block;
+                font-size: $font-size-lg;
+                font-weight: bold;
+                color: $text-primary;
+              }
+              
+              .method-label {
+                display: block;
+                font-size: $font-size-xs;
+                color: $text-tertiary;
+                margin-top: $spacing-xs * 0.5;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .fighter-fights {
+    padding: $spacing-lg;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    
+    h2 {
+      font-size: $font-size-xl;
+      margin: 0 0 $spacing-md 0;
+      padding-bottom: $spacing-xs;
+      border-bottom: 2px solid $primary-color;
+      color: $text-primary;
+    }
+    
+    .fights-list {
+      display: grid;
+      gap: $spacing-md;
+      margin-top: $spacing-md;
+      
+      @media (min-width: $breakpoint-tablet) {
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      }
+    }
+    
+    .fight-card {
+      background: $background-card;
+      border-radius: $border-radius-sm;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      
+      &.main-event {
+        border-left: 3px solid gold;
+      }
+    }
+    
+    .event-link {
+      display: block;
+      text-decoration: none;
+      color: $text-primary;
+      
+      &:hover {
+        .event-name {
+          color: $primary-color;
+        }
+      }
+    }
+    
+    .fight-date {
+      background: rgba(0, 0, 0, 0.2);
+      padding: $spacing-xs $spacing-sm;
+      font-size: $font-size-sm;
+      color: $text-tertiary;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .main-event-badge {
+      background-color: rgba(255, 215, 0, 0.2);
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      color: gold;
+      font-size: $font-size-xs;
+      padding: 0 $spacing-xs;
+      border-radius: $border-radius-sm;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .fight-details {
+      padding: $spacing-sm;
+    }
+    
+    .event-name {
+      display: block;
+      font-weight: bold;
+      font-size: $font-size-md;
+      margin-bottom: $spacing-sm;
+      transition: color 0.2s ease;
+    }
+    
+    .matchup {
+      display: flex;
+      align-items: center;
+      margin-bottom: $spacing-sm;
+      
+      .vs-label {
+        font-size: $font-size-xs;
+        color: $text-tertiary;
+        margin-right: $spacing-xs;
+        text-transform: uppercase;
+        font-weight: bold;
+      }
+    }
+    
+    .opponent-link {
+      position: relative;
+      font-weight: bold;
+      color: $text-primary;
+      text-decoration: none;
+      
+      &:hover {
+        color: $primary-color;
+        text-decoration: underline;
+      }
+    }
+    
+    .fight-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-xs;
+    }
+    
+    .weight-class-pill {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      padding: $spacing-xs * 0.5 $spacing-xs;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-xs;
+      color: $text-tertiary;
+      text-transform: uppercase;
+    }
+    
+    .no-fights {
+      background: $background-card;
+      padding: $spacing-md;
+      border-radius: $border-radius-sm;
+      text-align: center;
+      color: $text-tertiary;
+      font-style: italic;
+    }
+    
+    @media (max-width: $breakpoint-mobile) {
+      padding: $spacing-md;
+      
+      .fights-list {
+        gap: $spacing-sm;
+      }
+    }
+  
+    
+    .no-fights {
+      background: $background-card;
+      padding: $spacing-md;
+      border-radius: $border-radius-sm;
+      text-align: center;
+      color: $text-tertiary;
+      font-style: italic;
+    }
+  }
+  
+  .fighter-not-found {
+    text-align: center;
+    padding: $spacing-xl;
+    
+    h1 {
+      font-size: $font-size-xxl;
+      margin-bottom: $spacing-md;
+      color: $text-primary;
+    }
+    
+    p {
+      font-size: $font-size-md;
+      color: $text-secondary;
+      margin-bottom: $spacing-lg;
+    }
+    
+    .back-button {
+      display: inline-block;
+      background: $primary-color;
+      color: $text-primary;
+      text-decoration: none;
+      padding: $spacing-sm $spacing-md;
+      border-radius: $border-radius-sm;
+      font-weight: bold;
+      transition: background-color 0.2s ease;
+      
+      &:hover {
+        background-color: $secondary-color;
+      }
+    }
+  }
+  
+  @media (max-width: $breakpoint-mobile) {
+    .fighter-header {
+      flex-direction: column;
+      
+      .ufc-profile-link {
+        margin-top: $spacing-md;
+      }
+    }
+    
+    .fighter-profile {
+      padding: $spacing-md;
+    }
+    
+    .fighter-fights {
+      padding: $spacing-md;
+    }
+  }
+}
+
+.fighter-rankings {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.fighter-rank {
+  color: var(--text-secondary);
+  margin-top: 5px;
+}
+
+.rank-division {
+  color: var(--text-tertiary);
+}
+
+.champion-badge {
+  display: inline-block;
+  background-color: gold;
+  color: black;
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  text-transform: uppercase;
+  margin-right: 5px;
+}

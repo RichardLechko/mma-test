@@ -1,0 +1,264 @@
+@import '../base/variables';
+@import '../base/mixins';
+
+.home {
+  width: 100%;
+  color: $text-primary;
+  
+  // Hero section
+  .hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), #222;
+    padding: $spacing-xl $spacing-md;
+    text-align: center;
+    
+    &-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: $font-size-huge;
+      margin: 0 0 $spacing-sm;
+    }
+    
+    .tagline {
+      font-size: $font-size-lg;
+      margin-bottom: $spacing-lg;
+      opacity: 0.9;
+    }
+    
+    &-buttons {
+      display: flex;
+      gap: $spacing-md;
+      justify-content: center;
+      flex-wrap: wrap;
+      
+      .btn {
+        margin: 0;
+      }
+    }
+  }
+  
+  // Main content
+  .content {
+    max-width: $breakpoint-desktop;
+    margin: 0 auto;
+    padding: $spacing-xl $spacing-md;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-lg;
+    
+    @include tablet {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  // Cards
+  .card {
+    background: $background-dark;
+    border-radius: $border-radius-md;
+    padding: $spacing-md;
+    margin-bottom: $spacing-md;
+    
+    h2 {
+      margin: 0 0 $spacing-md;
+      padding-bottom: $spacing-xs;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  }
+  
+  // Event preview
+  .event-preview {
+    .event-details {
+      background: $background-card;
+      padding: $spacing-md;
+      margin: 1em 0em 1em 0em;
+      border-radius: $border-radius-md;
+      
+      h3 {
+        font-size: $font-size-xl;
+        margin-bottom: $spacing-sm;
+      }
+      
+      .event-date, .event-location {
+        margin-bottom: $spacing-xs;
+        color: $text-secondary;
+      }
+      
+      .countdown {
+        margin: $spacing-md 0;
+        font-weight: bold;
+        font-size: $font-size-lg;
+        color: $primary-color;
+      }
+      
+      .btn {
+        display: block;
+        text-align: center;
+        margin-top: $spacing-md;
+      }
+    }
+  }
+  
+  // Top fighters
+  .top-fighters {
+    .fighters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: $spacing-md;
+      margin-bottom: $spacing-md;
+    }
+    
+    .fighter-card {
+      background: $background-card;
+      padding: $spacing-md;
+      border-radius: $border-radius-md;
+      color: $text-primary;
+      text-decoration: none;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.3s;
+      overflow: hidden;
+      
+      // Add padding at the top to make room for rank tag
+      padding-top: $spacing-lg + $spacing-xs;
+      
+      // Create a spotlight effect with a radial gradient that follows cursor
+      &:hover {
+        transform: translateY(-3px);
+        
+        .spotlight {
+          opacity: 1;
+        }
+        
+        .rank {
+          animation: pulse 1.5s infinite;
+        }
+      }
+      
+      // Spotlight overlay that will track the mouse
+      .spotlight {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        opacity: 0;
+        background: radial-gradient(
+          circle 80px at var(--x, 50%) var(--y, 50%),
+          rgba(255, 255, 255, 0.06) 0%,
+          rgba(255, 255, 255, 0) 60%
+        );
+        transition: opacity 0.4s;
+      }
+      
+      h3 {
+        font-size: $font-size-md;
+        margin: 0 0 $spacing-xs;
+        // Ensure long names wrap instead of overflowing
+        word-wrap: break-word;
+      }
+      
+      .nickname {
+        color: $text-secondary;
+        font-style: italic;
+        margin-bottom: $spacing-xs;
+        font-size: $font-size-sm;
+      }
+      
+      .weight-class, .record {
+        font-size: $font-size-sm;
+        margin-bottom: $spacing-xs;
+        color: $text-secondary;
+      }
+      
+      .rank {
+        position: absolute;
+        bottom: $spacing-xs;
+        right: $spacing-xs;
+        background: $primary-color;
+        padding: $spacing-xs $spacing-sm;
+        border-radius: $border-radius-sm;
+        font-size: $font-size-xs;
+        font-weight: bold;
+        z-index: 2;
+      }
+    }
+    
+    .btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba($primary-color, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 5px rgba($primary-color, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba($primary-color, 0);
+    }
+  }
+  
+  // Features section
+  .features {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-md;
+    
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+    
+    .feature {
+      text-align: center;
+      padding: $spacing-lg $spacing-md;
+      
+      .icon {
+        font-size: 2.5rem;
+        margin-bottom: $spacing-md;
+      }
+      
+      h3 {
+        margin-bottom: $spacing-sm;
+      }
+      
+      p {
+        color: $text-tertiary;
+      }
+    }
+  }
+}
+
+// Button styles
+.btn {
+  display: inline-block;
+  padding: $spacing-sm $spacing-lg;
+  border-radius: $border-radius-sm;
+  background: rgba(255, 255, 255, 0.1);
+  color: $text-primary;
+  text-decoration: none;
+  font-weight: 500;
+  margin-top: $spacing-md;
+  transition: background 0.2s, transform 0.2s;
+  border: none;
+  cursor: pointer;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  &-primary {
+    background: $primary-color;
+    
+    &:hover {
+      background: lighten($primary-color, 5%);
+    }
+  }
+}

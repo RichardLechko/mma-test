@@ -25,19 +25,38 @@ func NewScraperService() *ScraperService {
 	}
 }
 
-func (s *ScraperService) ScrapeEvent(ctx context.Context, url string) (*models.Event, error) {
-	event, err := s.eventScraper.ScrapeEvent(ctx, url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to scrape event: %w", err)
+// convertWikiEventToModel converts a WikiEvent to a models.Event
+func convertWikiEventToModel(wikiEvent *scrapers.WikiEvent) models.Event {
+	return models.Event{
+		Name:      wikiEvent.Name,
+		Date:      wikiEvent.Date,
+		Location:  fmt.Sprintf("%s, %s, %s", wikiEvent.Venue, wikiEvent.City, wikiEvent.Country),
+		Promotion: "UFC",
+		MainCard:  []models.Fight{},  // To be populated separately if needed
+		PrelimCard: []models.Fight{}, // To be populated separately if needed
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
-	return event, nil
+}
+
+func (s *ScraperService) ScrapeEvent(ctx context.Context, url string) (*models.Event, error) {
+	// For single event scraping, we'll need to implement this in the EventScraper
+	return nil, fmt.Errorf("single event scraping not implemented for Wikipedia source")
 }
 
 func (s *ScraperService) ScrapeUpcomingEvents(ctx context.Context) ([]models.Event, error) {
-	events, err := s.eventScraper.ScrapeUpcomingEvents(ctx)
+	wikiEvents, err := s.eventScraper.ScrapeUpcomingEvents(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scrape upcoming events: %w", err)
 	}
+
+	// Convert WikiEvents to models.Events
+	var events []models.Event
+	for _, wikiEvent := range wikiEvents {
+		event := convertWikiEventToModel(wikiEvent)
+		events = append(events, event)
+	}
+
 	return events, nil
 }
 

@@ -1,0 +1,244 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { supabase } from '../../lib/supabase';
+
+// Define interfaces for type safety
+interface Fighter {
+  id: string;
+  name: string;
+  nickname?: string;
+  weight_class: string;
+  rank?: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  status?: string;
+}
+
+interface FighterRanking {
+  id: string;
+  fighter_id: string;
+  fighter: Fighter;
+  weight_class: string;
+  rank: string;
+}
+
+// Define weight classes in order
+const weightClasses = [
+  // Men's divisions (lightest to heaviest)
+  "Flyweight",
+  "Bantamweight",
+  "Featherweight",
+  "Lightweight",
+  "Welterweight",
+  "Middleweight",
+  "Light Heavyweight",
+  "Heavyweight",
+  
+  // Women's divisions (lightest to heaviest)
+  "Women's Strawweight",
+  "Women's Flyweight",
+  "Women's Bantamweight",
+  "Women's Featherweight"
+];
+
+// Fetch all fighters with their rankings
+const { data: rankings, error: rankingsError } = await supabase
+  .from('fighter_rankings')
+  .select(`
+    id,
+    fighter_id,
+    weight_class,
+    rank,
+    fighter:fighter_id (
+      id,
+      name,
+      nickname,
+      wins,
+      losses,
+      draws,
+      status
+    )
+  `);
+
+if (rankingsError) {
+  console.error('Error fetching rankings:', rankingsError);
+}
+
+// Get all ranked fighters from the fighters table for backward compatibility
+const { data: rankedFighters, error: fightersError } = await supabase
+  .from('fighters')
+  .select('*')
+  .not('rank', 'is', null)
+  .not('rank', 'eq', 'Unranked')
+  .not('rank', 'eq', 'NR');
+
+if (fightersError) {
+  console.error('Error fetching fighters:', fightersError);
+}
+
+// Helper function to get numeric rank from rank string
+function getRankValue(rank: string): number {
+  if (!rank) return 999;
+  if (rank === "Champion") return -2;
+  if (rank === "Interim Champion") return -1;
+  if (rank.startsWith("#")) {
+    const rankNum = parseInt(rank.substring(1));
+    return isNaN(rankNum) ? 999 : rankNum;
+  }
+  // Handle numeric ranks without hashtag
+  const rankNum = parseInt(rank);
+  return !isNaN(rankNum) ? rankNum : 999;
+}
+
+// Group fighters by weight class and sort by rank
+const fightersByWeightClass: Record<string, any[]> = {};
+
+// Initialize the structure for each weight class
+weightClasses.forEach(weightClass => {
+  fightersByWeightClass[weightClass] = [];
+});
+
+// Process fighters based on their rankings in fighter_rankings table
+if (rankings) {
+  rankings.forEach((ranking: any) => {
+    const weightClass = ranking.weight_class;
+    const rank = ranking.rank;
+    const fighter = ranking.fighter;
+    
+    // Only include ranked fighters
+    if (rank === "Champion" || rank === "Interim Champion" || 
+        rank.startsWith("#") || !isNaN(parseInt(rank))) {
+      
+      if (weightClasses.includes(weightClass) && fighter) {
+        fightersByWeightClass[weightClass].push({
+          id: fighter.id,
+          name: fighter.name,
+          nickname: fighter.nickname,
+          wins: fighter.wins || 0,
+          losses: fighter.losses || 0,
+          draws: fighter.draws || 0,
+          status: fighter.status,
+          currentRank: rank,
+          currentWeightClass: weightClass
+        });
+      }
+    }
+  });
+}
+
+// For backward compatibility, use the primary rank for fighters without entries in fighter_rankings
+if (rankedFighters) {
+  rankedFighters.forEach((fighter: any) => {
+    // Check if fighter already exists in any weight class via fighter_rankings
+    const hasRankingEntry = rankings?.some(
+      ranking => ranking.fighter_id === fighter.id
+    );
+    
+    // If fighter doesn't have an entry in fighter_rankings, use their primary rank
+    if (!hasRankingEntry && fighter.rank && fighter.weight_class) {
+      const weightClass = fighter.weight_class;
+      if (weightClasses.includes(weightClass)) {
+        fightersByWeightClass[weightClass].push({
+          id: fighter.id,
+          name: fighter.name,
+          nickname: fighter.nickname,
+          wins: fighter.wins || 0,
+          losses: fighter.losses || 0, 
+          draws: fighter.draws || 0,
+          status: fighter.status,
+          currentRank: fighter.rank,
+          currentWeightClass: weightClass
+        });
+      }
+    }
+  });
+}
+
+// Sort fighters within each weight class by rank
+for (const weightClass in fightersByWeightClass) {
+  fightersByWeightClass[weightClass].sort((a, b) => {
+    return getRankValue(a.currentRank) - getRankValue(b.currentRank);
+  });
+}
+
+// Get active weight classes (those with fighters)
+const activeWeightClasses = weightClasses.filter(wc => 
+  fightersByWeightClass[wc] && fightersByWeightClass[wc].length > 0
+);
+
+// Selected weight class (default to first active one)
+const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses[0] : "Heavyweight";
+---
+
+<Layout title="UFC Rankings">
+  <main class="rankings-page">
+    <h1 class="rankings-title">UFC Rankings</h1>
+    
+    <div class="rankings-nav-links">
+      <a href="/fighters" class="rankings-nav-link">All Fighters</a>
+      <a href="/rankings" class="rankings-nav-link active">Rankings</a>
+    </div>
+    
+    <div class="rankings-weight-class-tabs">
+      {activeWeightClasses.map(weightClass => (
+        <button 
+          class={`rankings-weight-tab ${weightClass === selectedWeightClass ? 'active' : ''}`}
+          data-weight-class={weightClass}
+        >
+          {weightClass}
+        </button>
+      ))}
+    </div>
+    
+    {activeWeightClasses.map(weightClass => (
+      <div 
+        class={`rankings-weight-class-section ${weightClass === selectedWeightClass ? 'active' : ''}`}
+        id={`weight-class-${weightClass.replace(/\s+/g, '-').replace(/'/g, '').toLowerCase()}`}
+      >
+        <div class="rankings-fighters-grid">
+          {fightersByWeightClass[weightClass].map((fighter: any) => (
+            <a href={`/fighters/${fighter.id}`} class={`rankings-fighter-card ${fighter.currentRank === "Champion" ? 'rankings-champion' : fighter.currentRank === "Interim Champion" ? 'rankings-interim-champion' : ''}`}>
+              <div class="rankings-fighter-info">
+                <h3 class="rankings-fighter-name">{fighter.name}</h3>
+                {fighter.nickname && <p class="rankings-fighter-nickname">{fighter.nickname}</p>}
+                
+                <div class="rankings-fighter-record">
+                  <span class="rankings-record-numbers">{fighter.wins}-{fighter.losses}-{fighter.draws}</span>
+                  <span class="rankings-record-label">Record</span>
+                </div>
+              </div>
+              
+              <div class="rankings-fighter-rank">{fighter.currentRank}</div>
+            </a>
+          ))}
+        </div>
+      </div>
+    ))}
+  </main>
+</Layout>
+
+<script>
+  // Tab functionality
+  const tabButtons = document.querySelectorAll('.rankings-weight-tab');
+  const fighterTabs = document.querySelectorAll('.rankings-weight-class-section');
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const weightClass = button.getAttribute('data-weight-class');
+      
+      if (weightClass) {
+        // Update active tab button
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Update active tab content
+        fighterTabs.forEach(tab => tab.classList.remove('active'));
+        const tabElement = document.getElementById(`weight-class-${weightClass.replace(/\s+/g, '-').replace(/'/g, '').toLowerCase()}`);
+        if (tabElement) {
+          tabElement.classList.add('active');
+        }
+      }
+    });
+  });
+</script>
