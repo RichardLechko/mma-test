@@ -11,11 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"mma-scheduler/config"
+	"mma-scheduler/pkg/scrapers"
+
 	"github.com/PuerkitoBio/goquery"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
-	"mma-scheduler/config"
-	"mma-scheduler/pkg/scrapers"
 )
 
 func main() {
