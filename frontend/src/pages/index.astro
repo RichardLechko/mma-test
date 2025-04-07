@@ -1,11 +1,281 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import { getUpcomingEvents, getFighters } from '../lib/database';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// Define interfaces for type safety
+interface Fighter {
+  id: string;
+  name: string;
+  weight_class: string;
+  rank?: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  fighter_rankings?: FighterRanking[];
+}
+
+interface FighterRanking {
+  weight_class: string;
+  rank: string;
+}
+
+interface Event {
+  id: string;
+  name: string;
+  event_date: string;
+  venue: string | null;
+  city: string | null;
+  country: string | null;
+  status: string;
+}
+
+// Get the next upcoming events (now get 2 instead of 1)
+const upcomingEvents = await getUpcomingEvents(2);
+
+// Get all fighters
+const allFighters = await getFighters(300);
+
+// Get fighters with their best rank
+const rankedFighters = allFighters.map(fighter => {
+  // Default to main rank
+  let bestRank = fighter.rank || "Unranked";
+  let bestWeightClass = fighter.weight_class;
+  
+  // Check fighter_rankings if available
+  if (fighter.fighter_rankings && fighter.fighter_rankings.length > 0) {
+    for (const ranking of fighter.fighter_rankings) {
+      // Always prefer Champion
+      if (ranking.rank === "Champion") {
+        bestRank = "Champion";
+        bestWeightClass = ranking.weight_class;
+        break; // Stop checking once we find a champion rank
+      }
+      // Then prefer Interim Champion if we haven't found a Champion
+      else if (ranking.rank === "Interim Champion" && bestRank !== "Champion") {
+        bestRank = "Interim Champion";
+        bestWeightClass = ranking.weight_class;
+      }
+      // Then prefer numerical ranks if better than current best
+      else if (ranking.rank.startsWith("#") && 
+              bestRank !== "Champion" && 
+              bestRank !== "Interim Champion") {
+        const rankNum = parseInt(ranking.rank.substring(1));
+        const currentNum = bestRank.startsWith("#") ? parseInt(bestRank.substring(1)) : 999;
+        
+        if (rankNum < currentNum) {
+          bestRank = ranking.rank;
+          bestWeightClass = ranking.weight_class;
+        }
+      }
+    }
+  }
+  
+  return {
+    ...fighter,
+    bestRank,
+    bestWeightClass
+  };
+});
+
+// Sort fighters by rank priority: Champions, then Interim Champions, then numerical ranks
+const sortedFighters = rankedFighters
+  .filter(fighter => fighter.bestRank !== "Unranked") // Only include ranked fighters
+  .sort((a, b) => {
+    // Champions first
+    if (a.bestRank === "Champion" && b.bestRank !== "Champion") return -1;
+    if (a.bestRank !== "Champion" && b.bestRank === "Champion") return 1;
+    
+    // Interim Champions second
+    if (a.bestRank === "Interim Champion" && b.bestRank !== "Interim Champion") return -1;
+    if (a.bestRank !== "Interim Champion" && b.bestRank === "Interim Champion") return 1;
+    
+    // Then by numerical rank
+    if (a.bestRank.startsWith("#") && b.bestRank.startsWith("#")) {
+      return parseInt(a.bestRank.substring(1)) - parseInt(b.bestRank.substring(1));
+    }
+    
+    return 0;
+  });
+
+// Get top 6 fighters
+const topFighters = sortedFighters.slice(0, 6);
+
+// Format date - fixed to ensure correct display
+function formatDate(dateString: string): string {
+  if (!dateString) return '';
+  
+  // Parse the date and extract UTC components
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Invalid date';
+  
+  const utcYear = date.getUTCFullYear();
+  const utcMonth = date.getUTCMonth();
+  const utcDay = date.getUTCDate();
+  
+  // Create a new date with the UTC date components
+  const displayDate = new Date(utcYear, utcMonth, utcDay);
+  
+  return displayDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+// Fixed days until calculation for accurate countdown
+function getDaysUntil(dateString: string): string {
+  if (!dateString) return '';
+  
+  // Parse the date and extract UTC components
+  const eventDate = new Date(dateString);
+  if (isNaN(eventDate.getTime())) return 'Date unknown';
+  
+  const utcYear = eventDate.getUTCFullYear();
+  const utcMonth = eventDate.getUTCMonth();
+  const utcDay = eventDate.getUTCDate();
+  
+  // Create a new date with the UTC date components
+  const displayDate = new Date(utcYear, utcMonth, utcDay);
+  
+  // Get today at midnight for accurate day comparison
+  const today = new Date();
+  const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
+  // Calculate days difference
+  const calculateDaysDifference = (date1: Date, date2: Date): number => {
+    // Set both dates to midnight to get accurate day count
+    const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+    const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+    
+    // Get the time difference in milliseconds
+    const timeDiff = Math.abs(d2.getTime() - d1.getTime());
+    
+    // Convert to days and round to handle DST changes
+    return Math.round(timeDiff / (1000 * 60 * 60 * 24));
+  };
+  
+  const diffDays = calculateDaysDifference(displayDate, todayAtMidnight);
+  const isPastEvent = displayDate < todayAtMidnight;
+  
+  // Create a user-friendly display
+  if (isPastEvent) {
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays} days ago`;
+  } else {
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    return `${diffDays} days away`;
+  }
+}
 ---
 
-<Layout>
-	<Welcome />
+
+
+<Layout title="MMA Scheduler - UFC Events and Fighter Database">
+  <main class="home">
+    <section class="hero">
+      <div class="hero-content">
+        <h1>MMA Scheduler</h1>
+        <p class="tagline">Your hub for UFC events and fighter information</p>
+        <div class="hero-buttons">
+          <a href="/events" class="btn btn-primary">View Events</a>
+          <a href="/fighters" class="btn">Browse Fighters</a>
+          <a href="/rankings" class="btn">Rankings</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="content">
+      <section class="event-preview card">
+        <h2>Upcoming UFC Events</h2>
+        
+        {upcomingEvents && upcomingEvents.length > 0 ? (
+          upcomingEvents.map(event => (
+            <div class="event-details">
+              <h3>{event.name}</h3>
+              <p class="event-date">{formatDate(event.event_date)}</p>
+              <p class="event-location">
+                {event.venue && `${event.venue}, `}
+                {event.city && `${event.city}, `}
+                {event.country}
+              </p>
+              
+              <div class="countdown">
+                <span>{getDaysUntil(event.event_date)}</span>
+              </div>
+              
+              <a href={`/events/event/${event.id}`} class="btn btn-primary">
+                View Fight Card
+              </a>
+            </div>
+          ))
+        ) : (
+          <p>No upcoming events scheduled at this time.</p>
+        )}
+      </section>
+
+      <section class="top-fighters card">
+        <h2>Top Ranked Fighters</h2>
+        <div class="fighters-grid">
+          {topFighters.map(fighter => (
+            <a href={`/fighters/${fighter.id}`} class={`fighter-card ${fighter.bestRank === "Champion" ? 'champion' : ''}`}>
+              <h3>{fighter.name}</h3>
+              <p class="weight-class">{fighter.bestWeightClass}</p>
+              <p class="record">{fighter.wins}-{fighter.losses}-{fighter.draws}</p>
+              <div class="rank">{fighter.bestRank}</div>
+            </a>
+          ))}
+        </div>
+        <a href="/rankings" class="btn">View All Rankings</a>
+      </section>
+
+      <section class="features">
+        <div class="feature card">
+          <div class="icon">📅</div>
+          <h3>Event Calendar</h3>
+          <p>Stay up to date with all upcoming UFC events.</p>
+        </div>
+        
+        <div class="feature card">
+          <div class="icon">👊</div>
+          <h3>Fighter Database</h3>
+          <p>Comprehensive fighter stats and records.</p>
+        </div>
+        
+        <div class="feature card">
+          <div class="icon">🏆</div>
+          <h3>Rankings</h3>
+          <p>Follow the latest UFC rankings.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+
+  <script is:inline>
+    // Using is:inline to bypass Astro's processing and avoid TypeScript errors
+    document.addEventListener('DOMContentLoaded', function() {
+      const fighterCards = document.querySelectorAll('.fighter-card');
+      
+      fighterCards.forEach(function(card) {
+        const spotlight = document.createElement('div');
+        spotlight.className = 'spotlight';
+        card.appendChild(spotlight);
+        
+        card.addEventListener('mousemove', function(e) {
+          const rect = this.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          const xPercent = Math.round((x / rect.width) * 100);
+          const yPercent = Math.round((y / rect.height) * 100);
+          
+          spotlight.style.setProperty('--x', `${xPercent}%`);
+          spotlight.style.setProperty('--y', `${yPercent}%`);
+        });
+      });
+    });
+  </script>
 </Layout>

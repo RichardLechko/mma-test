@@ -1,0 +1,328 @@
+@import '../base/variables';
+@import '../base/mixins';
+
+.events-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: $spacing-lg $spacing-sm;
+  
+  @media (min-width: 768px) {
+    padding: $spacing-lg;
+  }
+  
+  .events-container {
+    .events-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: $spacing-lg;
+      flex-wrap: wrap;
+      gap: $spacing-sm;
+      position: relative;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -$spacing-md;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, 
+          rgba(255,255,255,0.1) 0%, 
+          rgba(255,255,255,0.15) 50%, 
+          rgba(255,255,255,0.05) 100%);
+      }
+      
+      h1 {
+        font-size: $font-size-huge;
+        color: $text-primary;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        margin: 0;
+        position: relative;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          bottom: -8px;
+          left: 0;
+          width: 60px;
+          height: 3px;
+          background: $primary-color;
+          border-radius: 3px;
+        }
+        
+        @media (max-width: 576px) {
+          font-size: 1.8rem;
+        }
+      }
+    }
+  }
+  
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: $spacing-lg;
+    
+    @media (max-width: 576px) {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .event-card {
+    background: $background-dark;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    text-decoration: none;
+    color: $text-primary;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    
+    // Create pseudo-element for animated border
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 0 solid transparent;
+      border-radius: $border-radius-md;
+      pointer-events: none;
+      z-index: 2;
+      transition: border-width 0.4s ease, border-color 0.4s ease;
+    }
+    
+    &:hover::before {
+      border-width: 2px;
+      border-color: #EF4444; // Changed to red
+    }
+    
+    // Status-specific colored borders with animation
+    &.status-scheduled:hover::before {
+      border-color: #8B5CF6; // Original purple
+    }
+    
+    &.status-completed:hover::before {
+      border-color: #10B981; // Original emerald
+    }
+    
+    &.status-canceled:hover::before {
+      border-color: #EF4444; // Original red
+    }
+    
+    &.status-postponed:hover::before {
+      border-color: #F59E0B; // Original amber
+    }
+    
+    // Left border for date - create with pseudo element for animation
+    .event-date {
+      position: relative;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -$spacing-sm; // Changed from -$spacing-md to -$spacing-sm to move it closer
+        bottom: 0;
+        width: 0;
+        background-color: #EF4444; // Changed to red
+        transition: width 0.4s ease;
+      }
+    }
+    
+    &:hover .event-date::before {
+      width: 3px;
+    }
+    
+    &.status-scheduled:hover .event-date::before {
+      background-color: #8B5CF6; // Original purple
+    }
+    
+    &.status-completed:hover .event-date::before {
+      background-color: #10B981; // Original emerald
+    }
+    
+    &.status-canceled:hover .event-date::before {
+      background-color: #EF4444; // Original red
+    }
+    
+    &.status-postponed:hover .event-date::before {
+      background-color: #F59E0B; // Original amber
+    }
+    
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.3);
+    }
+    
+    .event-header {
+      background: linear-gradient(90deg, $primary-color 0%, $secondary-color 100%);
+      padding: $spacing-md;
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-xs;
+      position: relative;
+      overflow: hidden;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to bottom right, 
+                    rgba(255, 255, 255, 0.1) 0%, 
+                    rgba(255, 255, 255, 0) 60%);
+        opacity: 0.7;
+      }
+      
+      &.status-scheduled {
+        background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+      }
+      
+      &.status-completed {
+        background: linear-gradient(135deg, #2c3e50 0%, #1a1a1a 100%);
+        opacity: 0.9;
+      }
+      
+      &.status-canceled {
+        background: linear-gradient(135deg, #7f0000 0%, #4a0000 100%);
+        opacity: 0.9;
+        
+        &::before {
+          content: '✕';
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          font-size: 18px;
+          color: rgba(255, 255, 255, 0.5);
+        }
+      }
+      
+      &.status-postponed {
+        background: linear-gradient(135deg, #d35400 0%, #a04000 100%);
+      }
+      
+      h2 {
+        font-size: $font-size-lg;
+        margin: 0;
+        line-height: 1.3;
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
+        max-width: 90%;
+      }
+      
+      .event-countdown {
+        font-size: $font-size-sm;
+        font-weight: bold;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 4px $spacing-sm;
+        border-radius: $border-radius-sm;
+        align-self: flex-start;
+        position: relative;
+        z-index: 1;
+        letter-spacing: 0.3px;
+        backdrop-filter: blur(4px);
+      }
+    }
+    
+    .event-details {
+      padding: $spacing-md;
+      
+      .event-date {
+        font-size: $font-size-md;
+        margin-bottom: $spacing-xs;
+        color: $text-secondary;
+        font-weight: 500;
+      }
+      
+      .event-location {
+        font-size: $font-size-sm;
+        color: $text-tertiary;
+        line-height: 1.5;
+        
+        .venue {
+          display: block;
+          margin-bottom: $spacing-xs * 0.5;
+          font-weight: 500;
+          color: rgba($text-secondary, 0.9);
+        }
+        
+        .location {
+          display: block;
+          color: $text-tertiary;
+        }
+        
+        .location-tbd {
+          font-style: italic;
+          color: $text-tertiary;
+          opacity: 0.8;
+        }
+      }
+      
+      .event-status {
+        margin-top: $spacing-sm;
+        display: inline-block;
+        padding: 4px $spacing-sm;
+        border-radius: $border-radius-sm;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.4s ease;
+        overflow: hidden;
+        position: relative;
+      }
+    }
+    
+    // Animated background fill for status badges
+    &:hover .event-status {
+      color: white;
+      border-color: transparent;
+    }
+    
+    &.status-scheduled:hover .event-status {
+      background-color: #8B5CF6; // Purple
+    }
+    
+    &.status-completed:hover .event-status {
+      background-color: #10B981; // Emerald
+    }
+    
+    &.status-canceled:hover .event-status {
+      background-color: #EF4444; // Red
+    }
+    
+    &.status-postponed:hover .event-status {
+      background-color: #F59E0B; // Amber
+    }
+  }
+  
+  .no-events {
+    text-align: center;
+    padding: $spacing-xl $spacing-lg;
+    background: $background-dark;
+    border-radius: $border-radius-md;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    
+    p {
+      font-size: $font-size-lg;
+      color: $text-tertiary;
+      margin: 0;
+      
+      &::before {
+        content: '😕';
+        display: block;
+        font-size: 2rem;
+        margin-bottom: $spacing-sm;
+      }
+    }
+  }
+}

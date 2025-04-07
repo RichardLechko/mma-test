@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "": "file:",
-    "astro": "^5.0.9"
+    "@supabase/supabase-js": "^2.49.1",
+    "astro": "^5.5.4"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.18.1",

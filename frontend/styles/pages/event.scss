@@ -1,0 +1,243 @@
+@import '../base/variables';
+@import '../base/mixins';
+
+.event-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: $spacing-lg $spacing-sm;
+  
+  .event-details-container {
+    background: $background-dark;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .event-header {
+    background: linear-gradient(90deg, $primary-color 0%, $secondary-color 100%);
+    padding: $spacing-lg;
+    color: $text-primary;
+    position: relative;
+    
+    h1 {
+      font-size: $font-size-xxl;
+      margin: 0 0 $spacing-sm;
+      line-height: 1.2;
+    }
+    
+    .event-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-md;
+      margin-bottom: $spacing-md;
+      
+      .event-date, .event-time, .event-location {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .venue {
+        font-weight: bold;
+        margin-bottom: $spacing-xs * 0.5;
+      }
+    }
+    
+    .event-countdown {
+      position: absolute;
+      top: $spacing-lg;
+      right: $spacing-lg;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: $border-radius-md;
+      padding: $spacing-sm;
+      text-align: center;
+      
+      .countdown-value {
+        font-size: $font-size-xl;
+        font-weight: bold;
+        display: block;
+      }
+      
+      .countdown-label {
+        font-size: $font-size-sm;
+        opacity: 0.8;
+      }
+      
+      @media (max-width: $breakpoint-tablet) {
+        position: static;
+        margin-top: $spacing-md;
+      }
+    }
+  }
+  
+  .fight-card {
+    padding: $spacing-lg;
+    
+    h2 {
+      font-size: $font-size-xl;
+      margin-bottom: $spacing-md;
+      border-bottom: 2px solid $primary-color;
+      padding-bottom: $spacing-xs;
+      color: $text-primary;
+    }
+    
+    .fights-list {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-md;
+    }
+    
+    .fight {
+      background: $background-card;
+      border-radius: $border-radius-md;
+      padding: $spacing-md;
+      position: relative;
+      
+      &.main-event {
+        border: 2px solid gold; // Gold color for main event
+        background: linear-gradient(to bottom, darken($background-card, 3%), $background-card);
+      }
+      
+      .main-event-tag {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: gold;
+        color: black;
+        font-weight: bold;
+        padding: $spacing-xs * 0.5 $spacing-sm;
+        border-radius: $border-radius-sm;
+        font-size: $font-size-xs;
+        text-transform: uppercase;
+      }
+      
+      .weight-class {
+        color: $text-tertiary;
+        text-align: center;
+        font-size: $font-size-sm;
+        margin-bottom: $spacing-sm;
+        text-transform: uppercase;
+      }
+      
+      .fighters {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $spacing-sm;
+        
+        .fighter {
+          flex: 1;
+          text-decoration: none;
+          color: $text-primary;
+          padding: $spacing-sm;
+          border-radius: $border-radius-sm;
+          transition: background-color 0.2s ease;
+          
+          &:hover {
+            background-color: rgba($primary-color, 0.1);
+          }
+          
+          .fighter-name {
+            text-align: center;
+            margin-bottom: $spacing-xs;
+            
+            .name {
+              display: block;
+              font-size: $font-size-lg;
+              font-weight: bold;
+              margin-bottom: $spacing-xs * 0.5;
+            }
+            
+            .nickname {
+              display: block;
+              font-size: $font-size-sm;
+              color: $text-secondary;
+              font-style: italic;
+            }
+          }
+          
+          .fighter-rank {
+            text-align: center;
+            background: rgba($primary-color, 0.2);
+            border-radius: $border-radius-sm;
+            padding: $spacing-xs * 0.5 $spacing-xs;
+            font-size: $font-size-xs;
+            font-weight: bold;
+            display: inline-block;
+            margin: 0 auto;
+          }
+        }
+        
+        .vs {
+          font-weight: bold;
+          color: gold;
+          font-size: $font-size-lg;
+        }
+      }
+    }
+  }
+  
+  .no-fights {
+    text-align: center;
+    padding: $spacing-lg;
+    background: rgba($background-card, 0.5);
+    border-radius: $border-radius-md;
+    
+    p {
+      font-size: $font-size-lg;
+      color: $text-tertiary;
+    }
+  }
+  
+  .event-not-found {
+    text-align: center;
+    padding: $spacing-xl;
+    
+    h1 {
+      font-size: $font-size-xxl;
+      margin-bottom: $spacing-sm;
+      color: $text-primary;
+    }
+    
+    p {
+      font-size: $font-size-md;
+      color: $text-secondary;
+      margin-bottom: $spacing-lg;
+    }
+    
+    .back-button {
+      display: inline-block;
+      background: $primary-color;
+      color: $text-primary;
+      text-decoration: none;
+      padding: $spacing-xs * 1.5 $spacing-md;
+      border-radius: $border-radius-sm;
+      font-weight: bold;
+      transition: background-color 0.2s ease;
+      
+      &:hover {
+        background-color: darken($primary-color, 5%);
+      }
+    }
+  }
+  
+  // Responsive adjustments
+  @media (max-width: $breakpoint-mobile) {
+    .fight .fighters {
+      flex-direction: column;
+      
+      .fighter-1 {
+        order: 1;
+      }
+      
+      .vs {
+        order: 2;
+        margin: $spacing-sm 0;
+      }
+      
+      .fighter-2 {
+        order: 3;
+      }
+    }
+  }
+}

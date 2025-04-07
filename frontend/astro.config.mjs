@@ -1,3 +1,10 @@
 import { defineConfig } from 'astro/config';
 
-export default defineConfig({});
+// https://astro.build/config
+export default defineConfig({
+  output: 'server', // Enable SSR
+  // other settings
+  devToolbar: {
+    enabled: false
+  }
+});

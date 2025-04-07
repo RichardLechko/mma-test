@@ -1,0 +1,206 @@
+---
+// FilterDropdown.astro
+// A reusable dropdown component for filtering with the same styling as YearSelector
+
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  label: string;
+  options: Option[];
+  currentValue: string;
+  id: string;
+}
+
+const { label, options, currentValue, id } = Astro.props;
+
+// Determine the display text based on current value
+const displayText = currentValue 
+  ? options.find(opt => opt.value === currentValue)?.label || "All" 
+  : "All";
+---
+
+<div class="filter-dropdown" id={`${id}-dropdown`}>
+  <div class="filter-dropdown-header">
+    <span class="filter-label">{label}:</span>
+    <div class="filter-selected" id={`${id}-selected`}>
+      <span>{displayText}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
+  </div>
+  
+  <div class="filter-menu" id={`${id}-menu`}>
+    {options.map(option => (
+      <div 
+        class={`filter-item ${option.value === currentValue ? 'active' : ''}`}
+        data-value={option.value}
+        data-display={option.value === '' ? 'All' : option.label}
+      >
+        {option.label}
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .filter-dropdown {
+    position: relative;
+    user-select: none;
+  }
+  
+  .filter-dropdown-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .filter-label {
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+  
+  .filter-selected {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--background-dark, #1e1e1e);
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    min-width: 120px;
+  }
+  
+  .filter-selected:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .filter-selected span {
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+  }
+  
+  .filter-selected svg {
+    transition: transform 0.2s ease;
+    margin-left: auto;
+  }
+  
+  .filter-dropdown.active .filter-selected svg {
+    transform: rotate(180deg);
+  }
+  
+  .filter-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    min-width: 180px;
+    background-color: var(--background-dark, #1e1e1e);
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    opacity: 0;
+    transform-origin: top center;
+    transform: translateY(-10px) scale(0.95);
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .filter-dropdown.active .filter-menu {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+  }
+  
+  .filter-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: var(--text-primary, #ffffff);
+    transition: background-color 0.15s ease;
+    font-size: 0.9375rem;
+  }
+  
+  .filter-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .filter-item.active {
+    background-color: var(--primary-color, #6366f1);
+    color: white;
+    font-weight: 600;
+  }
+</style>
+
+<script define:vars={{ id }}>
+  // Initialize the dropdown when the component is mounted
+  document.addEventListener('DOMContentLoaded', () => {
+    const dropdown = document.getElementById(`${id}-dropdown`);
+    const selected = document.getElementById(`${id}-selected`);
+    const menu = document.getElementById(`${id}-menu`);
+    const items = menu.querySelectorAll('.filter-item');
+    const selectElement = document.getElementById(id);
+    
+    // Toggle dropdown when clicking the selected option
+    if (selected && dropdown) {
+      selected.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+      });
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!(e.target instanceof Node) || !dropdown.contains(e.target)) {
+          dropdown.classList.remove('active');
+        }
+      });
+      
+      // Close dropdown when pressing escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          dropdown.classList.remove('active');
+        }
+      });
+    }
+    
+    // Handle filter item selection
+    items.forEach(item => {
+      item.addEventListener('click', () => {
+        const value = item.getAttribute('data-value');
+        // Use the simplified display text for the selected item
+        const displayText = item.getAttribute('data-display') || item.textContent;
+        
+        // Update the visual selected state
+        items.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        
+        // Update the displayed text (simplified for "All" options)
+        selected.querySelector('span').textContent = displayText;
+        
+        // Update the underlying select element
+        if (selectElement) {
+          selectElement.value = value;
+          
+          // Trigger a change event
+          const event = new Event('change', { bubbles: true });
+          selectElement.dispatchEvent(event);
+        }
+        
+        // Close the dropdown
+        dropdown.classList.remove('active');
+      });
+    });
+  });
+</script>

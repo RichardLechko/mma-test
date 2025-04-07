@@ -3,255 +3,165 @@ package scrapers
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
-	"sync"
 	"time"
 
-	"mma-scheduler/internal/models"
-
-	"github.com/gocolly/colly/v2"
+	"github.com/PuerkitoBio/goquery"
 )
 
-type FightScraper struct {
-	processedEvents sync.Map
-	client          *http.Client
+// UFCScrapedFight represents a fight scraped from UFC website
+type UFCScrapedFight struct {
+	Fighter1Name      string
+	Fighter1GivenName string
+	Fighter1LastName  string
+	Fighter1Rank      string
+	Fighter1Result    string
+	Fighter2Name      string
+	Fighter2GivenName string
+	Fighter2LastName  string
+	Fighter2Rank      string
+	Fighter2Result    string
+	WeightClass       string
+	Method            string
+	Round             string
+	Time              string
+	IsMainEvent       bool
+	IsTitleFight      bool
 }
 
-func NewFightScraper() *FightScraper {
-	return &FightScraper{
+// UFCFightScraper handles scraping fight data from UFC website
+type UFCFightScraper struct {
+	client *http.Client
+}
+
+// NewUFCFightScraper creates a new UFCFightScraper
+func NewUFCFightScraper() *UFCFightScraper {
+	return &UFCFightScraper{
 		client: &http.Client{
-			Timeout: 15 * time.Second,
-			Transport: &http.Transport{
-				DisableKeepAlives:   true,
-				MaxIdleConns:        5,
-				IdleConnTimeout:     5 * time.Second,
-				TLSHandshakeTimeout: 5 * time.Second,
-			},
+			Timeout: 30 * time.Second,
 		},
 	}
 }
 
-func (s *FightScraper) ScrapeFights(eventName string, eventDate time.Time) ([]models.Fight, []string, error) {
-	eventKey := normalizeEventName(eventName)
-	if _, loaded := s.processedEvents.LoadOrStore(eventKey, true); loaded {
-		return nil, nil, fmt.Errorf("event already processed: %s", eventName)
+// ScrapeFights retrieves all fights from a UFC event page
+func (s *UFCFightScraper) ScrapeFights(ufcURL string) ([]UFCScrapedFight, error) {
+	// Make HTTP request
+	resp, err := s.client.Get(ufcURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch UFC page: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status code: %d", resp.StatusCode)
 	}
 
-	c := colly.NewCollector(
-		colly.AllowedDomains("www.ufc.com", "ufc.com"),
-		colly.MaxDepth(1),
-		colly.Async(false),
-	)
-
-	c.SetClient(s.client)
-
-	c.OnRequest(func(r *colly.Request) {
-		r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-		r.Headers.Set("Accept-Language", "en-US,en;q=0.5")
-	})
-
-	var fights []models.Fight
-	var mu sync.Mutex
-	fightOrder := 1
-
-	c.OnHTML("div.c-listing-fight", func(e *colly.HTMLElement) {
-		fight := models.Fight{}
-
-		fighters := e.ChildTexts("div.c-listing-fight__corner-name")
-		if len(fighters) >= 2 {
-			fight.Fighter1 = cleanFighterName(fighters[0])
-			fight.Fighter2 = cleanFighterName(fighters[1])
-		}
-
-		weightClass := e.ChildText("div.c-listing-fight__class-text")
-		if weightClass == "" {
-			weightClass = e.ChildText("div.c-listing-fight__class")
-		}
-		fight.WeightClass = cleanWeightClass(weightClass)
-
-		isMain := e.ChildText("div.c-listing-fight__banner-title")
-		fight.IsMainEvent = strings.Contains(strings.ToLower(isMain), "main event")
-
-		fight.Order = fightOrder
-
-		if fight.Fighter1 != "" && fight.Fighter2 != "" {
-			mu.Lock()
-			fights = append(fights, fight)
-			fightOrder++
-			mu.Unlock()
-		}
-	})
-
-	attemptedURLs := []string{}
-	urls := generatePossibleURLs(eventName, eventDate)
-
-	var lastErr error
-	for _, url := range urls {
-		attemptedURLs = append(attemptedURLs, url)
-
-		err := c.Visit(url)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		c.Wait()
-
-		if len(fights) > 0 {
-			return fights, attemptedURLs, nil
-		}
+	// Parse HTML document
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	if lastErr != nil {
-		return nil, attemptedURLs, fmt.Errorf("failed to scrape fights: %v", lastErr)
-	}
+	var fights []UFCScrapedFight
 
-	return nil, attemptedURLs, fmt.Errorf("no fights found for event: %s", eventName)
-}
+	// Find all fight listings
+	doc.Find(".c-listing-fight").Each(func(i int, fightElement *goquery.Selection) {
+		var fight UFCScrapedFight
 
-func generatePossibleURLs(eventName string, eventDate time.Time) []string {
-	baseURL := "https://www.ufc.com/event/"
-	normalizedName := strings.ToLower(eventName)
-	var urls []string
+		// Weight class
+		weightClass := fightElement.Find(".c-listing-fight__class-text").First().Text()
+		fight.WeightClass = cleanText(weightClass)
 
-	// Priority 1: Numbered UFC events
-	if match := regexp.MustCompile(`ufc (\d+)`).FindStringSubmatch(normalizedName); len(match) > 1 {
-		urls = append(urls, baseURL+"ufc-"+match[1])
-		return urls
-	}
+		// Check if title fight
+		fight.IsTitleFight = strings.Contains(strings.ToLower(weightClass), "title")
 
-	// Priority 2: Handle special events
-	if strings.Contains(normalizedName, "noche") {
-		urls = append(urls, baseURL+"noche-ufc")
-		if eventDate.Year() > 0 {
-			urls = append(urls, fmt.Sprintf("%snoche-ufc-%d", baseURL, eventDate.Year()))
-		}
-	}
+		// Main event is typically the first fight
+		fight.IsMainEvent = i == 0
 
-	// Priority 3: Fight Night with fighter names
-	if strings.Contains(normalizedName, "fight night") || strings.Contains(normalizedName, "vs") {
-		name := strings.TrimPrefix(normalizedName, "ufc fight night:")
-		name = strings.TrimPrefix(name, "ufc fight night")
-		name = strings.TrimPrefix(name, "ufc")
-		name = strings.TrimSpace(name)
+		// Get fighter 1 (red corner) details
+		redCornerName := fightElement.Find(".c-listing-fight__corner-name--red")
 
-		for _, sep := range []string{" vs. ", " vs ", ": ", " - "} {
-			if parts := strings.Split(name, sep); len(parts) == 2 {
-				fighter1 := cleanNameForURL(parts[0])
-				fighter2 := cleanNameForURL(parts[1])
-				if fighter1 != "" && fighter2 != "" {
-					urls = append(urls,
-						fmt.Sprintf("%sufc-fight-night-%s-vs-%s", baseURL, fighter1, fighter2),
-						fmt.Sprintf("%sufc-fight-night-%s-vs-%s", baseURL, fighter2, fighter1))
-				}
+		// Check if the fighter name is split into given/family name parts
+		redGivenName := redCornerName.Find(".c-listing-fight__corner-given-name").Text()
+		redFamilyName := redCornerName.Find(".c-listing-fight__corner-family-name").Text()
+
+		if redGivenName != "" && redFamilyName != "" {
+			fight.Fighter1GivenName = cleanText(redGivenName)
+			fight.Fighter1LastName = cleanText(redFamilyName)
+			fight.Fighter1Name = fight.Fighter1GivenName + " " + fight.Fighter1LastName
+		} else {
+			// If not split, get the full name
+			fight.Fighter1Name = cleanText(redCornerName.Text())
+
+			// Try to split the name if possible
+			nameParts := strings.Fields(fight.Fighter1Name)
+			if len(nameParts) >= 2 {
+				fight.Fighter1GivenName = strings.Join(nameParts[:len(nameParts)-1], " ")
+				fight.Fighter1LastName = nameParts[len(nameParts)-1]
 			}
 		}
-	}
 
-	// Priority 4: Date-based URLs
-	if strings.Contains(normalizedName, "fight night") {
-		monthStr := strings.ToLower(eventDate.Month().String())
-		monthAbbr := monthStr[:3]
+		// Get fighter 2 (blue corner) details
+		blueCornerName := fightElement.Find(".c-listing-fight__corner-name--blue")
 
-		urls = append(urls,
-			fmt.Sprintf("%sufc-fight-night-%s-%d-%d", baseURL, monthStr, eventDate.Day(), eventDate.Year()),
-			fmt.Sprintf("%sufc-fight-night-%s-%d-%d", baseURL, monthAbbr, eventDate.Day(), eventDate.Year()),
-			fmt.Sprintf("%sufc-fight-night-%s-%02d-%d", baseURL, monthStr, eventDate.Day(), eventDate.Year()))
-	}
+		// Check if the fighter name is split into given/family name parts
+		blueGivenName := blueCornerName.Find(".c-listing-fight__corner-given-name").Text()
+		blueFamilyName := blueCornerName.Find(".c-listing-fight__corner-family-name").Text()
 
-	// Priority 5: Clean event name as fallback
-	name := cleanEventNameForURL(eventName)
-	if name != "" {
-		if strings.Contains(normalizedName, "fight night") {
-			urls = append(urls, baseURL+"ufc-fight-night-"+name)
+		if blueGivenName != "" && blueFamilyName != "" {
+			fight.Fighter2GivenName = cleanText(blueGivenName)
+			fight.Fighter2LastName = cleanText(blueFamilyName)
+			fight.Fighter2Name = fight.Fighter2GivenName + " " + fight.Fighter2LastName
 		} else {
-			urls = append(urls, baseURL+"ufc-"+name)
+			// If not split, get the full name
+			fight.Fighter2Name = cleanText(blueCornerName.Text())
+
+			// Try to split the name if possible
+			nameParts := strings.Fields(fight.Fighter2Name)
+			if len(nameParts) >= 2 {
+				fight.Fighter2GivenName = strings.Join(nameParts[:len(nameParts)-1], " ")
+				fight.Fighter2LastName = nameParts[len(nameParts)-1]
+			}
 		}
-	}
 
-	return removeDuplicateURLs(urls)
-}
-
-func cleanNameForURL(name string) string {
-	name = strings.ToLower(strings.TrimSpace(name))
-	name = regexp.MustCompile(`[^a-z0-9 ]`).ReplaceAllString(name, "")
-	name = strings.Join(strings.Fields(name), "-")
-	return name
-}
-
-func cleanEventNameForURL(name string) string {
-	name = strings.ToLower(strings.TrimSpace(name))
-	name = strings.ReplaceAll(name, "'", "")
-	name = strings.ReplaceAll(name, ".", "")
-	name = strings.ReplaceAll(name, ": ", "-")
-	name = strings.ReplaceAll(name, " - ", "-")
-	name = strings.ReplaceAll(name, " vs. ", "-vs-")
-	name = strings.ReplaceAll(name, " vs ", "-vs-")
-	name = strings.ReplaceAll(name, " ", "-")
-	name = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(name, "")
-
-	// Clean up multiple dashes
-	for strings.Contains(name, "--") {
-		name = strings.ReplaceAll(name, "--", "-")
-	}
-
-	return strings.Trim(name, "-")
-}
-
-func normalizeEventName(name string) string {
-	name = strings.ToLower(strings.TrimSpace(name))
-	name = regexp.MustCompile(`[^a-z0-9]`).ReplaceAllString(name, "")
-	return name
-}
-
-func removeDuplicateURLs(urls []string) []string {
-	seen := make(map[string]bool)
-	result := make([]string, 0, len(urls))
-
-	for _, url := range urls {
-		url = strings.TrimRight(url, "-")
-		if !seen[url] {
-			seen[url] = true
-			result = append(result, url)
+		// Get fighter ranks
+		ranks := fightElement.Find(".c-listing-fight__corner-rank")
+		if ranks.Length() >= 2 {
+			// First rank is for red corner, second for blue corner
+			fight.Fighter1Rank = cleanText(ranks.Eq(0).Text())
+			fight.Fighter2Rank = cleanText(ranks.Eq(1).Text())
 		}
-	}
 
-	return result
+		// Fight results
+		fight.Round = cleanText(fightElement.Find(".c-listing-fight__result-text.round").Text())
+		fight.Time = cleanText(fightElement.Find(".c-listing-fight__result-text.time").Text())
+		fight.Method = cleanText(fightElement.Find(".c-listing-fight__result-text.method").Text())
+
+		// Fight outcomes
+		fight.Fighter1Result = cleanText(fightElement.Find(".c-listing-fight__corner--red .c-listing-fight__outcome-wrapper").Text())
+		fight.Fighter2Result = cleanText(fightElement.Find(".c-listing-fight__corner--blue .c-listing-fight__outcome-wrapper").Text())
+
+		// Only add the fight if we have both fighter names
+		if fight.Fighter1Name != "" && fight.Fighter2Name != "" &&
+			!strings.Contains(fight.Fighter1Name, "vs") &&
+			!strings.Contains(fight.Fighter2Name, "vs") {
+			fights = append(fights, fight)
+		}
+	})
+
+	return fights, nil
 }
 
-func cleanFighterName(name string) string {
-	name = strings.TrimSpace(name)
-	name = strings.ReplaceAll(name, "\n", " ")
-	for strings.Contains(name, "  ") {
-		name = strings.ReplaceAll(name, "  ", " ")
-	}
-	return name
-}
+// cleanText removes extra whitespace and normalizes text
+func cleanText(text string) string {
+	// Remove newlines and tabs
+	text = strings.ReplaceAll(text, "\n", " ")
+	text = strings.ReplaceAll(text, "\t", " ")
 
-func cleanWeightClass(weightClass string) string {
-	weightClass = strings.TrimSpace(weightClass)
-	weightClass = strings.ToUpper(weightClass)
-
-	weightClass = strings.ReplaceAll(weightClass, "BOUT", "")
-	weightClass = strings.ReplaceAll(weightClass, "TITLE", "")
-	weightClass = strings.ReplaceAll(weightClass, "POUND", "")
-	weightClass = strings.ReplaceAll(weightClass, "LBS", "")
-
-	if strings.Contains(weightClass, "WOMEN'S") || strings.Contains(weightClass, "WOMENS") {
-		weightClass = strings.ReplaceAll(weightClass, "WOMEN'S", "W")
-		weightClass = strings.ReplaceAll(weightClass, "WOMENS", "W")
+	// Replace multiple spaces with a single space
+	for strings.Contains(text, "  ") {
+		text = strings.ReplaceAll(text, "  ", " ")
 	}
 
-	weightClass = strings.ReplaceAll(weightClass, "WSTRAW", "WSTRAWWEIGHT")
-	weightClass = strings.ReplaceAll(weightClass, "WFLY", "WFLYWEIGHT")
-	weightClass = strings.ReplaceAll(weightClass, "WBANTAM", "WBANTAMWEIGHT")
-	weightClass = strings.ReplaceAll(weightClass, "WFEATHER", "WFEATHERWEIGHT")
-
-	for strings.Contains(weightClass, "  ") {
-		weightClass = strings.ReplaceAll(weightClass, "  ", " ")
-	}
-
-	return strings.TrimSpace(weightClass)
+	return strings.TrimSpace(text)
 }

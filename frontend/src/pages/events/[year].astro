@@ -1,0 +1,242 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { supabase } from '../../lib/supabase';
+import YearSelector from '../../components/YearSelector.astro';
+
+// Type safety
+interface Event {
+  id: string;
+  name: string;
+  event_date: string;
+  venue: string | null;
+  city: string | null;
+  country: string | null;
+  status: string;
+}
+
+// Get the year from the URL parameter
+const { year: yearParam } = Astro.params;
+const yearNum = parseInt(yearParam || new Date().getFullYear().toString());
+
+// Create date objects for start and end of year (using the valid year or defaulting to current)
+const currentYear = new Date().getFullYear();
+const validYear = !isNaN(yearNum) ? yearNum : currentYear;
+const startOfYear = new Date(validYear, 0, 1);
+const endOfYear = new Date(validYear, 11, 31, 23, 59, 59);
+
+// Format dates as ISO strings
+const startISO = startOfYear.toISOString();
+const endISO = endOfYear.toISOString();
+
+// Get all events for the selected year
+let events: Event[] = [];
+try {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .gte('event_date', startISO)
+    .lte('event_date', endISO);
+  
+  if (error) {
+    console.error('Error fetching events:', error);
+  } else {
+    events = data.filter(event => {
+      if (!event || !event.event_date) return false;
+      const date = new Date(event.event_date);
+      return !isNaN(date.getTime());
+    });
+  }
+} catch (error) {
+  console.error('Error in Supabase query:', error);
+}
+
+// Get available years for the dropdown
+let availableYears: string[] = [validYear.toString()];
+try {
+  const { data, error } = await supabase
+    .from('events')
+    .select('event_date');
+  
+  if (!error && data) {
+    // Extract years, filter out invalid dates, and remove duplicates
+    const years = data
+      .map(event => {
+        const date = new Date(event.event_date);
+        return !isNaN(date.getTime()) ? date.getFullYear() : null;
+      })
+      .filter(year => year !== null);
+    
+    // Make sure current year is included
+    if (!years.includes(currentYear)) {
+      years.push(currentYear);
+    }
+    
+    // Get unique years and sort in descending order
+    availableYears = [...new Set(years)]
+      .sort((a, b) => b - a)
+      .map(y => y.toString());
+  }
+} catch (error) {
+  console.error('Error fetching years:', error);
+}
+
+// Sort events
+const today = new Date();
+const isCurrentYear = validYear === today.getFullYear();
+let sortedEvents = [...events];
+
+if (isCurrentYear) {
+  // Sort by proximity to today (closest upcoming events first, then past events by recency)
+  sortedEvents = sortedEvents.sort((a, b) => {
+    const dateA = new Date(a.event_date);
+    const dateB = new Date(b.event_date);
+    
+    // Both dates are in the future or both are in the past
+    if ((dateA >= today && dateB >= today) || (dateA < today && dateB < today)) {
+      // For future dates: earliest first
+      // For past events: most recent first
+      return dateA >= today ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+    }
+    
+    // If one is in the future and one is in the past, future comes first
+    return dateA >= today ? -1 : 1;
+  });
+} else {
+  // For past years, just sort chronologically
+  sortedEvents = sortedEvents.sort((a, b) => 
+    new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+  );
+}
+---
+
+<Layout title={`UFC Events - ${validYear}`}>
+  <main class="events-page">
+    <section class="events-container">
+      <div class="events-header">
+        <h1>UFC Events {validYear}</h1>
+        
+        <YearSelector 
+          years={availableYears}
+          currentYear={validYear.toString()}
+          baseUrl="/events/"
+        />
+      </div>
+      
+      {sortedEvents.length > 0 ? (
+        <div class="events-grid">
+          {sortedEvents.map((event) => {
+            // Safely parse the date - preserve correct date by handling UTC properly
+            const eventDate = new Date(event.event_date);
+            
+            // Skip rendering this event if the date is invalid
+            if (isNaN(eventDate.getTime())) {
+              return null;
+            }
+            
+            // Use UTC methods to ensure we get the date as stored, without timezone shifting
+            const utcYear = eventDate.getUTCFullYear();
+            const utcMonth = eventDate.getUTCMonth();
+            const utcDay = eventDate.getUTCDate();
+            
+            // Create a new date object at the same UTC time, but interpret it as local
+            // This preserves the date as intended in the database
+            const displayDate = new Date(utcYear, utcMonth, utcDay);
+            
+            const formattedDate = displayDate.toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            
+            // Get today's date with time set to midnight for proper day comparison
+            const todayDate = new Date();
+            const todayAtMidnight = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+            
+            // Calculate if the event is in the past
+            const isPastEvent = displayDate < todayAtMidnight;
+            
+            // Calculate days difference more accurately
+            const calculateDaysDifference = (date1: Date, date2: Date): number => {
+              // Set both dates to midnight to get accurate day count
+              const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+              const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+              
+              // Get the time difference in milliseconds
+              const timeDiff = Math.abs(d2.getTime() - d1.getTime());
+              
+              // Convert to days and round to handle DST changes
+              return Math.round(timeDiff / (1000 * 60 * 60 * 24));
+            };
+            
+            const diffDays = calculateDaysDifference(displayDate, todayAtMidnight);
+            
+            // Handle "tomorrow", "today" and other cases with proper day calculations
+            let timeDisplay: string;
+            if (!isPastEvent) {
+              // Future event
+              if (diffDays === 0) {
+                timeDisplay = "Today";
+              } else if (diffDays === 1) {
+                timeDisplay = "Tomorrow";
+              } else {
+                timeDisplay = `${diffDays} days away`;
+              }
+            } else {
+              // Past event
+              if (diffDays === 0) {
+                timeDisplay = "Today";
+              } else if (diffDays === 1) {
+                timeDisplay = "Yesterday";
+              } else {
+                timeDisplay = `${diffDays} days ago`;
+              }
+            }
+            
+            // Status badge based on event status
+            const getStatusClass = (eventStatus: string | null): string => {
+              switch(eventStatus?.toLowerCase()) {
+                case 'scheduled': return 'status-scheduled';
+                case 'canceled': return 'status-canceled';
+                case 'postponed': return 'status-postponed';
+                case 'completed': return 'status-completed';
+                default: return '';
+              }
+            };
+            
+            return (
+              <a href={`/events/event/${event.id}`} class="event-card">
+                <div class={`event-header ${getStatusClass(event.status)}`}>
+                  <h2>{event.name}</h2>
+                  <span class="event-countdown">
+                    {timeDisplay}
+                  </span>
+                </div>
+                <div class="event-details">
+                  <p class="event-date">{formattedDate}</p>
+                  <p class="event-location">
+                    {event.venue ? (
+                      <>
+                        <span class="venue">{event.venue}</span>
+                        {event.city && event.country && (
+                          <span class="location">{event.city}, {event.country}</span>
+                        )}
+                      </>
+                    ) : (
+                      <span class="location-tbd">Location TBD</span>
+                    )}
+                  </p>
+                  {event.status && <p class="event-status">{event.status}</p>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="no-events">
+          <p>No events found for {validYear}.</p>
+        </div>
+      )}
+    </section>
+  </main>
+</Layout>
