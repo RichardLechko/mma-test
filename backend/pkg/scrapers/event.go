@@ -2,6 +2,7 @@ package scrapers
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,544 +13,344 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type EventScraper struct {
+// UFCEventScraper scrapes events directly from UFC.com
+type UFCEventScraper struct {
 	*BaseScraper
-	wikiURL string
+	baseURL string
 }
 
-func NewEventScraper(config ScraperConfig) *EventScraper {
-	return &EventScraper{
+// NewUFCEventScraper creates a new scraper for UFC events
+func NewUFCEventScraper(config ScraperConfig) *UFCEventScraper {
+	return &UFCEventScraper{
 		BaseScraper: NewBaseScraper(config),
-		wikiURL:     "https://en.wikipedia.org/wiki/List_of_UFC_events",
+		baseURL:     "https://www.ufc.com/events",
 	}
 }
 
-type WikiEvent struct {
-	Name       string
-	Date       time.Time
-	Venue      string
-	City       string
-	Country    string
-	Attendance string
-	Status     string // Added field to track if event was canceled
-	IsCanceled bool   // Flag to determine if this event should be filtered out
-	WikiURL    string // Added field to store the event's Wikipedia URL
+// UFCEvent represents an event from UFC.com
+type UFCEvent struct {
+	Name      string
+	Date      time.Time
+	Venue     string
+	Location  string
+	EventType string
+	Status    string
+	UFCURL    string
 }
 
-func (s *EventScraper) ScrapeEvents() ([]*WikiEvent, error) {
-	var allEvents []*WikiEvent
+// ScrapeEvents scrapes all events from UFC.com with pagination
+func (s *UFCEventScraper) ScrapeEvents(ctx context.Context, maxPages int) ([]*UFCEvent, error) {
+	var allEvents []*UFCEvent
+	
+	// Start with the first page (upcoming events)
+	page := 0
+	for page < maxPages {
+		pageURL := s.baseURL
+		if page > 0 {
+			pageURL = fmt.Sprintf("%s?page=%d", s.baseURL, page)
+		}
+		
+		log.Printf("Scraping UFC events from page %d: %s", page, pageURL)
+		
+		events, hasMorePages, err := s.scrapeEventPage(ctx, pageURL)
+		if err != nil {
+			log.Printf("Error scraping page %d: %v", page, err)
+			return allEvents, nil // Return what we have so far
+		}
+		
+		log.Printf("Found %d events on page %d", len(events), page)
+		allEvents = append(allEvents, events...)
+		
+		if !hasMorePages {
+			log.Printf("No more pages found after page %d", page)
+			break
+		}
+		
+		page++
+		
+		// Add a small delay between requests to avoid overwhelming the server
+		select {
+		case <-ctx.Done():
+			return allEvents, ctx.Err()
+		case <-time.After(1 * time.Second):
+			// Continue to next page
+		}
+	}
+	
+	log.Printf("Total events scraped: %d", len(allEvents))
+	return allEvents, nil
+}
 
-	req, err := http.NewRequest("GET", s.wikiURL, nil)
+// scrapeEventPage scrapes a single page of events
+func (s *UFCEventScraper) scrapeEventPage(ctx context.Context, url string) ([]*UFCEvent, bool, error) {
+	var events []*UFCEvent
+	
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
+		return nil, false, fmt.Errorf("error creating request: %v", err)
 	}
-
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/123.0")
-
+	
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+	
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching page: %v", err)
+		return nil, false, fmt.Errorf("error fetching page: %v", err)
 	}
 	defer resp.Body.Close()
-
+	
+	if resp.StatusCode != http.StatusOK {
+		return nil, false, fmt.Errorf("bad status code: %d", resp.StatusCode)
+	}
+	
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing HTML: %v", err)
-	}
-
-	// Scrape scheduled events
-	scheduledEvents, err := s.scrapeScheduledEvents(doc)
-	if err != nil {
-		log.Printf("Warning: %v", err)
-	} else {
-		allEvents = append(allEvents, scheduledEvents...)
-	}
-
-	// Scrape past events
-	pastEvents, err := s.scrapePastEvents(doc)
-	if err != nil {
-		log.Printf("Warning: %v", err)
-	} else {
-		allEvents = append(allEvents, pastEvents...)
+		return nil, false, fmt.Errorf("error parsing HTML: %v", err)
 	}
 	
-	// Filter out events with background color indicating cancellation
-	var filteredEvents []*WikiEvent
-	canceledCount := 0
-	for _, event := range allEvents {
-		if !event.IsCanceled {
-			filteredEvents = append(filteredEvents, event)
-		} else {
-			canceledCount++
+	// Check if there's a next page
+	hasMorePages := doc.Find(".pager__item--next a").Length() > 0
+	
+	// Find all event cards
+	doc.Find(".view-content .view-display-id-events_card, .view-content .view-display-id-past_events").Find(".l-listing__item").Each(func(i int, card *goquery.Selection) {
+		event := &UFCEvent{}
+		
+		// Extract event URL
+		eventLink := card.Find("a.e-button--ticket, a.card-title-link")
+		if eventHref, exists := eventLink.Attr("href"); exists {
+			if strings.HasPrefix(eventHref, "/event/") {
+				event.UFCURL = "https://www.ufc.com" + eventHref
+			} else if strings.HasPrefix(eventHref, "https://") {
+				event.UFCURL = eventHref
+			}
 		}
-	}
-	
-	log.Printf("Total events found: %d, canceled events filtered out: %d, final count: %d", 
-		len(allEvents), canceledCount, len(filteredEvents))
-	
-	return filteredEvents, nil
-}
-
-func (s *EventScraper) scrapeScheduledEvents(doc *goquery.Document) ([]*WikiEvent, error) {
-	var events []*WikiEvent
-
-	// Find the table with id "Scheduled_events"
-	table := doc.Find("table#Scheduled_events")
-	if table.Length() == 0 {
-		return nil, fmt.Errorf("scheduled events table not found")
-	}
-
-	// Find all rows in the tbody
-	rows := table.Find("tbody > tr")
-	if rows.Length() == 0 {
-		return nil, fmt.Errorf("no rows found in scheduled events table")
-	}
-
-	// Keep track of rowspan data
-	type RowspanData struct {
-		Value    string
-		RowsLeft int
-	}
-	
-	var currentVenue, currentLocation *RowspanData
-
-	rows.Each(func(i int, row *goquery.Selection) {
-		// Skip header rows or rows without enough cells
-		cells := row.Find("td")
-		if cells.Length() < 3 {
+		
+		// Skip if no URL found
+		if event.UFCURL == "" {
 			return
 		}
-
-		// Extract event name from the first column
-		nameCell := cells.Eq(0)
-		name := strings.TrimSpace(nameCell.Text())
-		if name == "" || !strings.Contains(name, "UFC") {
+		
+		// Extract event name
+		titleEl := card.Find(".c-card-event--result__headline")
+		if titleEl.Length() == 0 {
+			titleEl = card.Find(".c-card-event--result__date")
+		}
+		if titleEl.Length() == 0 {
+			titleEl = card.Find(".c-event-fight-card-broadcaster__headline")
+		}
+		
+		eventName := strings.TrimSpace(titleEl.Text())
+		
+		// Also try to get the event name from the URL if possible
+		if eventName == "" || strings.Contains(eventName, "TBD vs TBD") {
+			urlNameRegex := regexp.MustCompile(`/event/(.+)$`)
+			matches := urlNameRegex.FindStringSubmatch(event.UFCURL)
+			if len(matches) > 1 {
+				urlName := matches[1]
+				// Convert URL format to readable name
+				urlName = strings.ReplaceAll(urlName, "-", " ")
+				urlName = strings.ToUpper(urlName)
+				// Improve formatting of UFC numbers
+				urlName = regexp.MustCompile(`UFC (\d+)`).ReplaceAllString(urlName, "UFC $1")
+				eventName = urlName
+			}
+		}
+		
+		// Skip events without proper names or TBD vs TBD
+		if eventName == "" || strings.Contains(eventName, "TBD vs TBD") {
 			return
 		}
-
-		var event WikiEvent
-		event.Name = name
 		
-		// Extract Wiki URL from the name link
-		nameLink := nameCell.Find("a[href]").First()
-		if nameLink.Length() > 0 {
-			if href, exists := nameLink.Attr("href"); exists && href != "" {
-				// Make sure it's an absolute URL
-				if strings.HasPrefix(href, "/wiki/") {
-					event.WikiURL = "https://en.wikipedia.org" + href
-				} else if strings.HasPrefix(href, "https://") {
-					event.WikiURL = href
-				}
+		event.Name = eventName
+		
+		// Extract event date
+		dateEl := card.Find(".c-card-event--result__date")
+		if dateEl.Length() == 0 {
+			dateEl = card.Find(".c-event-fight-card-broadcaster__date")
+		}
+		
+		dateStr := strings.TrimSpace(dateEl.Text())
+		if dateStr != "" {
+			// Try to parse the date
+			parsedDate, err := parseUFCDate(dateStr)
+			if err != nil {
+				log.Printf("Warning: Could not parse date '%s' for event %s: %v", 
+					dateStr, event.Name, err)
+			} else {
+				event.Date = parsedDate
 			}
 		}
 		
-		// Add debug logging to verify URL extraction
-		if event.WikiURL == "" {
-			log.Printf("Warning: Could not extract URL for event: %s", name)
+		// Extract venue and location
+		venueLocationEl := card.Find(".field--name-venue")
+		if venueLocationEl.Length() == 0 {
+			venueLocationEl = card.Find(".c-event-fight-card-broadcaster__location")
 		}
 		
-		// Check if row or cells have a gray background indicating cancellation
-		isCanceled := false
-		
-		// Check row attribute
-		bgColor, hasBgColor := row.Attr("bgcolor")
-		if hasBgColor && (bgColor == "#D3D3D3" || bgColor == "#DEDEDE") {
-			isCanceled = true
+		venueLocationStr := strings.TrimSpace(venueLocationEl.Text())
+		if venueLocationStr != "" {
+			// Try to split venue and location
+			event.Venue, event.Location = extractVenueAndLocation(venueLocationStr)
 		}
 		
-		// Check each cell if needed
-		if !isCanceled {
-			cells.Each(func(i int, cell *goquery.Selection) {
-				cellBg, hasCellBg := cell.Attr("bgcolor")
-				if hasCellBg && (cellBg == "#D3D3D3" || cellBg == "#DEDEDE") {
-					isCanceled = true
-					return
-				}
-			})
+		// Extract event type
+		eventTypeEl := card.Find(".c-card-event--result__banner-tag")
+		if eventTypeEl.Length() > 0 {
+			event.EventType = strings.TrimSpace(eventTypeEl.Text())
 		}
 		
-		event.IsCanceled = isCanceled
+		// Determine status based on date
+		event.Status = determineEventStatus(event.Date)
 		
-		if isCanceled {
-			event.Status = "Canceled"
-		} else {
-			event.Status = "Scheduled"
-		}
-
-		// Extract date from the second column
-		dateStr := strings.TrimSpace(cells.Eq(1).Text())
-		parsedDate, err := extractDate(dateStr)
-		if err != nil {
-			log.Printf("Warning: Could not parse date for event %s: %v", name, err)
-			// Still include the event but with zero date
-		} else {
-			event.Date = parsedDate
-		}
-
-		// Handle venue (which could be in a rowspan)
-		var venue string
-		venueIdx := 2
-		
-		// Check if we're in the middle of a venue rowspan
-		if currentVenue != nil && currentVenue.RowsLeft > 0 {
-			// Use the stored venue
-			venue = currentVenue.Value
-			currentVenue.RowsLeft--
-		} else if cells.Length() > venueIdx {
-			// Check if this cell has a rowspan
-			venueCell := cells.Eq(venueIdx)
-			venue = strings.TrimSpace(venueCell.Text())
-			
-			// If it has a rowspan attribute
-			rowspanAttr, exists := venueCell.Attr("rowspan")
-			if exists {
-				rowspan := 1
-				fmt.Sscanf(rowspanAttr, "%d", &rowspan)
-				if rowspan > 1 {
-					// Store this venue for future rows
-					currentVenue = &RowspanData{
-						Value:    venue,
-						RowsLeft: rowspan - 1, // Subtract 1 because we're using it for this row
-					}
-				}
-			}
-		}
-		
-		if venue != "" && venue != "—" {
-			event.Venue = venue
-		}
-
-		// Handle location (which could be in a rowspan)
-		var location string
-		locationIdx := 3
-		
-		// Check if we're in the middle of a location rowspan
-		if currentLocation != nil && currentLocation.RowsLeft > 0 {
-			// Use the stored location
-			location = currentLocation.Value
-			currentLocation.RowsLeft--
-		} else if cells.Length() > locationIdx {
-			// Check if this cell has a rowspan
-			locationCell := cells.Eq(locationIdx)
-			location = strings.TrimSpace(locationCell.Text())
-			
-			// If it has a rowspan attribute
-			rowspanAttr, exists := locationCell.Attr("rowspan")
-			if exists {
-				rowspan := 1
-				fmt.Sscanf(rowspanAttr, "%d", &rowspan)
-				if rowspan > 1 {
-					// Store this location for future rows
-					currentLocation = &RowspanData{
-						Value:    location,
-						RowsLeft: rowspan - 1, // Subtract 1 because we're using it for this row
-					}
-				}
-			}
-		}
-		
-		// Process the location data
-		if location != "" && location != "—" {
-			locationParts := strings.Split(location, ", ")
-			if len(locationParts) >= 2 {
-				event.City = locationParts[0]
-				event.Country = locationParts[len(locationParts)-1]
-			} else if len(locationParts) == 1 {
-				event.City = locationParts[0]
-			}
-		}
-
-		// Extract attendance if available
-		attendanceIdx := 4
-		if cells.Length() > attendanceIdx {
-			attendanceText := strings.TrimSpace(cells.Eq(attendanceIdx).Text())
-			event.Attendance = attendanceText
-			
-			// If the attendance column contains "Canceled", mark the event as canceled
-			if strings.Contains(strings.ToLower(attendanceText), "cancel") {
-				event.Status = "Canceled"
-				event.IsCanceled = true
-			}
-		}
-
-		// Only add valid events with a name
-		if event.Name != "" {
-			events = append(events, &event)
+		// Only add events with proper names
+		if event.Name != "" && !strings.Contains(event.Name, "TBD vs TBD") {
+			events = append(events, event)
 		}
 	})
-
-	return events, nil
+	
+	return events, hasMorePages, nil
 }
 
-func (s *EventScraper) scrapePastEvents(doc *goquery.Document) ([]*WikiEvent, error) {
-	var events []*WikiEvent
-	
-	// Find the table with id "Past_events"
-	table := doc.Find("table#Past_events")
-	if table.Length() == 0 {
-		return nil, fmt.Errorf("past events table not found")
-	}
-
-	// Find all rows in the tbody
-	rows := table.Find("tbody > tr")
-	if rows.Length() == 0 {
-		return nil, fmt.Errorf("no rows found in past events table")
-	}
-	
-	log.Printf("Starting to scrape all past events from Wikipedia")
-	
-	var processedRows, includedRows int
-	
-	// Keep track of rowspan data
-	type RowspanData struct {
-		Value    string
-		RowsLeft int
-	}
-	
-	var currentVenue, currentLocation *RowspanData
-	
-	rows.Each(func(i int, row *goquery.Selection) {
-		processedRows++
-		
-		// Skip rows without enough cells
-		cells := row.Find("td")
-		if cells.Length() < 3 {
-			return
-		}
-
-		// Check if row or cells have a gray background indicating cancellation
-		isCanceled := false
-		
-		// Check row attribute
-		bgColor, hasBgColor := row.Attr("bgcolor")
-		if hasBgColor && (bgColor == "#D3D3D3" || bgColor == "#DEDEDE") {
-			isCanceled = true
-		}
-		
-		// Check each cell if needed
-		if !isCanceled {
-			cells.Each(func(i int, cell *goquery.Selection) {
-				cellBg, hasCellBg := cell.Attr("bgcolor")
-				if hasCellBg && (cellBg == "#D3D3D3" || cellBg == "#DEDEDE") {
-					isCanceled = true
-					return
-				}
-			})
-		}
-
-		// Extract event name from the second column (index 1)
-		nameCell := cells.Eq(1)
-		name := strings.TrimSpace(nameCell.Text())
-		if name == "" {
-			return
-		}
-		
-		// Create event
-		var event WikiEvent
-		event.Name = name
-		event.IsCanceled = isCanceled
-		
-		// Extract Wiki URL from the name link
-		nameLink := nameCell.Find("a[href]").First()
-		if nameLink.Length() > 0 {
-			if href, exists := nameLink.Attr("href"); exists && href != "" {
-				// Make sure it's an absolute URL
-				if strings.HasPrefix(href, "/wiki/") {
-					event.WikiURL = "https://en.wikipedia.org" + href
-				} else if strings.HasPrefix(href, "https://") {
-					event.WikiURL = href
-				}
-			}
-		}
-		
-		// Add debug logging to verify URL extraction
-		if event.WikiURL == "" {
-			log.Printf("Warning: Could not extract URL for past event: %s", name)
-		}
-		
-		// Set status based on cancellation
-		if isCanceled {
-			event.Status = "Canceled"
-		} else {
-			event.Status = "Completed"
-		}
-		
-		// Extract date - from the third column (index 2)
-		dateStr := strings.TrimSpace(cells.Eq(2).Text())
-		eventDate, err := extractDate(dateStr)
-		if err != nil {
-			log.Printf("Warning: Could not parse date for event %s: %v", name, err)
-			// Still include the event but with zero date
-		} else {
-			event.Date = eventDate
-		}
-		
-		// Handle venue (which could be in a rowspan)
-		var venue string
-		venueIdx := 3
-		
-		// Check if we're in the middle of a venue rowspan
-		if currentVenue != nil && currentVenue.RowsLeft > 0 {
-			// Use the stored venue
-			venue = currentVenue.Value
-			currentVenue.RowsLeft--
-		} else if cells.Length() > venueIdx {
-			// Check if this cell has a rowspan
-			venueCell := cells.Eq(venueIdx)
-			venue = strings.TrimSpace(venueCell.Text())
-			
-			// If it has a rowspan attribute
-			rowspanAttr, exists := venueCell.Attr("rowspan")
-			if exists {
-				rowspan := 1
-				fmt.Sscanf(rowspanAttr, "%d", &rowspan)
-				if rowspan > 1 {
-					// Store this venue for future rows
-					currentVenue = &RowspanData{
-						Value:    venue,
-						RowsLeft: rowspan - 1, // Subtract 1 because we're using it for this row
-					}
-				}
-			}
-		}
-		
-		if venue != "" && venue != "—" {
-			event.Venue = venue
-		}
-		
-		// Handle location (which could be in a rowspan)
-		var location string
-		locationIdx := 4
-		
-		// Check if we're in the middle of a location rowspan
-		if currentLocation != nil && currentLocation.RowsLeft > 0 {
-			// Use the stored location
-			location = currentLocation.Value
-			currentLocation.RowsLeft--
-		} else if cells.Length() > locationIdx {
-			// Check if this cell has a rowspan
-			locationCell := cells.Eq(locationIdx)
-			location = strings.TrimSpace(locationCell.Text())
-			
-			// If it has a rowspan attribute
-			rowspanAttr, exists := locationCell.Attr("rowspan")
-			if exists {
-				rowspan := 1
-				fmt.Sscanf(rowspanAttr, "%d", &rowspan)
-				if rowspan > 1 {
-					// Store this location for future rows
-					currentLocation = &RowspanData{
-						Value:    location,
-						RowsLeft: rowspan - 1, // Subtract 1 because we're using it for this row
-					}
-				}
-			}
-		}
-		
-		// Process the location data
-		if location != "" && location != "—" {
-			locationParts := strings.Split(location, ", ")
-			if len(locationParts) >= 2 {
-				event.City = locationParts[0]
-				event.Country = locationParts[len(locationParts)-1]
-			} else if len(locationParts) == 1 {
-				event.City = locationParts[0]
-			}
-		}
-		
-		// Handle attendance
-		attendanceIdx := 5
-		if cells.Length() > attendanceIdx {
-			attendanceText := strings.TrimSpace(cells.Eq(attendanceIdx).Text())
-			event.Attendance = attendanceText
-			
-			// If the attendance column contains "Canceled", mark the event as canceled
-			if strings.Contains(strings.ToLower(attendanceText), "cancel") {
-				event.Status = "Canceled"
-				event.IsCanceled = true
-			}
-		}
-		
-		// Only add valid events with a name
-		if event.Name != "" {
-			events = append(events, &event)
-			includedRows++
-		}
-	})
-
-	log.Printf("Past events: processed %d rows, included %d events", processedRows, includedRows)
-
-	return events, nil
-}
-
-// Improved helper function to extract date from Wikipedia date format
-func extractDate(dateStr string) (time.Time, error) {
-	// Remove any HTML or extra characters
+// parseUFCDate tries to parse the date string from UFC website
+func parseUFCDate(dateStr string) (time.Time, error) {
+	// Clean up the date string
 	dateStr = strings.TrimSpace(dateStr)
+	dateStr = regexp.MustCompile(`\s+`).ReplaceAllString(dateStr, " ")
 	
-	// Extract date text from spans with data-sort-value
-	re := regexp.MustCompile(`data-sort-value="[^"]*"[^>]*>([^<]+)</span>`)
-	matches := re.FindStringSubmatch(dateStr)
-	if len(matches) > 1 {
-		dateStr = strings.TrimSpace(matches[1])
+	// Extract just the date portion if there's additional text
+	dateParts := strings.Split(dateStr, "|")
+	if len(dateParts) > 1 {
+		dateStr = strings.TrimSpace(dateParts[0])
 	}
 	
-	// Remove footnote references if present
-	dateStr = regexp.MustCompile(`\[\d+\]`).ReplaceAllString(dateStr, "")
-	dateStr = strings.TrimSpace(dateStr)
-	
-	// Try different date formats
+	// Try various date formats
 	formats := []string{
 		"Jan 2, 2006",
 		"January 2, 2006",
-		"Jan 2 2006",
-		"January 2 2006",
 		"Jan. 2, 2006",
-		"January. 2, 2006",
+		"Monday, Jan 2, 2006",
+		"Monday, January 2, 2006",
+		"Jan 2",
+		"January 2",
+		"2006-01-02",
+		"01/02/2006",
 	}
 	
 	for _, format := range formats {
-		if parsedDate, err := time.Parse(format, dateStr); err == nil {
-			return parsedDate, nil
+		if t, err := time.Parse(format, dateStr); err == nil {
+			// If year is missing, use current year
+			if t.Year() == 0 {
+				currentYear := time.Now().Year()
+				t = time.Date(currentYear, t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+			}
+			return t, nil
 		}
 	}
 	
-	// If still not parsed, try to extract date with regex
-	dateMatch := regexp.MustCompile(`\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\.a-z]*\s+\d{1,2},?\s+\d{4}\b`).FindString(dateStr)
-	if dateMatch != "" {
-		// Clean up the date string
-		dateMatch = strings.ReplaceAll(dateMatch, ",", "")
-		dateMatch = strings.ReplaceAll(dateMatch, ".", "")
-		
-		// Try parsing again
-		for _, format := range []string{"Jan 2 2006", "January 2 2006"} {
-			if parsedDate, err := time.Parse(format, dateMatch); err == nil {
-				return parsedDate, nil
-			}
+	// Try to extract with regex as a last resort
+	dateRegex := regexp.MustCompile(`(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z.]*\s+(\d{1,2})(?:,?\s+(\d{4}))?`)
+	matches := dateRegex.FindStringSubmatch(dateStr)
+	if len(matches) >= 3 {
+		monthMap := map[string]time.Month{
+			"Jan": time.January, "Feb": time.February, "Mar": time.March,
+			"Apr": time.April, "May": time.May, "Jun": time.June,
+			"Jul": time.July, "Aug": time.August, "Sep": time.September,
+			"Oct": time.October, "Nov": time.November, "Dec": time.December,
 		}
+		
+		month := monthMap[matches[1]]
+		day := 1
+		fmt.Sscanf(matches[2], "%d", &day)
+		
+		year := time.Now().Year()
+		if len(matches) >= 4 && matches[3] != "" {
+			fmt.Sscanf(matches[3], "%d", &year)
+		}
+		
+		return time.Date(year, month, day, 0, 0, 0, 0, time.UTC), nil
 	}
 	
 	return time.Time{}, fmt.Errorf("could not parse date: %s", dateStr)
 }
 
-func (s *EventScraper) ScrapeUpcomingEvents(ctx context.Context) ([]*WikiEvent, error) {
-	req, err := http.NewRequest("GET", s.wikiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
+// extractVenueAndLocation extracts venue and location from a combined string
+func extractVenueAndLocation(venueLocationStr string) (string, string) {
+	// Look for a pattern with the venue followed by location
+	// Example: "T-Mobile Arena | Las Vegas, NV"
+	parts := strings.Split(venueLocationStr, "|")
+	if len(parts) >= 2 {
+		return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
 	}
-
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/123.0")
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching page: %v", err)
+	
+	// Look for a pattern with venue followed by city and state
+	parts = strings.Split(venueLocationStr, ",")
+	if len(parts) >= 2 {
+		return strings.TrimSpace(parts[0]), strings.TrimSpace(strings.Join(parts[1:], ","))
 	}
-	defer resp.Body.Close()
+	
+	// If we can't determine which is which, return the whole string as location
+	return "", venueLocationStr
+}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing HTML: %v", err)
+// determineEventStatus determines the event status based on date
+func determineEventStatus(eventDate time.Time) string {
+	if eventDate.IsZero() {
+		return "Scheduled" // Default status if no date
 	}
+	
+	now := time.Now()
+	
+	if eventDate.After(now) {
+		return "Scheduled"
+	} else {
+		return "Completed"
+	}
+}
 
-	return s.scrapeScheduledEvents(doc)
+// SaveEvents saves the events to the database
+func (s *UFCEventScraper) SaveEvents(ctx context.Context, db *sql.DB, events []*UFCEvent) (int, error) {
+	insertCount := 0
+	
+	for _, event := range events {
+		query := `
+        INSERT INTO events (
+            name, event_date, venue, location, event_type, status, ufc_url,
+            created_at, updated_at
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9
+        )
+        ON CONFLICT (name) 
+        DO UPDATE SET
+            event_date = EXCLUDED.event_date,
+            venue = EXCLUDED.venue,
+            location = EXCLUDED.location,
+            event_type = EXCLUDED.event_type,
+            status = EXCLUDED.status,
+            ufc_url = EXCLUDED.ufc_url,
+            updated_at = EXCLUDED.updated_at
+        RETURNING id`
+		
+		now := time.Now()
+		var eventID string
+		
+		err := db.QueryRowContext(ctx, query,
+			event.Name,
+			event.Date,
+			event.Venue,
+			event.Location,
+			event.EventType,
+			event.Status,
+			event.UFCURL,
+			now,
+			now,
+		).Scan(&eventID)
+		
+		if err != nil {
+			log.Printf("Failed to save event %s: %v", event.Name, err)
+			continue
+		}
+		
+		insertCount++
+	}
+	
+	return insertCount, nil
 }

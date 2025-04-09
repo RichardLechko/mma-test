@@ -1,69 +1,49 @@
-package services
+package scrapers
 
 import (
-	"context"
-	"fmt"
+	"net/http"
 	"time"
-
-	"mma-scheduler/internal/models"
-	"mma-scheduler/pkg/scrapers"
 )
 
-type ScraperService struct {
-	eventScraper *scrapers.EventScraper
-	proxyManager *scrapers.ProxyManager
+// ScraperConfig contains configuration for scrapers
+type ScraperConfig struct {
+	UserAgent    string
+	Timeout      time.Duration
+	MaxRetries   int
+	RetryDelay   time.Duration
+	ProxyURL     string
 }
 
-func NewScraperService() *ScraperService {
-	config := scrapers.DefaultConfig()
-	proxies := []string{}
-	proxyManager := scrapers.NewProxyManager(proxies, 5*time.Minute)
-
-	return &ScraperService{
-		eventScraper: scrapers.NewEventScraper(config),
-		proxyManager: proxyManager,
+// DefaultConfig creates a default scraper configuration
+func DefaultConfig() ScraperConfig {
+	return ScraperConfig{
+		UserAgent:    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+		Timeout:      30 * time.Second,
+		MaxRetries:   3,
+		RetryDelay:   2 * time.Second,
+		ProxyURL:     "",
 	}
 }
 
-// convertWikiEventToModel converts a WikiEvent to a models.Event
-func convertWikiEventToModel(wikiEvent *scrapers.WikiEvent) models.Event {
-	return models.Event{
-		Name:      wikiEvent.Name,
-		Date:      wikiEvent.Date,
-		Location:  fmt.Sprintf("%s, %s, %s", wikiEvent.Venue, wikiEvent.City, wikiEvent.Country),
-		Promotion: "UFC",
-		MainCard:  []models.Fight{},  // To be populated separately if needed
-		PrelimCard: []models.Fight{}, // To be populated separately if needed
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+// BaseScraper provides common functionality for scrapers
+type BaseScraper struct {
+	config ScraperConfig
+	client *http.Client
+}
+
+// NewBaseScraper creates a new base scraper
+func NewBaseScraper(config ScraperConfig) *BaseScraper {
+	client := &http.Client{
+		Timeout: config.Timeout,
 	}
-}
-
-func (s *ScraperService) ScrapeEvent(ctx context.Context, url string) (*models.Event, error) {
-	// For single event scraping, we'll need to implement this in the EventScraper
-	return nil, fmt.Errorf("single event scraping not implemented for Wikipedia source")
-}
-
-func (s *ScraperService) ScrapeUpcomingEvents(ctx context.Context) ([]models.Event, error) {
-	wikiEvents, err := s.eventScraper.ScrapeUpcomingEvents(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to scrape upcoming events: %w", err)
+	
+	// Configure proxy if provided
+	if config.ProxyURL != "" {
+		// Proxy configuration would go here
 	}
-
-	// Convert WikiEvents to models.Events
-	var events []models.Event
-	for _, wikiEvent := range wikiEvents {
-		event := convertWikiEventToModel(wikiEvent)
-		events = append(events, event)
+	
+	return &BaseScraper{
+		config: config,
+		client: client,
 	}
-
-	return events, nil
-}
-
-func (s *ScraperService) UpdateProxies(proxies []string) {
-	s.proxyManager = scrapers.NewProxyManager(proxies, 5*time.Minute)
-}
-
-func (s *ScraperService) GetNextProxy() (string, error) {
-	return s.proxyManager.GetProxy()
 }
