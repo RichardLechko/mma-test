@@ -1,330 +1,104 @@
 package services
 
 import (
-    "context"
-    "database/sql"
-    "errors"
-    "fmt"
-    "time"
-
-    "mma-scheduler/internal/models"
-
-    "github.com/google/uuid"
+	"context"
+	"fmt"
+	"time"
+	"mma-scheduler/internal/models"
+	"mma-scheduler/pkg/scrapers"
 )
 
-type EventService struct {
-    db *sql.DB
+// ScraperService provides access to various scrapers
+type ScraperService struct {
+	ufcEventScraper *scrapers.UFCEventScraper
+	proxyManager    *scrapers.ProxyManager
 }
 
-var _ EventServiceInterface = (*EventService)(nil)
-
-func NewEventService(db *sql.DB) *EventService {
-    return &EventService{
-        db: db,
-    }
+// NewScraperService creates a new scraper service
+func NewScraperService() *ScraperService {
+	config := scrapers.DefaultConfig()
+	proxies := []string{}
+	proxyManager := scrapers.NewProxyManager(proxies, 5*time.Minute)
+	
+	return &ScraperService{
+		ufcEventScraper: scrapers.NewUFCEventScraper(config),
+		proxyManager:    proxyManager,
+	}
 }
 
-func (s *EventService) CreateEvent(ctx context.Context, event *models.Event) error {
-    query := `
-        INSERT INTO events (
-            id, name, event_date, location, promotion, created_at, updated_at
-        ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7
-        ) RETURNING id`
-
-    id := uuid.New().String()
-    now := time.Now()
-    err := s.db.QueryRowContext(
-        ctx,
-        query,
-        id,
-        event.Name,
-        event.Date,
-        event.Location,
-        event.Promotion,
-        now,
-        now,
-    ).Scan(&event.ID)
-
-    if err != nil {
-        return err
-    }
-
-    return nil
+// convertUFCEventToModel converts a UFCEvent to a models.Event
+func convertUFCEventToModel(ufcEvent *scrapers.UFCEvent) *models.Event {
+	return &models.Event{
+		Name:       ufcEvent.Name,
+		Date:       ufcEvent.Date,
+		Location:   fmt.Sprintf("%s, %s", ufcEvent.Venue, ufcEvent.Location),
+		Promotion:  "UFC",
+		MainCard:   []*models.Fight{},  // To be populated separately if needed
+		PrelimCard: []*models.Fight{}, // To be populated separately if needed
+		UFCUrl:     ufcEvent.UFCURL,    // Store the UFC URL
+		EventType:  ufcEvent.EventType,
+		Status:     ufcEvent.Status,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
 }
 
-func (s *EventService) GetEventByID(ctx context.Context, id string) (*models.Event, error) {
-    query := `
-        SELECT id, name, event_date, location, promotion, created_at, updated_at
-        FROM events
-        WHERE id = $1`
-
-    event := &models.Event{}
-    err := s.db.QueryRowContext(ctx, query, id).Scan(
-        &event.ID,
-        &event.Name,
-        &event.Date,
-        &event.Location,
-        &event.Promotion,
-        &event.CreatedAt,
-        &event.UpdatedAt,
-    )
-
-    if err == sql.ErrNoRows {
-        return nil, errors.New("event not found")
-    }
-    if err != nil {
-        return nil, err
-    }
-
-    mainCard, err := s.getMainCardFights(ctx, id)
-    if err != nil {
-        return nil, err
-    }
-    event.MainCard = mainCard
-
-    prelimCard, err := s.getPrelimCardFights(ctx, id)
-    if err != nil {
-        return nil, err
-    }
-    event.PrelimCard = prelimCard
-
-    return event, nil
+// ScrapeEvent scrapes a single event by URL
+func (s *ScraperService) ScrapeEvent(ctx context.Context, url string) (*models.Event, error) {
+	// For single event, we'd need to implement a method to scrape just one event page
+	// This could be added to the UFCEventScraper
+	return nil, fmt.Errorf("single event scraping not implemented yet for UFC source")
 }
 
-func (s *EventService) ListEvents(ctx context.Context, filters map[string]interface{}) ([]models.Event, error) {
-    query := `
-        SELECT id, name, event_date, location, promotion, created_at, updated_at
-        FROM events
-        WHERE ($1::timestamp IS NULL OR event_date >= $1)
-        ORDER BY event_date DESC`
-
-    fromDate := filters["from_date"]
-
-    rows, err := s.db.QueryContext(ctx, query, fromDate)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var events []models.Event
-    for rows.Next() {
-        var event models.Event
-        err := rows.Scan(
-            &event.ID,
-            &event.Name,
-            &event.Date,
-            &event.Location,
-            &event.Promotion,
-            &event.CreatedAt,
-            &event.UpdatedAt,
-        )
-        if err != nil {
-            return nil, err
-        }
-
-        mainCard, err := s.getMainCardFights(ctx, event.ID)
-        if err != nil {
-            return nil, err
-        }
-        event.MainCard = mainCard
-
-        prelimCard, err := s.getPrelimCardFights(ctx, event.ID)
-        if err != nil {
-            return nil, err
-        }
-        event.PrelimCard = prelimCard
-
-        events = append(events, event)
-    }
-
-    return events, nil
+// ScrapeUpcomingEvents scrapes upcoming UFC events
+func (s *ScraperService) ScrapeUpcomingEvents(ctx context.Context) ([]*models.Event, error) {
+	// Only get the first page which contains upcoming events
+	ufcEvents, err := s.ufcEventScraper.ScrapeEvents(ctx, 1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scrape upcoming events: %w", err)
+	}
+	
+	// Only keep upcoming events
+	var upcomingEvents []*scrapers.UFCEvent
+	for _, event := range ufcEvents {
+		if event.Status == "Scheduled" {
+			upcomingEvents = append(upcomingEvents, event)
+		}
+	}
+	
+	// Convert UFCEvents to models.Events
+	var events []*models.Event
+	for _, ufcEvent := range upcomingEvents {
+		event := convertUFCEventToModel(ufcEvent)
+		events = append(events, event)
+	}
+	
+	return events, nil
 }
 
-func (s *EventService) UpdateEvent(ctx context.Context, event *models.Event) error {
-    query := `
-        UPDATE events
-        SET name = $1, event_date = $2, location = $3, promotion = $4, updated_at = $5
-        WHERE id = $6`
-
-    result, err := s.db.ExecContext(
-        ctx,
-        query,
-        event.Name,
-        event.Date,
-        event.Location,
-        event.Promotion,
-        time.Now(),
-        event.ID,
-    )
-    if err != nil {
-        return err
-    }
-
-    rows, err := result.RowsAffected()
-    if err != nil {
-        return err
-    }
-    if rows == 0 {
-        return errors.New("event not found")
-    }
-
-    return nil
+// ScrapeAllEvents scrapes all UFC events (both upcoming and past)
+func (s *ScraperService) ScrapeAllEvents(ctx context.Context, maxPages int) ([]*models.Event, error) {
+	ufcEvents, err := s.ufcEventScraper.ScrapeEvents(ctx, maxPages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scrape all events: %w", err)
+	}
+	
+	// Convert UFCEvents to models.Events
+	var events []*models.Event
+	for _, ufcEvent := range ufcEvents {
+		event := convertUFCEventToModel(ufcEvent)
+		events = append(events, event)
+	}
+	
+	return events, nil
 }
 
-func (s *EventService) DeleteEvent(ctx context.Context, id string) error {
-    query := `DELETE FROM events WHERE id = $1`
-
-    result, err := s.db.ExecContext(ctx, query, id)
-    if err != nil {
-        return err
-    }
-
-    rows, err := result.RowsAffected()
-    if err != nil {
-        return err
-    }
-    if rows == 0 {
-        return errors.New("event not found")
-    }
-
-    return nil
+// UpdateProxies updates the proxy list
+func (s *ScraperService) UpdateProxies(proxies []string) {
+	s.proxyManager = scrapers.NewProxyManager(proxies, 5*time.Minute)
 }
 
-func (s *EventService) GetUpcomingEvents(ctx context.Context) ([]*models.Event, error) {
-    query := `
-        SELECT id, name, event_date, location, promotion, created_at, updated_at
-        FROM events
-        WHERE event_date > NOW()
-        ORDER BY event_date ASC
-    `
-
-    rows, err := s.db.QueryContext(ctx, query)
-    if err != nil {
-        return nil, fmt.Errorf("query upcoming events: %w", err)
-    }
-    defer rows.Close()
-
-    var events []*models.Event
-    for rows.Next() {
-        var e models.Event
-        err := rows.Scan(
-            &e.ID,
-            &e.Name,
-            &e.Date,
-            &e.Location,
-            &e.Promotion,
-            &e.CreatedAt,
-            &e.UpdatedAt,
-        )
-        if err != nil {
-            return nil, fmt.Errorf("scan event: %w", err)
-        }
-        events = append(events, &e)
-    }
-
-    return events, nil
-}
-
-func (s *EventService) getMainCardFights(ctx context.Context, eventID string) ([]models.Fight, error) {
-    query := `
-        SELECT id, event_id, fighter_1, fighter_2, weight_class, is_main_event, fight_order 
-        FROM fights 
-        WHERE event_id = $1 AND is_main_card = true
-        ORDER BY fight_order ASC`
-
-    rows, err := s.db.QueryContext(ctx, query, eventID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var fights []models.Fight
-    for rows.Next() {
-        var fight models.Fight
-        err := rows.Scan(
-            &fight.ID,
-            &fight.EventID,
-            &fight.Fighter1,
-            &fight.Fighter2,
-            &fight.WeightClass,
-            &fight.IsMainEvent,
-            &fight.Order,
-        )
-        if err != nil {
-            return nil, err
-        }
-        fights = append(fights, fight)
-    }
-
-    return fights, nil
-}
-
-func (s *EventService) getPrelimCardFights(ctx context.Context, eventID string) ([]models.Fight, error) {
-    query := `
-        SELECT id, event_id, fighter_1, fighter_2, weight_class, is_main_event, fight_order 
-        FROM fights 
-        WHERE event_id = $1 AND is_main_card = false
-        ORDER BY fight_order ASC`
-
-    rows, err := s.db.QueryContext(ctx, query, eventID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var fights []models.Fight
-    for rows.Next() {
-        var fight models.Fight
-        err := rows.Scan(
-            &fight.ID,
-            &fight.EventID,
-            &fight.Fighter1,
-            &fight.Fighter2,
-            &fight.WeightClass,
-            &fight.IsMainEvent,
-            &fight.Order,
-        )
-        if err != nil {
-            return nil, err
-        }
-        fights = append(fights, fight)
-    }
-
-    return fights, nil
-}
-
-func (s *EventService) GetEventsSince(ctx context.Context, since time.Time) ([]*models.Event, error) {
-    query := `
-        SELECT id, name, event_date, location, promotion, created_at, updated_at
-        FROM events
-        WHERE event_date >= $1
-        ORDER BY event_date DESC
-    `
-
-    rows, err := s.db.QueryContext(ctx, query, since)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var events []*models.Event
-    for rows.Next() {
-        event := &models.Event{}
-        err := rows.Scan(
-            &event.ID,
-            &event.Name,
-            &event.Date,
-            &event.Location,
-            &event.Promotion,
-            &event.CreatedAt,
-            &event.UpdatedAt,
-        )
-        if err != nil {
-            return nil, err
-        }
-        events = append(events, event)
-    }
-
-    return events, nil
+// GetNextProxy gets the next available proxy
+func (s *ScraperService) GetNextProxy() (string, error) {
+	return s.proxyManager.GetProxy()
 }
