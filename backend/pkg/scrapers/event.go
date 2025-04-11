@@ -2,7 +2,6 @@ package scrapers
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,203 +10,227 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"mma-scheduler/internal/models"
 )
 
 // UFCEventScraper scrapes events directly from UFC.com
 type UFCEventScraper struct {
-	*BaseScraper
+	client  *http.Client
 	baseURL string
 }
 
 // NewUFCEventScraper creates a new scraper for UFC events
-func NewUFCEventScraper(config ScraperConfig) *UFCEventScraper {
+func NewUFCEventScraper() *UFCEventScraper {
 	return &UFCEventScraper{
-		BaseScraper: NewBaseScraper(config),
-		baseURL:     "https://www.ufc.com/events",
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+		baseURL: "https://www.ufc.com/events",
 	}
 }
 
-// UFCEvent represents an event from UFC.com
-type UFCEvent struct {
-	Name      string
-	Date      time.Time
-	Venue     string
-	Location  string
-	EventType string
-	Status    string
-	UFCURL    string
-}
+// ScrapeEvents scrapes events from UFC.com
+func (s *UFCEventScraper) ScrapeEvents(ctx context.Context) ([]*models.Event, error) {
+	var events []*models.Event
 
-// ScrapeEvents scrapes all events from UFC.com with pagination
-func (s *UFCEventScraper) ScrapeEvents(ctx context.Context, maxPages int) ([]*UFCEvent, error) {
-	var allEvents []*UFCEvent
-	
-	// Start with the first page (upcoming events)
-	page := 0
-	for page < maxPages {
-		pageURL := s.baseURL
-		if page > 0 {
-			pageURL = fmt.Sprintf("%s?page=%d", s.baseURL, page)
-		}
-		
-		log.Printf("Scraping UFC events from page %d: %s", page, pageURL)
-		
-		events, hasMorePages, err := s.scrapeEventPage(ctx, pageURL)
-		if err != nil {
-			log.Printf("Error scraping page %d: %v", page, err)
-			return allEvents, nil // Return what we have so far
-		}
-		
-		log.Printf("Found %d events on page %d", len(events), page)
-		allEvents = append(allEvents, events...)
-		
-		if !hasMorePages {
-			log.Printf("No more pages found after page %d", page)
-			break
-		}
-		
-		page++
-		
-		// Add a small delay between requests to avoid overwhelming the server
-		select {
-		case <-ctx.Done():
-			return allEvents, ctx.Err()
-		case <-time.After(1 * time.Second):
-			// Continue to next page
-		}
-	}
-	
-	log.Printf("Total events scraped: %d", len(allEvents))
-	return allEvents, nil
-}
-
-// scrapeEventPage scrapes a single page of events
-func (s *UFCEventScraper) scrapeEventPage(ctx context.Context, url string) ([]*UFCEvent, bool, error) {
-	var events []*UFCEvent
-	
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL, nil)
 	if err != nil {
-		return nil, false, fmt.Errorf("error creating request: %v", err)
+		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 	
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
 	
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return nil, false, fmt.Errorf("error fetching page: %v", err)
+		return nil, fmt.Errorf("error fetching page: %v", err)
 	}
 	defer resp.Body.Close()
 	
 	if resp.StatusCode != http.StatusOK {
-		return nil, false, fmt.Errorf("bad status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("bad status code: %d", resp.StatusCode)
 	}
 	
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, false, fmt.Errorf("error parsing HTML: %v", err)
+		return nil, fmt.Errorf("error parsing HTML: %v", err)
 	}
-	
-	// Check if there's a next page
-	hasMorePages := doc.Find(".pager__item--next a").Length() > 0
-	
-	// Find all event cards
-	doc.Find(".view-content .view-display-id-events_card, .view-content .view-display-id-past_events").Find(".l-listing__item").Each(func(i int, card *goquery.Selection) {
-		event := &UFCEvent{}
-		
-		// Extract event URL
-		eventLink := card.Find("a.e-button--ticket, a.card-title-link")
-		if eventHref, exists := eventLink.Attr("href"); exists {
-			if strings.HasPrefix(eventHref, "/event/") {
-				event.UFCURL = "https://www.ufc.com" + eventHref
-			} else if strings.HasPrefix(eventHref, "https://") {
-				event.UFCURL = eventHref
-			}
-		}
-		
-		// Skip if no URL found
-		if event.UFCURL == "" {
-			return
-		}
-		
-		// Extract event name
-		titleEl := card.Find(".c-card-event--result__headline")
-		if titleEl.Length() == 0 {
-			titleEl = card.Find(".c-card-event--result__date")
-		}
-		if titleEl.Length() == 0 {
-			titleEl = card.Find(".c-event-fight-card-broadcaster__headline")
-		}
-		
-		eventName := strings.TrimSpace(titleEl.Text())
-		
-		// Also try to get the event name from the URL if possible
-		if eventName == "" || strings.Contains(eventName, "TBD vs TBD") {
-			urlNameRegex := regexp.MustCompile(`/event/(.+)$`)
-			matches := urlNameRegex.FindStringSubmatch(event.UFCURL)
-			if len(matches) > 1 {
-				urlName := matches[1]
-				// Convert URL format to readable name
-				urlName = strings.ReplaceAll(urlName, "-", " ")
-				urlName = strings.ToUpper(urlName)
-				// Improve formatting of UFC numbers
-				urlName = regexp.MustCompile(`UFC (\d+)`).ReplaceAllString(urlName, "UFC $1")
-				eventName = urlName
-			}
-		}
-		
-		// Skip events without proper names or TBD vs TBD
-		if eventName == "" || strings.Contains(eventName, "TBD vs TBD") {
-			return
-		}
-		
-		event.Name = eventName
-		
-		// Extract event date
-		dateEl := card.Find(".c-card-event--result__date")
-		if dateEl.Length() == 0 {
-			dateEl = card.Find(".c-event-fight-card-broadcaster__date")
-		}
-		
-		dateStr := strings.TrimSpace(dateEl.Text())
-		if dateStr != "" {
-			// Try to parse the date
-			parsedDate, err := parseUFCDate(dateStr)
-			if err != nil {
-				log.Printf("Warning: Could not parse date '%s' for event %s: %v", 
-					dateStr, event.Name, err)
-			} else {
-				event.Date = parsedDate
-			}
-		}
-		
-		// Extract venue and location
-		venueLocationEl := card.Find(".field--name-venue")
-		if venueLocationEl.Length() == 0 {
-			venueLocationEl = card.Find(".c-event-fight-card-broadcaster__location")
-		}
-		
-		venueLocationStr := strings.TrimSpace(venueLocationEl.Text())
-		if venueLocationStr != "" {
-			// Try to split venue and location
-			event.Venue, event.Location = extractVenueAndLocation(venueLocationStr)
-		}
-		
-		// Extract event type
-		eventTypeEl := card.Find(".c-card-event--result__banner-tag")
-		if eventTypeEl.Length() > 0 {
-			event.EventType = strings.TrimSpace(eventTypeEl.Text())
-		}
-		
-		// Determine status based on date
-		event.Status = determineEventStatus(event.Date)
-		
-		// Only add events with proper names
-		if event.Name != "" && !strings.Contains(event.Name, "TBD vs TBD") {
+
+	// Track processed event names to avoid duplicates
+	processedEvents := make(map[string]bool)
+
+	// First, check featured/hero events
+	doc.Find(".c-hero--full__event-info").Each(func(i int, heroEvent *goquery.Selection) {
+		event := extractEventFromHero(heroEvent)
+		if event != nil && !processedEvents[event.Name] {
+			processedEvents[event.Name] = true
 			events = append(events, event)
 		}
 	})
+
+	// Then check card events
+	doc.Find(".c-card-event--result").Each(func(i int, card *goquery.Selection) {
+		event := extractEventFromCard(card)
+		if event != nil && !processedEvents[event.Name] {
+			processedEvents[event.Name] = true
+			events = append(events, event)
+		}
+	})
+
+	// Advanced filtering to ensure we have future events
+	var futureEvents []*models.Event
+	now := time.Now()
+	for _, event := range events {
+		if event.Date.After(now) {
+			futureEvents = append(futureEvents, event)
+		}
+	}
+
+	return futureEvents, nil
+}
+
+func extractEventFromCard(card *goquery.Selection) *models.Event {
+	// Extract event name
+	nameElement := card.Find(".c-card-event--result__headline a")
+	name := strings.TrimSpace(nameElement.Text())
 	
-	return events, hasMorePages, nil
+	// Try to extract name from URL if empty
+	if name == "" {
+		if href, exists := nameElement.Attr("href"); exists {
+			name = extractNameFromURL(href)
+		}
+	}
+
+	if name == "" || strings.Contains(name, "TBD vs TBD") {
+		return nil
+	}
+
+	// Extract event URL
+	eventURL := ""
+	if href, exists := nameElement.Attr("href"); exists {
+		eventURL = "https://www.ufc.com" + href
+	}
+
+	// Extract date
+	dateElement := card.Find(".c-card-event--result__date")
+	dateText := strings.TrimSpace(dateElement.Text())
+	
+	// Parse date
+	eventDate, err := parseUFCDate(dateText)
+	if err != nil {
+		log.Printf("Warning: Could not parse date '%s' for event %s: %v", dateText, name, err)
+		return nil
+	}
+
+	// Extract venue and location details
+	venueElement := card.Find(".field--name-taxonomy-term-title h5")
+	venue := strings.TrimSpace(venueElement.Text())
+
+	var city, country string
+	card.Find(".field--name-location .address span").Each(func(i int, span *goquery.Selection) {
+		spanClass, exists := span.Attr("class")
+		if !exists {
+			return
+		}
+
+		text := strings.TrimSpace(span.Text())
+		switch spanClass {
+		case "locality":
+			city = text
+		case "country":
+			country = text
+		}
+	})
+
+	// Determine status
+	status := determineEventStatus(eventDate)
+
+	// Create event
+	return &models.Event{
+		Name:      name,
+		Date:      eventDate,
+		Venue:     venue,
+		City:      city,
+		Country:   country,
+		Status:    status,
+		UFCURL:    eventURL,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+}
+
+func extractEventFromHero(heroEvent *goquery.Selection) *models.Event {
+	// Extract event name
+	nameElement := heroEvent.Find(".c-hero--full__event-title")
+	name := strings.TrimSpace(nameElement.Text())
+	
+	// Try to extract name from URL if empty
+	if name == "" {
+		heroEvent.Find("a").Each(func(i int, a *goquery.Selection) {
+			if href, exists := a.Attr("href"); exists && strings.Contains(href, "/event/") {
+				name = extractNameFromURL(href)
+			}
+		})
+	}
+
+	if name == "" || strings.Contains(name, "TBD vs TBD") {
+		return nil
+	}
+
+	// Extract event URL from title link
+	eventURL := ""
+	heroEvent.Find("a").Each(func(i int, a *goquery.Selection) {
+		if href, exists := a.Attr("href"); exists && strings.Contains(href, "/event/") {
+			eventURL = "https://www.ufc.com" + href
+		}
+	})
+
+	// Extract date
+	dateElement := heroEvent.Find(".c-hero--full__event-date")
+	dateText := strings.TrimSpace(dateElement.Text())
+	
+	// Parse date
+	eventDate, err := parseUFCDate(dateText)
+	if err != nil {
+		log.Printf("Warning: Could not parse date '%s' for event %s: %v", dateText, name, err)
+		return nil
+	}
+
+	// Extract venue and location
+	locationElement := heroEvent.Find(".c-hero--full__location-city")
+	location := strings.TrimSpace(locationElement.Text())
+
+	// Split location into parts
+	var city, country string
+	locationParts := strings.Split(location, ", ")
+	if len(locationParts) >= 1 {
+		city = locationParts[0]
+	}
+	if len(locationParts) >= 2 {
+		country = locationParts[1]
+	}
+
+	// Extract venue
+	venue := ""
+	venueElement := heroEvent.Find(".c-hero--full__location-arena")
+	if venueElement.Length() > 0 {
+		venue = strings.TrimSpace(venueElement.Text())
+	}
+
+	// Determine status
+	status := determineEventStatus(eventDate)
+
+	// Create event
+	return &models.Event{
+		Name:      name,
+		Date:      eventDate,
+		Venue:     venue,
+		City:      city,
+		Country:   country,
+		Status:    status,
+		UFCURL:    eventURL,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 }
 
 // parseUFCDate tries to parse the date string from UFC website
@@ -272,25 +295,6 @@ func parseUFCDate(dateStr string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("could not parse date: %s", dateStr)
 }
 
-// extractVenueAndLocation extracts venue and location from a combined string
-func extractVenueAndLocation(venueLocationStr string) (string, string) {
-	// Look for a pattern with the venue followed by location
-	// Example: "T-Mobile Arena | Las Vegas, NV"
-	parts := strings.Split(venueLocationStr, "|")
-	if len(parts) >= 2 {
-		return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
-	}
-	
-	// Look for a pattern with venue followed by city and state
-	parts = strings.Split(venueLocationStr, ",")
-	if len(parts) >= 2 {
-		return strings.TrimSpace(parts[0]), strings.TrimSpace(strings.Join(parts[1:], ","))
-	}
-	
-	// If we can't determine which is which, return the whole string as location
-	return "", venueLocationStr
-}
-
 // determineEventStatus determines the event status based on date
 func determineEventStatus(eventDate time.Time) string {
 	if eventDate.IsZero() {
@@ -306,51 +310,19 @@ func determineEventStatus(eventDate time.Time) string {
 	}
 }
 
-// SaveEvents saves the events to the database
-func (s *UFCEventScraper) SaveEvents(ctx context.Context, db *sql.DB, events []*UFCEvent) (int, error) {
-	insertCount := 0
-	
-	for _, event := range events {
-		query := `
-        INSERT INTO events (
-            name, event_date, venue, location, event_type, status, ufc_url,
-            created_at, updated_at
-        ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9
-        )
-        ON CONFLICT (name) 
-        DO UPDATE SET
-            event_date = EXCLUDED.event_date,
-            venue = EXCLUDED.venue,
-            location = EXCLUDED.location,
-            event_type = EXCLUDED.event_type,
-            status = EXCLUDED.status,
-            ufc_url = EXCLUDED.ufc_url,
-            updated_at = EXCLUDED.updated_at
-        RETURNING id`
-		
-		now := time.Now()
-		var eventID string
-		
-		err := db.QueryRowContext(ctx, query,
-			event.Name,
-			event.Date,
-			event.Venue,
-			event.Location,
-			event.EventType,
-			event.Status,
-			event.UFCURL,
-			now,
-			now,
-		).Scan(&eventID)
-		
-		if err != nil {
-			log.Printf("Failed to save event %s: %v", event.Name, err)
-			continue
-		}
-		
-		insertCount++
+// extractNameFromURL extracts an event name from a UFC event URL
+func extractNameFromURL(url string) string {
+	// Use regex to extract the event name from URL
+	urlNameRegex := regexp.MustCompile(`/event/(.+)$`)
+	matches := urlNameRegex.FindStringSubmatch(url)
+	if len(matches) > 1 {
+		urlName := matches[1]
+		// Convert URL format to readable name
+		urlName = strings.ReplaceAll(urlName, "-", " ")
+		urlName = strings.ToUpper(urlName)
+		// Improve formatting of UFC numbers
+		urlName = regexp.MustCompile(`UFC (\d+)`).ReplaceAllString(urlName, "UFC $1")
+		return urlName
 	}
-	
-	return insertCount, nil
+	return ""
 }

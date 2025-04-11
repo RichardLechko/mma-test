@@ -45,12 +45,10 @@ func main() {
         log.Fatalf("Failed to open database: %v", err)
     }
 
-    db := services.NewDatabase(sqlDB)
+    // Create the event service directly with sqlDB
+    eventService := services.NewEventService(sqlDB)
 
-    
-    eventService := services.NewEventService(db.GetDB())  
-
-    
+    // Create the event handler with the event service
     eventHandler := handlers.NewEventHandler(eventService)
 
     router := setupRouter(cfg, eventHandler)
