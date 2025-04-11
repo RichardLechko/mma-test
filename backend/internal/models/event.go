@@ -8,7 +8,12 @@ type Event struct {
     ID          string    `json:"id"`
     Name        string    `json:"name"`
     Date        time.Time `json:"date"`
-    Location    string    `json:"location"`
+    Venue       string    `json:"venue"`
+    City        string    `json:"city"`
+    Country     string    `json:"country"`
+    Status      string    `json:"status"`
+    WikiURL     string    `json:"wiki_url"`
+    UFCURL      string    `json:"ufc_url"`
     Promotion   string    `json:"promotion"`
     MainCard    []Fight   `json:"main_card"`
     PrelimCard  []Fight   `json:"prelim_card"`

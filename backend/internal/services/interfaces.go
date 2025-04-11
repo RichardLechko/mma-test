@@ -39,7 +39,7 @@ type EventServiceInterface interface {
 }
 
 type ScraperServiceInterface interface {
-    ScrapeEvent(ctx context.Context, eventID string) (*models.Event, error)
+    ScrapeEvent(ctx context.Context, url string) (*models.Event, error)
     ScrapeUpcomingEvents(ctx context.Context) ([]models.Event, error)
 }
 
