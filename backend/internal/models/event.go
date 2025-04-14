@@ -17,6 +17,7 @@ type Event struct {
     Promotion   string    `json:"promotion"`
     MainCard    []Fight   `json:"main_card"`
     PrelimCard  []Fight   `json:"prelim_card"`
+    Attendance  string    `json:"attendance"`
     CreatedAt   time.Time `json:"created_at"`
     UpdatedAt   time.Time `json:"updated_at"`
 }

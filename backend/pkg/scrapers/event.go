@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -13,7 +12,7 @@ import (
 	"mma-scheduler/internal/models"
 )
 
-// UFCEventScraper scrapes events directly from UFC.com
+// UFCEventScraper scrapes event information from UFC.com
 type UFCEventScraper struct {
 	client  *http.Client
 	baseURL string
@@ -23,26 +22,240 @@ type UFCEventScraper struct {
 func NewUFCEventScraper() *UFCEventScraper {
 	return &UFCEventScraper{
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 		baseURL: "https://www.ufc.com/events",
 	}
 }
 
-// ScrapeEvents scrapes events from UFC.com
+// ScrapeEvents scrapes events from UFC.com, focusing on UFC URL, event date, venue, city, and country
 func (s *UFCEventScraper) ScrapeEvents(ctx context.Context) ([]*models.Event, error) {
-	var events []*models.Event
+	var allEvents []*models.Event
+	processedEvents := make(map[string]bool)
+	consecutiveEmptyPages := 0
+	page := 0
 
-	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL, nil)
+	for consecutiveEmptyPages < 5 {
+		select {
+		case <-ctx.Done():
+			return allEvents, ctx.Err()
+		default:
+			// Construct URL with pagination
+			pageURL := s.baseURL
+			if page > 0 {
+				pageURL = fmt.Sprintf("%s?page=%d", s.baseURL, page)
+			}
+
+			req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
+			if err != nil {
+				log.Printf("Error creating request for page %d: %v", page, err)
+				page++
+				continue
+			}
+			
+			req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+			
+			resp, err := s.client.Do(req)
+			if err != nil {
+				log.Printf("Error fetching page %d: %v", page, err)
+				page++
+				consecutiveEmptyPages++
+				continue
+			}
+			defer resp.Body.Close()
+			
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("Bad status code for page %d: %d", page, resp.StatusCode)
+				page++
+				consecutiveEmptyPages++
+				continue
+			}
+			
+			doc, err := goquery.NewDocumentFromReader(resp.Body)
+			if err != nil {
+				log.Printf("Error parsing HTML for page %d: %v", page, err)
+				page++
+				consecutiveEmptyPages++
+				continue
+			}
+
+			// Track if we found any events on this page
+			pageEvents := 0
+
+			// Process each event card
+			doc.Find(".c-card-event--result").Each(func(i int, card *goquery.Selection) {
+				// Find event link - this is our primary key (UFC URL)
+				linkElem := card.Find(".c-card-event--result__headline a")
+				eventURL, exists := linkElem.Attr("href")
+				if !exists || eventURL == "" {
+					return
+				}
+
+				// Ensure full URL
+				if !strings.HasPrefix(eventURL, "http") {
+					eventURL = "https://www.ufc.com" + eventURL
+				}
+
+				// Skip if we've already processed this event
+				if processedEvents[eventURL] {
+					return
+				}
+
+				// Extract event name for logging
+				eventName := strings.TrimSpace(linkElem.Text())
+				
+				// Extract date information
+				dateElem := card.Find(".c-card-event--result__date")
+				dateText := strings.TrimSpace(dateElem.Text())
+				
+				// Try to get timestamp from data attribute first
+				var eventDate time.Time
+				timestampStr, exists := dateElem.Attr("data-main-card-timestamp")
+				if exists {
+					// Convert Unix timestamp to time.Time
+					timestampInt := 0
+					fmt.Sscanf(timestampStr, "%d", &timestampInt)
+					if timestampInt > 0 {
+						// Use the original timestamp with correct date and time
+						eventDate = time.Unix(int64(timestampInt), 0)
+						log.Printf("Parsed timestamp %d to date: %s", timestampInt, eventDate.Format(time.RFC3339))
+					}
+				}
+				
+				// If timestamp failed, try to parse the text date
+				if eventDate.IsZero() {
+					// Clean up the date text before parsing
+					dateText = strings.Split(dateText, " / ")[0] // Take only the date part
+					dateFormats := []string{
+						"Mon, Jan 2",
+						"Monday, January 2",
+					}
+					
+					for _, format := range dateFormats {
+						parsed, err := time.Parse(format, dateText)
+						if err == nil {
+							// Use current year for the date since we couldn't get exact year
+							currentYear := time.Now().Year()
+							eventDate = time.Date(
+								currentYear, 
+								parsed.Month(), 
+								parsed.Day(), 
+								0, 0, 0, 0, 
+								time.UTC,
+							)
+							
+							// If the resulting date is in the past by more than a month, 
+							// assume it's for next year
+							if eventDate.Before(time.Now().AddDate(0, -1, 0)) {
+								eventDate = time.Date(
+									currentYear + 1, 
+									parsed.Month(), 
+									parsed.Day(), 
+									0, 0, 0, 0, 
+									time.UTC,
+								)
+							}
+							
+							log.Printf("Parsed text date to: %s (guessed year)", eventDate.Format(time.RFC3339))
+							break
+						}
+					}
+				}
+				
+				// Extract location information
+				var venue, city, country string
+				
+				locationElem := card.Find(".c-card-event--result__location")
+				
+				// Extract venue
+				venueElem := locationElem.Find(".field--name-taxonomy-term-title h5")
+				if venueElem.Length() > 0 {
+					venue = strings.TrimSpace(venueElem.Text())
+				}
+				
+				// Extract city and country
+				cityElem := locationElem.Find(".field--name-location .locality")
+				if cityElem.Length() > 0 {
+					city = strings.TrimSpace(cityElem.Text())
+				}
+				
+				countryElem := locationElem.Find(".field--name-location .country")
+				if countryElem.Length() > 0 {
+					country = strings.TrimSpace(countryElem.Text())
+				}
+				
+				// For incomplete data, fetch the event page itself for more details
+				if eventDate.IsZero() || venue == "" || city == "" || country == "" {
+					eventDetails, err := s.scrapeEventDetails(ctx, eventURL)
+					if err == nil {
+						if eventDate.IsZero() && !eventDetails.Date.IsZero() {
+							eventDate = eventDetails.Date
+						}
+						if venue == "" && eventDetails.Venue != "" {
+							venue = eventDetails.Venue
+						}
+						if city == "" && eventDetails.City != "" {
+							city = eventDetails.City
+						}
+						if country == "" && eventDetails.Country != "" {
+							country = eventDetails.Country
+						}
+					}
+				}
+				
+				// Determine status based on date
+				status := "Upcoming"
+				if !eventDate.IsZero() && eventDate.Before(time.Now()) {
+					status = "Completed"
+				}
+				
+				// Create event with the essential fields
+				event := &models.Event{
+					Date:      eventDate,
+					Venue:     venue,
+					City:      city,
+					Country:   country,
+					UFCURL:    eventURL,
+					Status:    status,
+				}
+				
+				// Add event if we have the UFC URL plus at least one other piece of data
+				if eventURL != "" && (venue != "" || city != "" || country != "" || !eventDate.IsZero()) {
+					allEvents = append(allEvents, event)
+					processedEvents[eventURL] = true
+					pageEvents++
+					
+					// Log event
+					log.Printf("Found event: %s on %s at %s", eventName, eventDate.Format("2006-01-02"), venue)
+				}
+			})
+
+			// Reset consecutive empty pages if we found events
+			if pageEvents > 0 {
+				consecutiveEmptyPages = 0
+			} else {
+				consecutiveEmptyPages++
+			}
+
+			page++
+		}
+	}
+
+	return allEvents, nil
+}
+
+// scrapeEventDetails fetches additional details from an event's page
+func (s *UFCEventScraper) scrapeEventDetails(ctx context.Context, eventURL string) (*models.Event, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", eventURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 	
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
 	
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching page: %v", err)
+		return nil, fmt.Errorf("error fetching event page: %w", err)
 	}
 	defer resp.Body.Close()
 	
@@ -52,277 +265,95 @@ func (s *UFCEventScraper) ScrapeEvents(ctx context.Context) ([]*models.Event, er
 	
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing HTML: %v", err)
+		return nil, fmt.Errorf("error parsing HTML: %w", err)
 	}
-
-	// Track processed event names to avoid duplicates
-	processedEvents := make(map[string]bool)
-
-	// First, check featured/hero events
-	doc.Find(".c-hero--full__event-info").Each(func(i int, heroEvent *goquery.Selection) {
-		event := extractEventFromHero(heroEvent)
-		if event != nil && !processedEvents[event.Name] {
-			processedEvents[event.Name] = true
-			events = append(events, event)
-		}
-	})
-
-	// Then check card events
-	doc.Find(".c-card-event--result").Each(func(i int, card *goquery.Selection) {
-		event := extractEventFromCard(card)
-		if event != nil && !processedEvents[event.Name] {
-			processedEvents[event.Name] = true
-			events = append(events, event)
-		}
-	})
-
-	// Advanced filtering to ensure we have future events
-	var futureEvents []*models.Event
-	now := time.Now()
-	for _, event := range events {
-		if event.Date.After(now) {
-			futureEvents = append(futureEvents, event)
-		}
-	}
-
-	return futureEvents, nil
-}
-
-func extractEventFromCard(card *goquery.Selection) *models.Event {
-	// Extract event name
-	nameElement := card.Find(".c-card-event--result__headline a")
-	name := strings.TrimSpace(nameElement.Text())
 	
-	// Try to extract name from URL if empty
-	if name == "" {
-		if href, exists := nameElement.Attr("href"); exists {
-			name = extractNameFromURL(href)
-		}
-	}
-
-	if name == "" || strings.Contains(name, "TBD vs TBD") {
-		return nil
-	}
-
-	// Extract event URL
-	eventURL := ""
-	if href, exists := nameElement.Attr("href"); exists {
-		eventURL = "https://www.ufc.com" + href
-	}
-
-	// Extract date
-	dateElement := card.Find(".c-card-event--result__date")
-	dateText := strings.TrimSpace(dateElement.Text())
+	event := &models.Event{}
 	
-	// Parse date
-	eventDate, err := parseUFCDate(dateText)
-	if err != nil {
-		log.Printf("Warning: Could not parse date '%s' for event %s: %v", dateText, name, err)
-		return nil
-	}
-
-	// Extract venue and location details
-	venueElement := card.Find(".field--name-taxonomy-term-title h5")
-	venue := strings.TrimSpace(venueElement.Text())
-
-	var city, country string
-	card.Find(".field--name-location .address span").Each(func(i int, span *goquery.Selection) {
-		spanClass, exists := span.Attr("class")
-		if !exists {
-			return
-		}
-
-		text := strings.TrimSpace(span.Text())
-		switch spanClass {
-		case "locality":
-			city = text
-		case "country":
-			country = text
-		}
-	})
-
-	// Determine status
-	status := determineEventStatus(eventDate)
-
-	// Create event
-	return &models.Event{
-		Name:      name,
-		Date:      eventDate,
-		Venue:     venue,
-		City:      city,
-		Country:   country,
-		Status:    status,
-		UFCURL:    eventURL,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-}
-
-func extractEventFromHero(heroEvent *goquery.Selection) *models.Event {
-	// Extract event name
-	nameElement := heroEvent.Find(".c-hero--full__event-title")
-	name := strings.TrimSpace(nameElement.Text())
-	
-	// Try to extract name from URL if empty
-	if name == "" {
-		heroEvent.Find("a").Each(func(i int, a *goquery.Selection) {
-			if href, exists := a.Attr("href"); exists && strings.Contains(href, "/event/") {
-				name = extractNameFromURL(href)
+	// Extract date using data attributes which are more reliable
+	dateContainer := doc.Find(".hero-event-results__date-container")
+	if dateContainer.Length() > 0 {
+		// Try to get timestamp from data attribute
+		timestampStr, exists := dateContainer.Attr("data-main-card-timestamp")
+		if exists {
+			// Convert Unix timestamp to time.Time
+			timestampInt := 0
+			fmt.Sscanf(timestampStr, "%d", &timestampInt)
+			if timestampInt > 0 {
+				// Use the original timestamp with correct date and time
+				event.Date = time.Unix(int64(timestampInt), 0)
+				log.Printf("Event details timestamp %d parsed to: %s", timestampInt, event.Date.Format(time.RFC3339))
 			}
-		})
-	}
-
-	if name == "" || strings.Contains(name, "TBD vs TBD") {
-		return nil
-	}
-
-	// Extract event URL from title link
-	eventURL := ""
-	heroEvent.Find("a").Each(func(i int, a *goquery.Selection) {
-		if href, exists := a.Attr("href"); exists && strings.Contains(href, "/event/") {
-			eventURL = "https://www.ufc.com" + href
 		}
-	})
-
-	// Extract date
-	dateElement := heroEvent.Find(".c-hero--full__event-date")
-	dateText := strings.TrimSpace(dateElement.Text())
-	
-	// Parse date
-	eventDate, err := parseUFCDate(dateText)
-	if err != nil {
-		log.Printf("Warning: Could not parse date '%s' for event %s: %v", dateText, name, err)
-		return nil
-	}
-
-	// Extract venue and location
-	locationElement := heroEvent.Find(".c-hero--full__location-city")
-	location := strings.TrimSpace(locationElement.Text())
-
-	// Split location into parts
-	var city, country string
-	locationParts := strings.Split(location, ", ")
-	if len(locationParts) >= 1 {
-		city = locationParts[0]
-	}
-	if len(locationParts) >= 2 {
-		country = locationParts[1]
-	}
-
-	// Extract venue
-	venue := ""
-	venueElement := heroEvent.Find(".c-hero--full__location-arena")
-	if venueElement.Length() > 0 {
-		venue = strings.TrimSpace(venueElement.Text())
-	}
-
-	// Determine status
-	status := determineEventStatus(eventDate)
-
-	// Create event
-	return &models.Event{
-		Name:      name,
-		Date:      eventDate,
-		Venue:     venue,
-		City:      city,
-		Country:   country,
-		Status:    status,
-		UFCURL:    eventURL,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-}
-
-// parseUFCDate tries to parse the date string from UFC website
-func parseUFCDate(dateStr string) (time.Time, error) {
-	// Clean up the date string
-	dateStr = strings.TrimSpace(dateStr)
-	dateStr = regexp.MustCompile(`\s+`).ReplaceAllString(dateStr, " ")
-	
-	// Extract just the date portion if there's additional text
-	dateParts := strings.Split(dateStr, "|")
-	if len(dateParts) > 1 {
-		dateStr = strings.TrimSpace(dateParts[0])
-	}
-	
-	// Try various date formats
-	formats := []string{
-		"Jan 2, 2006",
-		"January 2, 2006",
-		"Jan. 2, 2006",
-		"Monday, Jan 2, 2006",
-		"Monday, January 2, 2006",
-		"Jan 2",
-		"January 2",
-		"2006-01-02",
-		"01/02/2006",
-	}
-	
-	for _, format := range formats {
-		if t, err := time.Parse(format, dateStr); err == nil {
-			// If year is missing, use current year
-			if t.Year() == 0 {
-				currentYear := time.Now().Year()
-				t = time.Date(currentYear, t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+		
+		// If that fails, try to parse the text date
+		if event.Date.IsZero() {
+			dateText := strings.TrimSpace(dateContainer.Text())
+			dateFormats := []string{
+				"Mon, Jan 2",
+				"Monday, January 2",
 			}
-			return t, nil
+			
+			for _, format := range dateFormats {
+				parsed, err := time.Parse(format, dateText)
+				if err == nil {
+					// Use current year for the date
+					currentYear := time.Now().Year()
+					event.Date = time.Date(
+						currentYear, 
+						parsed.Month(), 
+						parsed.Day(), 
+						0, 0, 0, 0, 
+						time.UTC,
+					)
+					
+					// If the resulting date is in the past by more than a month, 
+					// assume it's for next year
+					if event.Date.Before(time.Now().AddDate(0, -1, 0)) {
+						event.Date = time.Date(
+							currentYear + 1, 
+							parsed.Month(), 
+							parsed.Day(), 
+							0, 0, 0, 0, 
+							time.UTC,
+						)
+					}
+					
+					log.Printf("Parsed event details date to: %s (guessed year)", event.Date.Format(time.RFC3339))
+					break
+				}
+			}
 		}
 	}
 	
-	// Try to extract with regex as a last resort
-	dateRegex := regexp.MustCompile(`(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z.]*\s+(\d{1,2})(?:,?\s+(\d{4}))?`)
-	matches := dateRegex.FindStringSubmatch(dateStr)
-	if len(matches) >= 3 {
-		monthMap := map[string]time.Month{
-			"Jan": time.January, "Feb": time.February, "Mar": time.March,
-			"Apr": time.April, "May": time.May, "Jun": time.June,
-			"Jul": time.July, "Aug": time.August, "Sep": time.September,
-			"Oct": time.October, "Nov": time.November, "Dec": time.December,
+	// Extract venue, city, and country
+	locationContainer := doc.Find(".field--name-venue")
+	if locationContainer.Length() > 0 {
+		// Venue name
+		venueElem := locationContainer.Find(".field--name-taxonomy-term-title")
+		if venueElem.Length() > 0 {
+			event.Venue = strings.TrimSpace(venueElem.Text())
 		}
 		
-		month := monthMap[matches[1]]
-		day := 1
-		fmt.Sscanf(matches[2], "%d", &day)
-		
-		year := time.Now().Year()
-		if len(matches) >= 4 && matches[3] != "" {
-			fmt.Sscanf(matches[3], "%d", &year)
+		// City
+		cityElem := locationContainer.Find(".field--name-location .locality")
+		if cityElem.Length() > 0 {
+			event.City = strings.TrimSpace(cityElem.Text())
 		}
 		
-		return time.Date(year, month, day, 0, 0, 0, 0, time.UTC), nil
+		// Country
+		countryElem := locationContainer.Find(".field--name-location .country")
+		if countryElem.Length() > 0 {
+			event.Country = strings.TrimSpace(countryElem.Text())
+		}
 	}
 	
-	return time.Time{}, fmt.Errorf("could not parse date: %s", dateStr)
-}
-
-// determineEventStatus determines the event status based on date
-func determineEventStatus(eventDate time.Time) string {
-	if eventDate.IsZero() {
-		return "Scheduled" // Default status if no date
-	}
-	
-	now := time.Now()
-	
-	if eventDate.After(now) {
-		return "Scheduled"
+	// Determine status based on date
+	if !event.Date.IsZero() && event.Date.Before(time.Now()) {
+		event.Status = "Completed"
 	} else {
-		return "Completed"
+		event.Status = "Upcoming"
 	}
-}
-
-// extractNameFromURL extracts an event name from a UFC event URL
-func extractNameFromURL(url string) string {
-	// Use regex to extract the event name from URL
-	urlNameRegex := regexp.MustCompile(`/event/(.+)$`)
-	matches := urlNameRegex.FindStringSubmatch(url)
-	if len(matches) > 1 {
-		urlName := matches[1]
-		// Convert URL format to readable name
-		urlName = strings.ReplaceAll(urlName, "-", " ")
-		urlName = strings.ToUpper(urlName)
-		// Improve formatting of UFC numbers
-		urlName = regexp.MustCompile(`UFC (\d+)`).ReplaceAllString(urlName, "UFC $1")
-		return urlName
-	}
-	return ""
+	
+	return event, nil
 }
