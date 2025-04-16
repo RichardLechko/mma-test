@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"log"
-	"net/http"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -348,9 +350,10 @@ func (s *FighterScraper) ScrapeFightersByCountry(countryCode string) ([]*Fighter
 	return fighters, nil
 }
 
-// ScrapeFightersByAllCountries gets fighters country by country
+// Optimized version that processes countries in parallel
 func (s *FighterScraper) ScrapeFightersByAllCountries(ctx context.Context) ([]*Fighter, error) {
 	var allFighters []*Fighter
+	var mu sync.Mutex // Protect allFighters
 
 	// First get all available countries and their codes
 	countries, err := s.GetAvailableCountries()
@@ -358,27 +361,69 @@ func (s *FighterScraper) ScrapeFightersByAllCountries(ctx context.Context) ([]*F
 		return nil, fmt.Errorf("error getting country list: %v", err)
 	}
 
-	log.Printf("Starting to scrape fighters from %d countries", len(countries))
+	log.Printf("Starting to scrape fighters from %d countries in parallel", len(countries))
 
-	// Process each country
-	for _, country := range countries {
-		select {
-		case <-ctx.Done():
-			return allFighters, ctx.Err()
-		default:
-		}
-
-		fighters, err := s.ScrapeFightersByCountry(country.Code)
-		if err != nil {
-			log.Printf("Warning: Error scraping %s fighters: %v", country.Name, err)
-			continue
-		}
-
-		allFighters = append(allFighters, fighters...)
-
-		// Be nice to the server with a short delay between countries
-		time.Sleep(200 * time.Millisecond)
+	// Determine optimal number of workers
+	numWorkers := runtime.NumCPU() 
+	if numWorkers > 8 {
+		numWorkers = 8 // Cap at a reasonable number to avoid overwhelming the UFC server
 	}
+
+	// Create a channel to distribute countries
+	countryCh := make(chan CountryCode, len(countries))
+	
+	// Create a wait group to wait for all workers to finish
+	var wg sync.WaitGroup
+	
+	// Launch worker goroutines
+	var processedCountries, totalFighters int32
+	
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			
+			for country := range countryCh {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				
+				fighters, err := s.ScrapeFightersByCountry(country.Code)
+				if err != nil {
+					log.Printf("Worker %d: Error scraping %s fighters: %v", 
+						workerID, country.Name, err)
+					continue
+				}
+				
+				// Add fighters to the global list
+				if len(fighters) > 0 {
+					mu.Lock()
+					allFighters = append(allFighters, fighters...)
+					mu.Unlock()
+					
+					atomic.AddInt32(&totalFighters, int32(len(fighters)))
+				}
+				
+				count := atomic.AddInt32(&processedCountries, 1)
+				log.Printf("Progress: %d/%d countries processed, %d fighters found so far",
+					count, len(countries), atomic.LoadInt32(&totalFighters))
+				
+				// Be nice to the server with a short delay between countries
+				time.Sleep(100 * time.Millisecond)
+			}
+		}(i)
+	}
+	
+	// Send countries to the workers
+	for _, country := range countries {
+		countryCh <- country
+	}
+	close(countryCh)
+	
+	// Wait for all workers to finish
+	wg.Wait()
 
 	log.Printf("Completed scraping a total of %d fighters from all countries", len(allFighters))
 	return allFighters, nil
@@ -470,6 +515,9 @@ func (s *FighterScraper) ScrapeFightersDirectly() ([]*Fighter, error) {
 			emptyPageCount = 0
 			allFighters = append(allFighters, pageFighters...)
 		}
+		
+		// Add a small delay between pages to avoid overwhelming the server
+		time.Sleep(200 * time.Millisecond)
 	}
 
 	log.Printf("Found %d fighters directly from main listing", len(allFighters))
@@ -682,66 +730,7 @@ func (s *FighterScraper) ScrapeRankings() (map[string]map[string]string, error) 
 	return rankings, nil
 }
 
-// ScrapeAllFighters - main entry point that uses both country-based and direct approaches
-func (s *FighterScraper) ScrapeAllFighters(ctx context.Context) ([]*Fighter, error) {
-	log.Println("Starting to scrape UFC fighters using combined approach...")
-
-	// First, get the total count of athletes from the UI
-	expectedTotal, err := s.GetTotalAthleteCount()
-	if err != nil {
-		log.Printf("Warning: Couldn't determine total athlete count: %v", err)
-		// Use a default high number if we can't get the actual count
-		expectedTotal = 6000
-	}
-
-	// Step 1: Get all fighters by scraping each country's page
-	fightersByCountry, err := s.ScrapeFightersByAllCountries(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error scraping fighters by nationality: %v", err)
-	}
-
-	log.Printf("Found %d fighters with nationality information", len(fightersByCountry))
-
-	// Check if we've found all the fighters
-	if len(fightersByCountry) >= expectedTotal {
-		log.Printf("Found all expected fighters with nationality information (%d/%d)",
-			len(fightersByCountry), expectedTotal)
-		return s.processAndEnrichFighters(ctx, fightersByCountry)
-	}
-
-	// Step 2: If we didn't get all fighters, also scrape the main listing
-	log.Printf("Need to supplement with direct scraping (%d/%d found so far)",
-		len(fightersByCountry), expectedTotal)
-
-	// Create a map of already seen fighter IDs
-	seenFighterIDs := make(map[string]bool)
-	for _, fighter := range fightersByCountry {
-		if fighter.UFCID != "" {
-			seenFighterIDs[fighter.UFCID] = true
-		}
-	}
-
-	// Get remaining fighters directly
-	directFighters, err := s.ScrapeFightersDirectly()
-	if err != nil {
-		log.Printf("Warning: Error scraping fighters directly: %v", err)
-		// Continue with what we have
-	} else {
-		// Add only new fighters not already found via country scraping
-		for _, fighter := range directFighters {
-			if fighter.UFCID != "" && !seenFighterIDs[fighter.UFCID] {
-				seenFighterIDs[fighter.UFCID] = true
-				fightersByCountry = append(fightersByCountry, fighter)
-			}
-		}
-	}
-
-	log.Printf("Found a total of %d unique fighters after combining approaches", len(fightersByCountry))
-
-	return s.processAndEnrichFighters(ctx, fightersByCountry)
-}
-
-// Update the processAndEnrichFighters function to simplify the duplicate handling now that we're using UFC ID
+// Optimized version for parallel processing of fighter details
 func (s *FighterScraper) processAndEnrichFighters(ctx context.Context, fighters []*Fighter) ([]*Fighter, error) {
 	totalFighters := len(fighters)
 	log.Printf("Retrieving detailed information for %d fighters...", totalFighters)
@@ -767,53 +756,79 @@ func (s *FighterScraper) processAndEnrichFighters(ctx context.Context, fighters 
 		uniqueFighters = append(uniqueFighters, fighter)
 	}
 
-	// Get details for each fighter
-	for i, fighter := range uniqueFighters {
-		select {
-		case <-ctx.Done():
-			return uniqueFighters, ctx.Err()
-		default:
-		}
-
-		// Keep retrying until we get the details - never skip a fighter
-		success := false
-		attempts := 0
-		maxAttempts := 3 // Limit retries to prevent infinite loops
-
-		for !success && attempts < maxAttempts {
-			err := s.GetFighterDetails(fighter)
-			if err == nil {
-				success = true
-			} else {
-				// Log the error but keep trying
-				attempts++
-				if attempts < maxAttempts {
-					// Log retry message every few attempts to avoid log spam
-					if attempts%2 == 0 {
-						log.Printf("Still trying to get details for %s (attempt %d/%d): %v",
-							fighter.Name, attempts, maxAttempts, err)
+	// Create worker pool for parallel processing
+	numWorkers := runtime.NumCPU()
+	if numWorkers > 10 {
+		numWorkers = 10 // Cap at a reasonable maximum
+	}
+	
+	fighterCh := make(chan *Fighter, len(uniqueFighters))
+	var wg sync.WaitGroup
+	
+	// Stats counters
+	var successCount, failureCount int32
+	
+	// Start workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			
+			for fighter := range fighterCh {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				
+				// Attempt to get fighter details with retries
+				success := false
+				attempts := 0
+				maxAttempts := 3
+				
+				for !success && attempts < maxAttempts {
+					err := s.GetFighterDetails(fighter)
+					if err == nil {
+						success = true
+						atomic.AddInt32(&successCount, 1)
+					} else {
+						attempts++
+						if attempts < maxAttempts {
+							// Exponential backoff
+							backoffTime := time.Duration(100*(1<<attempts)) * time.Millisecond
+							if backoffTime > 1*time.Second {
+								backoffTime = 1 * time.Second
+							}
+							time.Sleep(backoffTime)
+						} else {
+							atomic.AddInt32(&failureCount, 1)
+							log.Printf("Worker %d: Failed to get details for %s after %d attempts: %v",
+								workerID, fighter.Name, attempts, err)
+						}
 					}
-					// Wait between retries - longer wait for more attempts
-					backoffTime := time.Duration(50*attempts) * time.Millisecond
-					if backoffTime > 1*time.Second {
-						backoffTime = 1 * time.Second
-					}
-					time.Sleep(backoffTime)
-				} else {
-					// Log final failure but don't stop the process
-					log.Printf("Warning: Couldn't get details for fighter %s after %d attempts: %v",
-						fighter.Name, attempts, err)
+				}
+				
+				// Log progress periodically
+				totalProcessed := atomic.LoadInt32(&successCount) + atomic.LoadInt32(&failureCount)
+				if totalProcessed%50 == 0 || totalProcessed == int32(len(uniqueFighters)) {
+					log.Printf("Fighter details: %d/%d processed (%d successful, %d failed)",
+						totalProcessed, len(uniqueFighters), successCount, failureCount)
 				}
 			}
-		}
-
-		if (i+1)%10 == 0 || i+1 == len(uniqueFighters) {
-			log.Printf("Processed %d/%d fighters...", i+1, len(uniqueFighters))
-		}
+		}(i)
 	}
-
-	// Now that we have UFC_ID as the unique constraint, we no longer need to worry about duplicate names
-	// We can keep all fighters and their original names
+	
+	// Send fighters to workers
+	for _, fighter := range uniqueFighters {
+		fighterCh <- fighter
+	}
+	close(fighterCh)
+	
+	// Wait for all workers to finish
+	wg.Wait()
+	
+	log.Printf("Completed getting fighter details: %d successful, %d failed",
+		successCount, failureCount)
 
 	// Get the rankings from the rankings page
 	log.Println("Scraping fighter rankings from rankings page...")
@@ -874,11 +889,70 @@ func (s *FighterScraper) processAndEnrichFighters(ctx context.Context, fighters 
 		}
 	}
 
-	log.Printf("Completed scraping %d unique UFC fighters (including %d with nationality information)",
+	log.Printf("Completed processing %d unique UFC fighters (including %d with nationality information)",
 		len(uniqueFighters),
 		countFightersWithNationality(uniqueFighters))
 
 	return uniqueFighters, nil
+}
+
+// ScrapeAllFighters - main entry point that uses both country-based and direct approaches
+func (s *FighterScraper) ScrapeAllFighters(ctx context.Context) ([]*Fighter, error) {
+	log.Println("Starting to scrape UFC fighters using combined approach...")
+
+	// First, get the total count of athletes from the UI
+	expectedTotal, err := s.GetTotalAthleteCount()
+	if err != nil {
+		log.Printf("Warning: Couldn't determine total athlete count: %v", err)
+		// Use a default high number if we can't get the actual count
+		expectedTotal = 6000
+	}
+
+	// Step 1: Get all fighters by scraping each country's page
+	fightersByCountry, err := s.ScrapeFightersByAllCountries(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error scraping fighters by nationality: %v", err)
+	}
+
+	log.Printf("Found %d fighters with nationality information", len(fightersByCountry))
+
+	// Check if we've found all the fighters
+	if len(fightersByCountry) >= expectedTotal {
+		log.Printf("Found all expected fighters with nationality information (%d/%d)",
+			len(fightersByCountry), expectedTotal)
+		return s.processAndEnrichFighters(ctx, fightersByCountry)
+	}
+
+	// Step 2: If we didn't get all fighters, also scrape the main listing
+	log.Printf("Need to supplement with direct scraping (%d/%d found so far)",
+		len(fightersByCountry), expectedTotal)
+
+	// Create a map of already seen fighter IDs
+	seenFighterIDs := make(map[string]bool)
+	for _, fighter := range fightersByCountry {
+		if fighter.UFCID != "" {
+			seenFighterIDs[fighter.UFCID] = true
+		}
+	}
+
+	// Get remaining fighters directly
+	directFighters, err := s.ScrapeFightersDirectly()
+	if err != nil {
+		log.Printf("Warning: Error scraping fighters directly: %v", err)
+		// Continue with what we have
+	} else {
+		// Add only new fighters not already found via country scraping
+		for _, fighter := range directFighters {
+			if fighter.UFCID != "" && !seenFighterIDs[fighter.UFCID] {
+				seenFighterIDs[fighter.UFCID] = true
+				fightersByCountry = append(fightersByCountry, fighter)
+			}
+		}
+	}
+
+	log.Printf("Found a total of %d unique fighters after combining approaches", len(fightersByCountry))
+
+	return s.processAndEnrichFighters(ctx, fightersByCountry)
 }
 
 // Helper to count fighters with nationality info
@@ -893,339 +967,35 @@ func countFightersWithNationality(fighters []*Fighter) int {
 }
 
 func InsertFighter(db *sql.DB, fighter *Fighter) error {
-	// Now that we're using ufc_id as the unique constraint, we can use a simple UPSERT pattern
-	_, err := db.Exec(`
-		INSERT INTO fighters
-		(name, nickname, weight_class, record, status, ranking, ufc_id, ufc_url, nationality)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		ON CONFLICT (ufc_id) DO UPDATE SET
-			name = EXCLUDED.name,
-			nickname = EXCLUDED.nickname,
-			weight_class = EXCLUDED.weight_class, 
-			record = EXCLUDED.record,
-			status = EXCLUDED.status,
-			ranking = EXCLUDED.ranking,
-			ufc_url = EXCLUDED.ufc_url,
-			nationality = EXCLUDED.nationality
-	`, fighter.Name, fighter.Nickname, fighter.WeightClass, fighter.Record,
-		fighter.Status, fighter.Ranking, fighter.UFCID, fighter.UFCURL, fighter.Nationality)
+    // Parse the wins, losses, draws from the struct fields
+    wins := fighter.KOWins + fighter.SubWins + fighter.DecWins
+    
+    // Now that we're using ufc_id as the unique constraint, we can use a simple UPSERT pattern
+    _, err := db.Exec(`
+        INSERT INTO fighters
+        (name, nickname, weight_class, status, rank, ufc_id, ufc_url, nationality,
+         wins, ko_wins, sub_wins, dec_wins, age, height, weight, reach)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ON CONFLICT (ufc_id) DO UPDATE SET
+            name = EXCLUDED.name,
+            nickname = EXCLUDED.nickname,
+            weight_class = EXCLUDED.weight_class,
+            status = EXCLUDED.status,
+            rank = EXCLUDED.rank,
+            ufc_url = EXCLUDED.ufc_url,
+            nationality = EXCLUDED.nationality,
+            wins = EXCLUDED.wins,
+            ko_wins = EXCLUDED.ko_wins,
+            sub_wins = EXCLUDED.sub_wins,
+            dec_wins = EXCLUDED.dec_wins,
+            age = EXCLUDED.age,
+            height = EXCLUDED.height,
+            weight = EXCLUDED.weight,
+            reach = EXCLUDED.reach
+    `, fighter.Name, fighter.Nickname, fighter.WeightClass, 
+       fighter.Status, fighter.Ranking, fighter.UFCID, fighter.UFCURL, fighter.Nationality,
+       wins, fighter.KOWins, fighter.SubWins, fighter.DecWins,
+       fighter.Age, fighter.Height, fighter.Weight, fighter.Reach)
 
-	return err
-}
-
-type UFCFighterProfileScraper struct {
-	client *http.Client
-}
-
-// Create a new instance of the UFC fighter profile scraper
-func NewUFCFighterProfileScraper() *UFCFighterProfileScraper {
-	return &UFCFighterProfileScraper{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-	}
-}
-
-// ScrapeFighterHistory gets all fights for a specific fighter from their UFC profile
-func (s *UFCFighterProfileScraper) ScrapeFighterHistory(ufcURL string) ([]UFCScrapedFight, error) {
-	var fights []UFCScrapedFight
-
-	resp, err := s.client.Get(ufcURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unsuccessful response: %d", resp.StatusCode)
-	}
-
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Extract fighter name - adjust selector based on UFC website structure
-	fighterName := strings.TrimSpace(doc.Find("h1.hero-profile__name").Text())
-	if fighterName == "" {
-		// Try alternate selector
-		fighterName = strings.TrimSpace(doc.Find(".field--name-name").Text())
-	}
-
-	log.Printf("Scraping fight history for %s", fighterName)
-
-	// Find the fight history section - adjust selectors based on UFC website structure
-	doc.Find(".c-card-event--athlete-results").Each(func(i int, fightCard *goquery.Selection) {
-		// Extract opponent info
-		opponentName := strings.TrimSpace(fightCard.Find(".c-card-event--result__opponent-name").Text())
-		weightClass := strings.TrimSpace(fightCard.Find(".c-card-event--result__weightclass").Text())
-
-		// Only proceed if we have opponent and weight class
-		if opponentName == "" || weightClass == "" {
-			return
-		}
-
-		// Extract result
-		resultText := strings.TrimSpace(fightCard.Find(".c-card-event--result__caption").Text())
-		methodText := strings.TrimSpace(fightCard.Find(".c-card-event--result__method").Text())
-
-		// Determine if it was a main event or title fight
-		isMainEvent := fightCard.Find(".c-card-event--result__headline").HasClass("main-event") ||
-			strings.Contains(strings.ToLower(resultText), "main event")
-
-		isTitleFight := strings.Contains(strings.ToLower(weightClass), "title") ||
-			strings.Contains(strings.ToLower(resultText), "title")
-
-		// Determine winner and result
-		var fighter1Result, fighter2Result string
-		if strings.Contains(strings.ToLower(resultText), "win") {
-			fighter1Result = "Win"
-			fighter2Result = "Loss"
-		} else if strings.Contains(strings.ToLower(resultText), "loss") {
-			fighter1Result = "Loss"
-			fighter2Result = "Win"
-		} else if strings.Contains(strings.ToLower(resultText), "draw") {
-			fighter1Result = "Draw"
-			fighter2Result = "Draw"
-		} else if strings.Contains(strings.ToLower(resultText), "nc") ||
-			strings.Contains(strings.ToLower(resultText), "no contest") {
-			fighter1Result = "NC"
-			fighter2Result = "NC"
-		}
-
-		// Split fighter names into parts
-		fighterNameParts := strings.Fields(fighterName)
-		opponentNameParts := strings.Fields(opponentName)
-
-		var fighter1GivenName, fighter1LastName, fighter2GivenName, fighter2LastName string
-
-		if len(fighterNameParts) > 1 {
-			fighter1GivenName = strings.Join(fighterNameParts[:len(fighterNameParts)-1], " ")
-			fighter1LastName = fighterNameParts[len(fighterNameParts)-1]
-		} else if len(fighterNameParts) == 1 {
-			fighter1LastName = fighterNameParts[0]
-		}
-
-		if len(opponentNameParts) > 1 {
-			fighter2GivenName = strings.Join(opponentNameParts[:len(opponentNameParts)-1], " ")
-			fighter2LastName = opponentNameParts[len(opponentNameParts)-1]
-		} else if len(opponentNameParts) == 1 {
-			fighter2LastName = opponentNameParts[0]
-		}
-
-		// Extract round and time information if available
-		roundInfo := strings.TrimSpace(fightCard.Find(".c-card-event--result__time").Text())
-
-		var round, time string
-		if roundInfo != "" {
-			// Try to parse "Round X XX:XX" format
-			parts := strings.Split(roundInfo, " ")
-			if len(parts) >= 3 {
-				round = parts[1] // Just the number
-				time = parts[2]  // The time
-			}
-		}
-
-		// Create fight object
-		fight := UFCScrapedFight{
-			Fighter1Name:      fighterName,
-			Fighter1GivenName: fighter1GivenName,
-			Fighter1LastName:  fighter1LastName,
-			Fighter1Result:    fighter1Result,
-			Fighter2Name:      opponentName,
-			Fighter2GivenName: fighter2GivenName,
-			Fighter2LastName:  fighter2LastName,
-			Fighter2Result:    fighter2Result,
-			WeightClass:       weightClass,
-			Method:            methodText,
-			Round:             round,
-			Time:              time,
-			IsMainEvent:       isMainEvent,
-			IsTitleFight:      isTitleFight,
-		}
-
-		// Add the fight to our list
-		fights = append(fights, fight)
-	})
-
-	log.Printf("Found %d fights for %s", len(fights), fighterName)
-	return fights, nil
-}
-
-func BackfillFighterHistory(db *sql.DB, fighterName string) error {
-	log.Printf("Backfilling fight history for %s", fighterName)
-
-	// First, find the fighter ID
-	var fighterID string
-	err := db.QueryRow("SELECT id FROM fighters WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'", fighterName).Scan(&fighterID)
-	if err != nil {
-		return fmt.Errorf("fighter not found: %v", err)
-	}
-
-	// Get events that should have this fighter's bouts (from Wikipedia URLs or other sources)
-	// For Volkanovski and Lopes, we can hardcode known events
-	var eventURLs []string
-
-	if strings.Contains(strings.ToLower(fighterName), "volkanovski") {
-		eventURLs = []string{
-			"https://www.ufc.com/event/ufc-284",                          // vs Makhachev
-			"https://www.ufc.com/event/ufc-276",                          // vs Holloway 3
-			"https://www.ufc.com/event/ufc-273",                          // vs Korean Zombie
-			"https://www.ufc.com/event/ufc-266",                          // vs Ortega
-			"https://www.ufc.com/event/ufc-251",                          // vs Holloway 2
-			"https://www.ufc.com/event/ufc-245",                          // vs Holloway 1
-			"https://www.ufc.com/event/ufc-237",                          // vs Aldo
-			"https://www.ufc.com/event/ufc-232",                          // vs Mendes
-			"https://www.ufc.com/event/ufc-fight-night-november-18-2018", // vs Elkins
-		}
-	} else if strings.Contains(strings.ToLower(fighterName), "lopes") {
-		eventURLs = []string{
-			"https://www.ufc.com/event/ufc-288",                       // vs Evloev
-			"https://www.ufc.com/event/ufc-fight-night-april-22-2023", // vs Jourdain
-		}
-	}
-
-	// Create UFC scraper
-	ufcScraper := NewUFCFightScraper()
-
-	// Process each event
-	for _, eventURL := range eventURLs {
-		log.Printf("Scraping event: %s for fighter %s", eventURL, fighterName)
-
-		// Get the event ID from our database
-		var eventID string
-		eventName := extractEventNameFromURL(eventURL)
-		err := db.QueryRow("SELECT id FROM events WHERE name LIKE '%' || $1 || '%'", eventName).Scan(&eventID)
-		if err != nil {
-			log.Printf("Couldn't find event ID for %s: %v", eventName, err)
-			continue
-		}
-
-		// Scrape fights from this event
-		fights, err := ufcScraper.ScrapeFights(eventURL)
-		if err != nil {
-			log.Printf("Error scraping event %s: %v", eventURL, err)
-			continue
-		}
-
-		log.Printf("Found %d fights at event %s", len(fights), eventName)
-
-		// Look for fights involving our fighter
-		for _, fight := range fights {
-			if strings.Contains(strings.ToLower(fight.Fighter1Name), strings.ToLower(fighterName)) ||
-				strings.Contains(strings.ToLower(fight.Fighter2Name), strings.ToLower(fighterName)) {
-
-				log.Printf("Found fight: %s vs %s", fight.Fighter1Name, fight.Fighter2Name)
-
-				// Find opponent's ID
-				var opponentName string
-				if strings.Contains(strings.ToLower(fight.Fighter1Name), strings.ToLower(fighterName)) {
-					opponentName = fight.Fighter2Name
-				} else {
-					opponentName = fight.Fighter1Name
-				}
-
-				var opponentID string
-				err := db.QueryRow("SELECT id FROM fighters WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'", opponentName).Scan(&opponentID)
-				if err != nil {
-					log.Printf("Opponent %s not found: %v", opponentName, err)
-					continue
-				}
-
-				// Determine fighter1_id and fighter2_id
-				var fighter1ID, fighter2ID string
-				var fighter1Name, fighter2Name string
-
-				if strings.Contains(strings.ToLower(fight.Fighter1Name), strings.ToLower(fighterName)) {
-					fighter1ID = fighterID
-					fighter2ID = opponentID
-					fighter1Name = fight.Fighter1Name
-					fighter2Name = fight.Fighter2Name
-				} else {
-					fighter1ID = opponentID
-					fighter2ID = fighterID
-					fighter1Name = fight.Fighter1Name
-					fighter2Name = fight.Fighter2Name
-				}
-
-				// Determine winner
-				var winnerID *string
-				if (strings.Contains(strings.ToLower(fight.Fighter1Name), strings.ToLower(fighterName)) &&
-					fight.Fighter1Result == "Win") ||
-					(strings.Contains(strings.ToLower(fight.Fighter2Name), strings.ToLower(fighterName)) &&
-						fight.Fighter2Result == "Win") {
-					winnerID = &fighterID
-				} else if (strings.Contains(strings.ToLower(fight.Fighter1Name), strings.ToLower(fighterName)) &&
-					fight.Fighter1Result == "Loss") ||
-					(strings.Contains(strings.ToLower(fight.Fighter2Name), strings.ToLower(fighterName)) &&
-						fight.Fighter2Result == "Loss") {
-					winnerID = &opponentID
-				}
-
-				// Insert or update the fight
-				_, err = db.Exec(`
-                    INSERT INTO fights (
-                        event_id, fighter1_id, fighter2_id, fighter1_name, fighter2_name, 
-                        weight_class, is_main_event, was_title_fight, winner_id,
-                        fighter1_rank, fighter2_rank,
-                        created_at, updated_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-                    ON CONFLICT (event_id, fighter1_id, fighter2_id) DO UPDATE SET
-                        fighter1_name = EXCLUDED.fighter1_name,
-                        fighter2_name = EXCLUDED.fighter2_name,
-                        weight_class = EXCLUDED.weight_class,
-                        is_main_event = EXCLUDED.is_main_event,
-                        was_title_fight = EXCLUDED.was_title_fight,
-                        winner_id = EXCLUDED.winner_id,
-                        fighter1_rank = EXCLUDED.fighter1_rank,
-                        fighter2_rank = EXCLUDED.fighter2_rank,
-                        updated_at = EXCLUDED.updated_at
-                `,
-					eventID, fighter1ID, fighter2ID, fighter1Name, fighter2Name,
-					fight.WeightClass, fight.IsMainEvent, fight.IsTitleFight, winnerID,
-					fight.Fighter1Rank, fight.Fighter2Rank,
-					time.Now(), time.Now(),
-				)
-
-				if err != nil {
-					log.Printf("Failed to save fight %s vs %s: %v", fight.Fighter1Name, fight.Fighter2Name, err)
-				} else {
-					log.Printf("Successfully saved fight: %s vs %s at event %s",
-						fight.Fighter1Name, fight.Fighter2Name, eventName)
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func extractEventNameFromURL(url string) string {
-	// Parse out the event name from URLs like:
-	// https://www.ufc.com/event/ufc-284
-	// https://www.ufc.com/event/ufc-fight-night-april-22-2023
-
-	parts := strings.Split(url, "/")
-	if len(parts) < 1 {
-		return ""
-	}
-
-	lastPart := parts[len(parts)-1]
-
-	// Convert to more readable format
-	lastPart = strings.ReplaceAll(lastPart, "-", " ")
-
-	// Handle numbered events
-	if strings.HasPrefix(lastPart, "ufc ") && len(lastPart) > 4 {
-		if num, err := strconv.Atoi(lastPart[4:]); err == nil {
-			return fmt.Sprintf("UFC %d", num)
-		}
-	}
-
-	// Handle Fight Nights
-	if strings.Contains(lastPart, "fight night") {
-		return "UFC Fight Night"
-	}
-
-	return strings.ToUpper(lastPart)
+    return err
 }

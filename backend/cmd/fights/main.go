@@ -5,29 +5,329 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"mma-scheduler/config"
 	"mma-scheduler/pkg/scrapers"
 
-	"github.com/PuerkitoBio/goquery"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 )
 
+// EventInfo holds event information from the database
+type EventInfo struct {
+	ID        string
+	Name      string
+	EventDate time.Time
+	UFCURL    string
+}
+
+// FightResult tracks the processing result of a fight
+type FightResult struct {
+	EventName string
+	FightName string
+	Success   bool
+	Error     error
+}
+
+// Comprehensive fighter struct combining Fighter and FighterExtraInfo
+type ManualFighterData struct {
+	// Core Fighter fields
+	Name        string
+	Nickname    string
+	WeightClass string
+	Status      string
+	Ranking     string
+	UFCID       string
+	UFCURL      string
+	Nationality string
+
+	// Fighter physical attributes
+	Age    int
+	Height string
+	Weight string
+	Reach  string
+
+	// Win methods
+	KOWins  int
+	SubWins int
+	DecWins int
+
+	// Extra info fields
+	KOLosses      int
+	SubLosses     int
+	DecLosses     int
+	DQLosses      int
+	NoContests    int
+	FightingOutOf string
+}
+
+// calculateAge calculates age from a date of birth string in MM/DD/YYYY format
+func calculateAge(dob string) int {
+	// Parse the DOB string
+	t, err := time.Parse("01/02/2006", dob)
+	if err != nil {
+		return 0 // Return 0 for invalid dates
+	}
+
+	// Get current time
+	now := time.Now()
+
+	// Calculate age
+	age := now.Year() - t.Year()
+
+	// Adjust age if birthday hasn't occurred yet this year
+	if now.Month() < t.Month() || (now.Month() == t.Month() && now.Day() < t.Day()) {
+		age--
+	}
+
+	return age
+}
+
+// Populate manual fighters with comprehensive data
+var manualFightersData = map[string]ManualFighterData{
+	"Derrick Mehmen": {
+		Name:          "Derrick Mehmen",
+		Nickname:      "",
+		WeightClass:   "Light Heavyweight",
+		Status:        "Not Fighting",
+		Ranking:       "Unranked",
+		UFCID:         "derrick-mehmen",
+		UFCURL:        "",
+		Nationality:   "United States",
+		Age:           calculateAge("04/15/1985"), // DOB: April 15, 1985
+		Height:        "6' 3\"",
+		Weight:        "205 lbs",
+		Reach:         "76\"",
+		KOWins:        8,
+		SubWins:       4,
+		DecWins:       7,
+		KOLosses:      3,
+		SubLosses:     2,
+		DecLosses:     2,
+		DQLosses:      0,
+		NoContests:    0,
+		FightingOutOf: "Cedar Rapids, Iowa",
+	},
+	"Goran Reljic": {
+		Name:          "Goran Reljic",
+		Nickname:      "",
+		WeightClass:   "Light Heavyweight",
+		Status:        "Not Fighting",
+		Ranking:       "Unranked",
+		UFCID:         "goran-reljic",
+		UFCURL:        "",
+		Nationality:   "Croatia",
+		Age:           calculateAge("03/20/1983"), // DOB: March 20, 1983
+		Height:        "6' 3\"",
+		Weight:        "205 lbs",
+		Reach:         "77\"",
+		KOWins:        6,
+		SubWins:       3,
+		DecWins:       3,
+		KOLosses:      1,
+		SubLosses:     1,
+		DecLosses:     2,
+		DQLosses:      0,
+		NoContests:    0,
+		FightingOutOf: "Zadar, Croatia",
+	},
+	"Jason Godsey": {
+		Name:          "Jason Godsey",
+		Nickname:      "",
+		WeightClass:   "Heavyweight",
+		Status:        "Not Fighting",
+		Ranking:       "Unranked",
+		UFCID:         "jason-godsey",
+		UFCURL:        "",
+		Nationality:   "United States",
+		Age:           calculateAge("02/10/1979"), // DOB: Feb 10, 1979
+		Height:        "6' 0\"",
+		Weight:        "230 lbs",
+		Reach:         "74\"",
+		KOWins:        2,
+		SubWins:       1,
+		DecWins:       1,
+		KOLosses:      1,
+		SubLosses:     1,
+		DecLosses:     0,
+		DQLosses:      0,
+		NoContests:    0,
+		FightingOutOf: "Columbus, Ohio",
+	},
+	"Гловер Тейшейра": {
+		Name:          "Godofredo Pepey",
+		Nickname:      "Pepey",
+		WeightClass:   "Featherweight",
+		Status:        "Not Fighting",
+		Ranking:       "Unranked",
+		UFCID:         "godofredo-pepey",
+		UFCURL:        "",
+		Nationality:   "Brazil",
+		Age:           calculateAge("07/22/1987"),
+		Height:        "5' 10\"",
+		Weight:        "145 lbs",
+		Reach:         "70\"",
+		KOWins:        2,
+		SubWins:       9,
+		DecWins:       2,
+		KOLosses:      1,
+		SubLosses:     1,
+		DecLosses:     3,
+		DQLosses:      0,
+		NoContests:    0,
+		FightingOutOf: "Fortaleza, Brazil",
+	},
+	"Godofredo Pepey": {
+		// Same data as above
+		Name:          "Godofredo Pepey",
+		Nickname:      "Pepey",
+		WeightClass:   "Featherweight",
+		Status:        "Not Fighting",
+		Ranking:       "Unranked",
+		UFCID:         "godofredo-pepey",
+		UFCURL:        "",
+		Nationality:   "Brazil",
+		Age:           calculateAge("07/22/1987"),
+		Height:        "5' 10\"",
+		Weight:        "145 lbs",
+		Reach:         "70\"",
+		KOWins:        2,
+		SubWins:       9,
+		DecWins:       2,
+		KOLosses:      1,
+		SubLosses:     1,
+		DecLosses:     3,
+		DQLosses:      0,
+		NoContests:    0,
+		FightingOutOf: "Fortaleza, Brazil",
+	},
+	"Zelim Imadaev": {
+		Name:          "Zelim Imadaev",
+		Nickname:      "Borz",
+		WeightClass:   "Welterweight",
+		Status:        "Not Fighting",
+		Ranking:       "Unranked",
+		UFCID:         "zelim-imadaev",
+		UFCURL:        "",
+		Nationality:   "Russia",
+		Age:           calculateAge("01/03/1995"), // DOB: Jan 3, 1995
+		Height:        "6' 0\"",
+		Weight:        "170 lbs",
+		Reach:         "74\"",
+		KOWins:        8,
+		SubWins:       0,
+		DecWins:       0,
+		KOLosses:      0,
+		SubLosses:     1,
+		DecLosses:     2,
+		DQLosses:      0,
+		NoContests:    0,
+		FightingOutOf: "Moscow, Russia",
+	},
+}
+
 func main() {
+	// Set up logging
+	log.Println("🚀 Starting Fight Scraper")
+	startTime := time.Now()
+
+	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		// Silently continue if .env not found
 	}
 
+	// Load configuration
 	if err := config.LoadConfig("config/config.json"); err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	// Connect to database
+	db, err := connectToDatabase()
+	if err != nil {
+		log.Fatalf("Database connection error: %v", err)
+	}
+	defer db.Close()
+
+	// Get events with UFC URLs from the database
+	events, err := getEventsWithUFCURLs(db)
+	if err != nil {
+		log.Fatalf("Error fetching events: %v", err)
+	}
+
+	log.Printf("Found %d events with UFC URLs to process", len(events))
+
+	// Create scraper with configuration
+	scraperConfig := &scrapers.ScraperConfig{
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+	}
+	ufcScraper := scrapers.NewUFCFightScraper(scraperConfig)
+
+	// Create database context with longer timeout for the entire operation
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 120*time.Minute)
+	defer dbCancel()
+
+	// Set up concurrency control
+	const maxConcurrentEvents = 3 // Process 3 events at a time
+	sem := make(chan struct{}, maxConcurrentEvents)
+
+	var wg sync.WaitGroup
+	resultChan := make(chan FightResult, 100) // Buffer for results
+
+	// Stats tracking
+	var statsMutex sync.Mutex
+	totalFightsSaved := 0
+	totalEventsProcessed := 0
+
+	// Start result processor
+	go processResults(resultChan)
+
+	// Process events concurrently
+	for i, event := range events {
+		wg.Add(1)
+		sem <- struct{}{} // Acquire semaphore slot
+
+		go func(idx int, event EventInfo) {
+			defer wg.Done()
+			defer func() { <-sem }() // Release semaphore slot
+
+			log.Printf("Processing event %d/%d: %s", idx+1, len(events), event.Name)
+
+			// Create context with timeout for this event
+			eventCtx, eventCancel := context.WithTimeout(dbCtx, 5*time.Minute)
+			defer eventCancel()
+
+			// Process a single event
+			fightsSaved := processEvent(eventCtx, db, ufcScraper, event, resultChan)
+
+			// Update stats
+			statsMutex.Lock()
+			totalEventsProcessed++
+			totalFightsSaved += fightsSaved
+			statsMutex.Unlock()
+
+			// Add a small delay between requests to avoid rate limiting
+			time.Sleep(1 * time.Second)
+		}(i, event)
+	}
+
+	// Wait for all events to be processed
+	wg.Wait()
+	close(resultChan)
+
+	// Wait a moment for the result processor to finish
+	time.Sleep(100 * time.Millisecond)
+
+	log.Printf("🏁 Scraping completed in %v! Processed %d/%d events, saved %d fights total.",
+		time.Since(startTime).Round(time.Second), totalEventsProcessed, len(events), totalFightsSaved)
+}
+
+// connectToDatabase establishes a connection to the database
+func connectToDatabase() (*sql.DB, error) {
 	dbConfig := config.GetDatabaseConfig()
 
 	connStr := fmt.Sprintf(
@@ -43,269 +343,126 @@ func main() {
 
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	defer db.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	rows, err := db.QueryContext(ctx, `
-SELECT id, name, event_date, wiki_url FROM events 
-WHERE wiki_url IS NOT NULL AND wiki_url != '' 
+	return db, nil
+}
 
-AND (
-    name LIKE 'UFC %' 
-    OR name LIKE 'UFC: %'
-    OR name LIKE 'UFC Japan%'
-    OR name LIKE 'UFC Brazil%'
-    OR name = 'UFC'
-)
-AND name NOT IN (
-    'UFC 1: The Beginning', 'UFC 2: No Way Out', 'UFC 3: The American Dream',
-    'UFC 4: Revenge of the Warriors', 'UFC 5: The Return of the Beast',
-    'UFC 6: Clash of the Titans', 'UFC 7: The Brawl in Buffalo',
-    'UFC: The Ultimate Ultimate', 'UFC 8: David vs. Goliath', 'UFC 10: The Tournament',
-    'UFC 11: The Proving Ground', 'UFC: The Ultimate Ultimate 2',
-    'UFC 12: Judgement Day', 'UFC 13: The Ultimate Force', 'UFC 14: Showdown',
-    'UFC 15: Collision Course', 'UFC Japan: Ultimate Japan',
-    'UFC 16: Battle in the Bayou', 'UFC 17: Redemption', 'UFC 23: Ultimate Japan 2'
-)
-ORDER BY event_date DESC`)
+// getEventsWithUFCURLs retrieves events with UFC URLs from the database
+func getEventsWithUFCURLs(db *sql.DB) ([]EventInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Get events with UFC URLs from the database
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, name, event_date, ufc_url 
+		FROM events 
+		WHERE ufc_url IS NOT NULL AND ufc_url != '' 
+		ORDER BY event_date DESC`)
 	if err != nil {
-		log.Fatalf("Error querying events: %v", err)
+		return nil, fmt.Errorf("error querying events: %w", err)
 	}
 	defer rows.Close()
 
-	var events []struct {
-		ID        string
-		Name      string
-		EventDate time.Time
-		WikiURL   string
-	}
+	var events []EventInfo
 
 	for rows.Next() {
-		var event struct {
-			ID        string
-			Name      string
-			EventDate time.Time
-			WikiURL   string
-		}
-		if err := rows.Scan(&event.ID, &event.Name, &event.EventDate, &event.WikiURL); err != nil {
+		var event EventInfo
+		if err := rows.Scan(&event.ID, &event.Name, &event.EventDate, &event.UFCURL); err != nil {
 			continue
 		}
 		events = append(events, event)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Fatalf("Error iterating event rows: %v", err)
+		return nil, fmt.Errorf("error iterating event rows: %w", err)
 	}
 
-	ufcScraper := scrapers.NewUFCFightScraper()
-	dbCtx, dbCancel := context.WithTimeout(context.Background(), 60*time.Minute) // Increased timeout
-	defer dbCancel()
+	return events, nil
+}
 
-	totalFightsSaved := 0
+// processResults handles the result channel and logs results
+func processResults(resultChan <-chan FightResult) {
+	// Track events we've seen
+	seenEvents := make(map[string]int)
 
-	for _, event := range events {
-		// Only process UFC events
-		if !strings.Contains(strings.ToLower(event.Name), "ufc") {
-			continue
+	for result := range resultChan {
+		// Update event stats
+		if _, exists := seenEvents[result.EventName]; !exists {
+			seenEvents[result.EventName] = 0
 		}
+		seenEvents[result.EventName]++
 
-		var ufcFights []scrapers.UFCScrapedFight
-		var err error
-		var successfulScrape bool
-
-		// Attempt 1: Try with UFC event number
-		if eventNumber := extractUFCEventNumber(event.Name); eventNumber != "" {
-			ufcURL := fmt.Sprintf("https://www.ufc.com/event/ufc-%s", eventNumber)
-
-			ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-			if err == nil && len(ufcFights) > 0 {
-				successfulScrape = true
-			}
+		// Log errors
+		if !result.Success {
+			log.Printf("❌ %s: %v", result.FightName, result.Error)
 		}
+	}
+}
 
-		// Attempt 2: Try with date format (both padded and unpadded day)
-		if !successfulScrape {
-			date := event.EventDate.UTC()
-			month := strings.ToLower(date.Month().String())
-			day := date.Day()
-			year := date.Year()
+// processEvent handles a single event, scraping and saving fights
+func processEvent(ctx context.Context, db *sql.DB, scraper *scrapers.UFCFightScraper,
+	event EventInfo, resultChan chan<- FightResult) int {
 
-			// Try exact event date with different formats
-			// Format 1: ufc-fight-night-january-20-2024
-			ufcURL := fmt.Sprintf("https://www.ufc.com/event/ufc-fight-night-%s-%d-%d", month, day, year)
-			ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-
-			// Format 2: ufc-fight-night-january-20-2024-location
-			if err != nil || len(ufcFights) == 0 {
-				// Extract location from event name if available
-				nameParts := strings.Split(event.Name, ":")
-				if len(nameParts) > 1 {
-					location := strings.TrimSpace(nameParts[1])
-					if location != "" {
-						location = strings.ToLower(location)
-						location = strings.ReplaceAll(location, " ", "-")
-						ufcURL = fmt.Sprintf("https://www.ufc.com/event/ufc-fight-night-%s-%d-%d-%s", month, day, year, location)
-						ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-					}
-				}
-			}
-
-			// Try with padded day (e.g., 01, 02)
-			if err != nil || len(ufcFights) == 0 {
-				ufcURL = fmt.Sprintf("https://www.ufc.com/event/ufc-fight-night-%s-%02d-%d", month, day, year)
-				ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-			}
-
-			// Try adjacent days if needed
-			if err != nil || len(ufcFights) == 0 {
-				// Try the day before with both formats
-				yesterday := date.AddDate(0, 0, -1)
-				month = strings.ToLower(yesterday.Month().String())
-				day = yesterday.Day()
-				year = yesterday.Year()
-
-				// Padded and unpadded
-				ufcURL = fmt.Sprintf("https://www.ufc.com/event/ufc-fight-night-%s-%02d-%d", month, day, year)
-				ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-
-				if err != nil || len(ufcFights) == 0 {
-					ufcURL = fmt.Sprintf("https://www.ufc.com/event/ufc-fight-night-%s-%d-%d", month, day, year)
-					ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-				}
-
-				// Try the day after with both formats
-				if err != nil || len(ufcFights) == 0 {
-					tomorrow := date.AddDate(0, 0, 1)
-					month = strings.ToLower(tomorrow.Month().String())
-					day = tomorrow.Day()
-					year = tomorrow.Year()
-
-					ufcURL = fmt.Sprintf("https://www.ufc.com/event/ufc-fight-night-%s-%02d-%d", month, day, year)
-					ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-
-					if err != nil || len(ufcFights) == 0 {
-						ufcURL = fmt.Sprintf("https://www.ufc.com/event/ufc-fight-night-%s-%d-%d", month, day, year)
-						ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-					}
-				}
-			}
-
-			// Try with 'ufc-' prefix instead of 'ufc-fight-night-'
-			if err != nil || len(ufcFights) == 0 {
-				month := strings.ToLower(event.EventDate.Month().String())
-				day := event.EventDate.Day()
-				year := event.EventDate.Year()
-
-				ufcURL = fmt.Sprintf("https://www.ufc.com/event/ufc-%s-%d-%d", month, day, year)
-				ufcFights, err = ufcScraper.ScrapeFights(ufcURL)
-			}
-
-			if err == nil && len(ufcFights) > 0 {
-				successfulScrape = true
-			}
+	// Scrape fights from the UFC URL
+	ufcFights, err := scraper.ScrapeFightsWithContext(ctx, event.UFCURL)
+	if err != nil || len(ufcFights) == 0 {
+		resultChan <- FightResult{
+			EventName: event.Name,
+			FightName: "Event scraping",
+			Success:   false,
+			Error:     fmt.Errorf("failed to scrape event from URL %s: %w", event.UFCURL, err),
 		}
+		return 0
+	}
 
-		// Then try the early UFC scraper for non-tournament events
-		if !successfulScrape {
-			earlyUFCFights, isEarlyEvent := tryEarlyUFCEvent(event)
-			if isEarlyEvent && len(earlyUFCFights) > 0 {
-				log.Printf("Event '%s': Using special early UFC event scraping", event.Name)
-				ufcFights = earlyUFCFights
-				successfulScrape = true
-			}
-		}
+	// Use a wait group to process fights concurrently
+	var fightWg sync.WaitGroup
+	fightSem := make(chan struct{}, 5) // Process up to 5 fights concurrently
 
-		if !successfulScrape && event.WikiURL != "" {
-			wikiURL := event.WikiURL
+	var fightsMutex sync.Mutex
+	fightsSavedForEvent := 0
 
-			// Fetch the Wikipedia page
-			resp, err := http.Get(wikiURL)
-			if err == nil && resp.StatusCode == http.StatusOK {
-				doc, err := goquery.NewDocumentFromReader(resp.Body)
-				resp.Body.Close()
+	// Process each fight - the order from the scraper already has the main event first
+	for j, fight := range ufcFights {
+		fightWg.Add(1)
+		fightSem <- struct{}{} // Acquire fight semaphore
 
-				if err == nil {
-					// Extract fights from the Wikipedia page
-					wikiUFCFights := extractFightsFromWikipedia(doc)
-					if len(wikiUFCFights) > 0 {
-						log.Printf("Event '%s': Falling back to Wikipedia data as UFC site failed", event.Name)
-						ufcFights = wikiUFCFights
-						successfulScrape = true
-					}
-				}
-			}
-		}
+		go func(idx int, fight scrapers.UFCScrapedFight) {
+			defer fightWg.Done()
+			defer func() { <-fightSem }() // Release fight semaphore
 
-		if !successfulScrape || len(ufcFights) == 0 {
-			log.Printf("Failed to scrape event %s: No fights found", event.Name)
-			continue
-		}
+			// Process a single fight
+			fightName := fmt.Sprintf("%s vs %s", fight.Fighter1Name, fight.Fighter2Name)
 
-		for j, fight := range ufcFights {
-			// For fighter1:
-			var fighter1ID string
-
-			// Check if this is a special case that should be skipped
-			mappedName1 := mapFighterName(fight.Fighter1Name)
-
-			// Try exact match with original name
-			err = db.QueryRowContext(dbCtx, "SELECT id FROM fighters WHERE LOWER(name) = LOWER($1)", mappedName1).Scan(&fighter1ID)
+			fighter1ID, err := findFighterId(ctx, db, fight.Fighter1Name, fight.Fighter1LastName, event.Name)
 			if err != nil {
-				// Try with normalized name
-				normalizedName := normalizeAccents(mappedName1)
-				err = db.QueryRowContext(dbCtx, "SELECT id FROM fighters WHERE LOWER(name) = LOWER($1)", normalizedName).Scan(&fighter1ID)
-
-				// If still not found, try with last name
-				if err != nil && len(fight.Fighter1LastName) > 3 {
-					normalizedLastName := normalizeAccents(fight.Fighter1LastName)
-					err = db.QueryRowContext(dbCtx, "SELECT id FROM fighters WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'", normalizedLastName).Scan(&fighter1ID)
-					if err != nil {
-						log.Printf("Fighter '%s' not found in database for event '%s', skipping fight", fight.Fighter1Name, event.Name)
-						continue
-					}
-				} else if err != nil {
-					log.Printf("Fighter '%s' not found in database for event '%s', skipping fight", fight.Fighter1Name, event.Name)
-					continue
+				resultChan <- FightResult{
+					EventName: event.Name,
+					FightName: fightName,
+					Success:   false,
+					Error:     fmt.Errorf("fighter '%s' not found: %w", fight.Fighter1Name, err),
 				}
+				return
 			}
 
-			// For fighter2:
-			var fighter2ID string
-
-			// Check if this is a special case that should be skipped
-			mappedName2 := mapFighterName(fight.Fighter2Name)
-			if mappedName2 == "SKIP" {
-				log.Printf("Fighter '%s' skipped (known edge case) for event '%s'", fight.Fighter2Name, event.Name)
-				continue
-			}
-
-			// Try exact match with original name
-			err = db.QueryRowContext(dbCtx, "SELECT id FROM fighters WHERE LOWER(name) = LOWER($1)", mappedName2).Scan(&fighter2ID)
+			fighter2ID, err := findFighterId(ctx, db, fight.Fighter2Name, fight.Fighter2LastName, event.Name)
 			if err != nil {
-				// Try with normalized name
-				normalizedName := normalizeAccents(mappedName2)
-				err = db.QueryRowContext(dbCtx, "SELECT id FROM fighters WHERE LOWER(name) = LOWER($1)", normalizedName).Scan(&fighter2ID)
-
-				// If still not found, try with last name
-				if err != nil && len(fight.Fighter2LastName) > 3 {
-					normalizedLastName := normalizeAccents(fight.Fighter2LastName)
-					err = db.QueryRowContext(dbCtx, "SELECT id FROM fighters WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'", normalizedLastName).Scan(&fighter2ID)
-					if err != nil {
-						log.Printf("Fighter '%s' not found in database for event '%s', skipping fight", fight.Fighter2Name, event.Name)
-						continue
-					}
-				} else if err != nil {
-					log.Printf("Fighter '%s' not found in database for event '%s', skipping fight", fight.Fighter2Name, event.Name)
-					continue
+				resultChan <- FightResult{
+					EventName: event.Name,
+					FightName: fightName,
+					Success:   false,
+					Error:     fmt.Errorf("fighter '%s' not found: %w", fight.Fighter2Name, err),
 				}
+				return
 			}
 
 			// Determine winner ID if available
@@ -343,6 +500,7 @@ ORDER BY event_date DESC`)
 			fighter1Rank := stripRankPrefix(fight.Fighter1Rank)
 			fighter2Rank := stripRankPrefix(fight.Fighter2Rank)
 
+			// Create query
 			query := `
 			INSERT INTO fights (
 				event_id, fighter1_id, fighter2_id, fighter1_name, fighter2_name, 
@@ -377,7 +535,8 @@ ORDER BY event_date DESC`)
 			now := time.Now()
 			var fightID string
 
-			err = db.QueryRowContext(dbCtx, query,
+			// For fight_order, use index+1 directly - this preserves the order from the UFC website
+			err = db.QueryRowContext(ctx, query,
 				event.ID,            // $1
 				fighter1ID,          // $2
 				fighter2ID,          // $3
@@ -385,7 +544,7 @@ ORDER BY event_date DESC`)
 				fight.Fighter2Name,  // $5
 				fight.WeightClass,   // $6
 				fight.IsMainEvent,   // $7
-				j+1,                 // $8 - fight_order
+				idx+1,               // $8 - fight_order (preserves UFC website order)
 				fighter1WasChampion, // $9
 				fighter2WasChampion, // $10
 				fight.IsTitleFight,  // $11
@@ -401,250 +560,196 @@ ORDER BY event_date DESC`)
 			).Scan(&fightID)
 
 			if err != nil {
-				log.Printf("Failed to save fight %s vs %s: %v", fight.Fighter1Name, fight.Fighter2Name, err)
-				continue
+				resultChan <- FightResult{
+					EventName: event.Name,
+					FightName: fightName,
+					Success:   false,
+					Error:     fmt.Errorf("failed to save fight: %w", err),
+				}
+				return
 			}
 
-			totalFightsSaved++
+			// Update fight count
+			fightsMutex.Lock()
+			fightsSavedForEvent++
+			fightsMutex.Unlock()
+
+			resultChan <- FightResult{
+				EventName: event.Name,
+				FightName: fightName,
+				Success:   true,
+			}
+		}(j, fight)
+	}
+
+	// Wait for all fights to be processed
+	fightWg.Wait()
+
+	log.Printf("✅ Saved %d fights for event '%s'", fightsSavedForEvent, event.Name)
+	return fightsSavedForEvent
+}
+
+func findFighterId(ctx context.Context, db *sql.DB, fighterName, fighterLastName, eventName string) (string, error) {
+	// Check if this is a special case
+	mappedName := mapFighterName(fighterName)
+
+	if mappedName == "MANUAL" {
+		// First try the original fighter name
+		manualData, exists := manualFightersData[fighterName]
+
+		// If not found by original name, check if the mapped name exists
+		if !exists && fighterName != mappedName {
+			manualData, exists = manualFightersData[mappedName]
 		}
 
-		time.Sleep(1 * time.Second)
+		if exists {
+			// Convert to Fighter struct for insertion
+			fighter := scrapers.Fighter{
+				Name:        manualData.Name,
+				Nickname:    manualData.Nickname,
+				WeightClass: manualData.WeightClass,
+				Status:      manualData.Status,
+				Ranking:     manualData.Ranking,
+				UFCID:       manualData.UFCID,
+				UFCURL:      manualData.UFCURL,
+				Nationality: manualData.Nationality,
+				Age:         manualData.Age,
+				Height:      manualData.Height,
+				Weight:      manualData.Weight,
+				Reach:       manualData.Reach,
+				KOWins:      manualData.KOWins,
+				SubWins:     manualData.SubWins,
+				DecWins:     manualData.DecWins,
+			}
+
+			// Try to insert the fighter
+			err := scrapers.InsertFighter(db, &fighter)
+			if err != nil {
+				return "", fmt.Errorf("failed to manually insert fighter '%s': %w", fighterName, err)
+			}
+
+			// Now try to get the ID of the newly inserted fighter
+			var fighterId string
+			err = db.QueryRowContext(ctx, "SELECT id FROM fighters WHERE ufc_id = $1", fighter.UFCID).Scan(&fighterId)
+			if err != nil {
+				return "", fmt.Errorf("fighter '%s' was inserted but ID retrieval failed: %w", fighterName, err)
+			}
+
+			return fighterId, nil
+		}
+
+		return "", fmt.Errorf("fighter '%s' requires manual entry but data not provided", fighterName)
 	}
 
-	log.Println("Starting backfill process for fighters with missing fight data...")
-	backfillFighters := []string{
-		"Alexander Volkanovski",
-		"Diego Lopes",
-		// Add any other fighters with missing fights here
-	}
+	// Handle DETOUR case - direct URL lookup
+	if mappedName == "DETOUR" {
+		// Map of fighter names to their direct UFC IDs from URLs
+		directUrlMap := map[string]string{
+			"Feng Xiaocan":            "feng-xiaocan",
+			"Kiru Sahota":             "kiru-singh-sahota",
+			"Marcio Alexandre Junior": "marcio-alexandre-junior",
+			"Virgil Zwicker":          "virgil-zwicker",
+		}
 
-	// Process each fighter
-	for _, fighterName := range backfillFighters {
-		err := scrapers.BackfillFighterHistory(db, fighterName)
-		if err != nil {
-			log.Printf("Error backfilling %s: %v", fighterName, err)
-		} else {
-			log.Printf("Successfully backfilled %s's fight history", fighterName)
+		if ufcUrlId, exists := directUrlMap[fighterName]; exists {
+			// Try to find fighter by their URL ID
+			var fighterId string
+			err := db.QueryRowContext(ctx, "SELECT id FROM fighters WHERE ufc_id = $1", ufcUrlId).Scan(&fighterId)
+			if err == nil {
+				return fighterId, nil
+			}
+
+			// If not found, insert the fighter directly into the database
+			// Notice we're inserting directly using the schema columns instead of using InsertFighter
+			now := time.Now()
+
+			// Parse record into components (using 0-0-0 as default)
+			wins, losses, draws := 0, 0, 0
+
+			insertQuery := `
+            INSERT INTO fighters 
+            (name, nickname, weight_class, status, rank, ufc_id, ufc_url, 
+             nationality, age, height, weight, reach, 
+             wins, losses, draws, no_contests,
+             ko_wins, sub_wins, dec_wins, 
+             loss_by_ko, loss_by_sub, loss_by_dec, loss_by_dq,
+             created_at, updated_at) 
+            VALUES 
+            ($1, $2, $3, $4, $5, $6, $7, 
+             $8, $9, $10, $11, $12, 
+             $13, $14, $15, $16, 
+             $17, $18, $19, 
+             $20, $21, $22, $23, 
+             $24, $25)
+            RETURNING id`
+
+			err = db.QueryRowContext(ctx, insertQuery,
+				fighterName, // $1 name
+				"",          // $2 nickname
+				"Unknown",   // $3 weight_class
+				"Active",    // $4 status
+				"Unranked",  // $5 rank
+				ufcUrlId,    // $6 ufc_id
+				"https://www.ufc.com/athlete/"+ufcUrlId, // $7 ufc_url
+				"",     // $8 nationality
+				0,      // $9 age
+				"",     // $10 height
+				"",     // $11 weight
+				"",     // $12 reach
+				wins,   // $13 wins
+				losses, // $14 losses
+				draws,  // $15 draws
+				0,      // $16 no_contests
+				0,      // $17 ko_wins
+				0,      // $18 sub_wins
+				0,      // $19 dec_wins
+				0,      // $20 loss_by_ko
+				0,      // $21 loss_by_sub
+				0,      // $22 loss_by_dec
+				0,      // $23 loss_by_dq
+				now,    // $24 created_at
+				now,    // $25 updated_at
+			).Scan(&fighterId)
+
+			if err != nil {
+				return "", fmt.Errorf("failed to insert detour fighter '%s': %w", fighterName, err)
+			}
+
+			return fighterId, nil
 		}
 	}
-	log.Printf("Scraping completed! Saved %d fights total.", totalFightsSaved)
-}
 
-// Extract UFC event number from event name
-func extractUFCEventNumber(name string) string {
-	re := regexp.MustCompile(`UFC\s*-?\s*(\d{3})`)
-	matches := re.FindStringSubmatch(name)
-	if len(matches) > 1 {
-		return matches[1]
-	}
-	return ""
-}
-
-// Extract fights from Wikipedia HTML
-func extractFightsFromWikipedia(doc *goquery.Document) []scrapers.UFCScrapedFight {
-	var fights []scrapers.UFCScrapedFight
-
-	// Find the main fight table - this assumes the structure in the sample you provided
-	doc.Find("table.toccolours").Each(func(i int, table *goquery.Selection) {
-		var inFightSection bool = false
-		var isMainCard bool = false
-
-		// Process each row in the table
-		table.Find("tr").Each(func(j int, row *goquery.Selection) {
-			// Check if this is a section header (Main Card, Preliminary Card)
-			headerText := row.Find("th[colspan]").First().Text()
-
-			if strings.Contains(strings.ToLower(headerText), "main card") {
-				inFightSection = true
-				isMainCard = true
-				return // Skip the header row
-			} else if strings.Contains(strings.ToLower(headerText), "preliminary card") {
-				inFightSection = true
-				isMainCard = false
-				return // Skip the header row
-			}
-
-			// Skip if not in a fight section or if it's the column header row
-			if !inFightSection || row.Find("th").Length() > 0 {
-				return
-			}
-
-			// Extract fighter names, weight class and result
-			cells := row.Find("td")
-			if cells.Length() < 4 {
-				return
-			}
-
-			weightClass := strings.TrimSpace(cells.Eq(0).Text())
-			if weightClass == "" {
-				return
-			}
-
-			// Check if it's a title fight
-			isTitleFight := strings.Contains(strings.ToLower(weightClass), "title")
-
-			// Extract fighter names - try the <a> tag first, if it exists
-			fighter1Element := cells.Eq(1).Find("a").First()
-			fighter2Element := cells.Eq(3).Find("a").First()
-
-			var fighter1Name, fighter2Name string
-
-			// If <a> tag exists, use its text
-			if fighter1Element.Length() > 0 {
-				fighter1Name = strings.TrimSpace(fighter1Element.Text())
-			} else {
-				// Otherwise use the cell text directly
-				fighter1Name = strings.TrimSpace(cells.Eq(1).Text())
-			}
-
-			if fighter2Element.Length() > 0 {
-				fighter2Name = strings.TrimSpace(fighter2Element.Text())
-			} else {
-				fighter2Name = strings.TrimSpace(cells.Eq(3).Text())
-			}
-
-			// Skip if either fighter name is missing
-			if fighter1Name == "" || fighter2Name == "" {
-				return
-			}
-
-			// Clean fighter names - remove any footnote references like [1]
-			re := regexp.MustCompile(`\[\d+\]`)
-			fighter1Name = strings.TrimSpace(re.ReplaceAllString(fighter1Name, ""))
-			fighter2Name = strings.TrimSpace(re.ReplaceAllString(fighter2Name, ""))
-
-			// Extract last names for better matching
-			fighter1LastName := extractLastName(fighter1Name)
-			fighter2LastName := extractLastName(fighter2Name)
-
-			// Extract result method and round if available
-			var method, round, time string
-			if cells.Length() >= 7 {
-				method = strings.TrimSpace(cells.Eq(4).Text())
-				round = strings.TrimSpace(cells.Eq(5).Text())
-				time = strings.TrimSpace(cells.Eq(6).Text())
-			} else if cells.Length() >= 5 {
-				// Some tables have fewer columns
-				method = strings.TrimSpace(cells.Eq(4).Text())
-			}
-
-			// Determine winner (Wiki tables usually format with "def." in the middle)
-			var fighter1Result, fighter2Result string
-			resultText := strings.TrimSpace(cells.Eq(2).Text())
-			if strings.Contains(resultText, "def.") {
-				fighter1Result = "Win"
-				fighter2Result = "Loss"
-			} else if strings.Contains(resultText, "vs.") || strings.Contains(resultText, "vs") {
-				// No result yet or draw
-				fighter1Result = ""
-				fighter2Result = ""
-			}
-
-			// Create fight struct
-			fight := scrapers.UFCScrapedFight{
-				Fighter1Name:     fighter1Name,
-				Fighter2Name:     fighter2Name,
-				Fighter1LastName: fighter1LastName,
-				Fighter2LastName: fighter2LastName,
-				Fighter1Result:   fighter1Result,
-				Fighter2Result:   fighter2Result,
-				WeightClass:      weightClass,
-				IsMainEvent:      j == 2 && isMainCard, // First fight in main card is often main event
-				IsTitleFight:     isTitleFight,
-				Method:           method,
-				Round:            round,
-				Time:             time,
-			}
-
-			fights = append(fights, fight)
-		})
-	})
-
-	// If we found no fights with the standard method, try an alternative table structure
-	if len(fights) == 0 {
-		// Try looking for different table structures
-		doc.Find("table.wikitable").Each(func(i int, tableBody *goquery.Selection) {
-			// Process this table if it looks like a fight card
-			if tableBody.Find("tr th:contains('Weight class')").Length() > 0 {
-				tableBody.Find("tr").Each(func(j int, row *goquery.Selection) {
-					// Skip header row
-					if j == 0 {
-						return
-					}
-
-					cells := row.Find("td")
-					if cells.Length() < 5 { // Minimum columns needed
-						return
-					}
-
-					// Extract data from cells
-					weightClass := strings.TrimSpace(cells.Eq(0).Text())
-					fighter1Name := strings.TrimSpace(cells.Eq(1).Text())
-					resultText := strings.TrimSpace(cells.Eq(2).Text())
-					fighter2Name := strings.TrimSpace(cells.Eq(3).Text())
-					method := ""
-
-					if cells.Length() > 4 {
-						method = strings.TrimSpace(cells.Eq(4).Text())
-					}
-
-					// Skip if essential data is missing
-					if weightClass == "" || fighter1Name == "" || fighter2Name == "" {
-						return
-					}
-
-					// Clean fighter names
-					re := regexp.MustCompile(`\[\d+\]`)
-					fighter1Name = strings.TrimSpace(re.ReplaceAllString(fighter1Name, ""))
-					fighter2Name = strings.TrimSpace(re.ReplaceAllString(fighter2Name, ""))
-
-					// Determine winner
-					var fighter1Result, fighter2Result string
-					if strings.Contains(resultText, "def.") {
-						fighter1Result = "Win"
-						fighter2Result = "Loss"
-					}
-
-					// Add to fights list
-					fight := scrapers.UFCScrapedFight{
-						Fighter1Name:     fighter1Name,
-						Fighter2Name:     fighter2Name,
-						Fighter1LastName: extractLastName(fighter1Name),
-						Fighter2LastName: extractLastName(fighter2Name),
-						Fighter1Result:   fighter1Result,
-						Fighter2Result:   fighter2Result,
-						WeightClass:      weightClass,
-						IsMainEvent:      j == 1, // First non-header row is main event
-						IsTitleFight:     strings.Contains(strings.ToLower(weightClass), "title"),
-						Method:           method,
-					}
-
-					fights = append(fights, fight)
-				})
-			}
-		})
+	// Skip case
+	if mappedName == "SKIP" {
+		return "", fmt.Errorf("fighter '%s' skipped (known edge case) for event '%s'", fighterName, eventName)
 	}
 
-	// Add more logging to help diagnose issues
-	if len(fights) == 0 {
-		fmt.Println("Warning: No fights extracted from Wikipedia page")
-		// Print table structure for debugging
-		doc.Find("table").Each(func(i int, table *goquery.Selection) {
-			className, _ := table.Attr("class")
-			fmt.Printf("Found table with class: %s\n", className)
-		})
+	var fighterId string
+	var err error
+
+	// Try exact match with original name
+	err = db.QueryRowContext(ctx, "SELECT id FROM fighters WHERE LOWER(name) = LOWER($1)", mappedName).Scan(&fighterId)
+	if err == nil {
+		return fighterId, nil
 	}
 
-	return fights
-}
-
-// Helper function to extract last name
-func extractLastName(fullName string) string {
-	parts := strings.Fields(fullName)
-	if len(parts) > 1 {
-		return parts[len(parts)-1]
+	// Try with normalized name
+	normalizedName := normalizeAccents(mappedName)
+	err = db.QueryRowContext(ctx, "SELECT id FROM fighters WHERE LOWER(name) = LOWER($1)", normalizedName).Scan(&fighterId)
+	if err == nil {
+		return fighterId, nil
 	}
-	return fullName
+
+	// Try with last name if it's long enough
+	if len(fighterLastName) > 3 {
+		normalizedLastName := normalizeAccents(fighterLastName)
+		err = db.QueryRowContext(ctx, "SELECT id FROM fighters WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'", normalizedLastName).Scan(&fighterId)
+		if err == nil {
+			return fighterId, nil
+		}
+	}
+
+	return "", fmt.Errorf("fighter '%s' not found in database for event '%s'", fighterName, eventName)
 }
 
 // Helper function to strip rank prefix (e.g., "#3" -> "3")
@@ -674,198 +779,40 @@ func normalizeAccents(name string) string {
 	// Create a map for accented character replacements
 	replacements := map[string]string{
 		// Lowercase
-		"á": "a",
-		"à": "a",
-		"â": "a",
-		"ä": "a",
-		"ã": "a",
-		"å": "a",
-		"ą": "a",
-		"ă": "a",
-		"ā": "a",
-
-		"é": "e",
-		"è": "e",
-		"ê": "e",
-		"ë": "e",
-		"ę": "e",
-		"ė": "e",
-		"ě": "e",
-		"ē": "e",
-
-		"í": "i",
-		"ì": "i",
-		"î": "i",
-		"ï": "i",
-		"ı": "i", // Turkish dotless i
-		"ī": "i",
-
-		"ó": "o",
-		"ò": "o",
-		"ô": "o",
-		"ö": "o", // This is in Özkılıç
-		"õ": "o",
-		"ø": "o",
-		"ő": "o",
-		"ō": "o",
-		"ơ": "o",
-
-		"ú": "u",
-		"ù": "u",
-		"û": "u",
-		"ü": "u",
-		"ū": "u",
-		"ů": "u",
-		"ű": "u",
-		"ų": "u",
-		"ư": "u",
-
-		"ý": "y",
-		"ÿ": "y",
-		"ŷ": "y",
-
-		"ç": "c",
-		"č": "c",
-		"ć": "c",
-		"ĉ": "c",
-
-		"ñ": "n",
-		"ń": "n",
-		"ň": "n",
-		"ņ": "n",
-
-		"ş": "s",
-		"ś": "s",
-		"š": "s",
-		"ș": "s",
-		"ŝ": "s",
-
-		"ž": "z",
-		"ź": "z",
-		"ż": "z",
-
-		"ł": "l",
-		"ĺ": "l",
-		"ļ": "l",
-		"ľ": "l",
-
-		"ť": "t",
-		"ț": "t",
-		"ţ": "t",
-
-		"ď": "d",
-		"đ": "d",
-
-		"ř": "r",
-		"ŕ": "r",
-		"ŗ": "r",
-
-		"ğ": "g", // This is in Lim Hyun-gyu
-		"ĝ": "g",
-		"ģ": "g",
-		"ġ": "g",
-
-		"ĵ": "j",
-		"ķ": "k",
-		"ĥ": "h",
-		"ħ": "h",
+		"á": "a", "à": "a", "â": "a", "ä": "a", "ã": "a", "å": "a", "ą": "a", "ă": "a", "ā": "a",
+		"é": "e", "è": "e", "ê": "e", "ë": "e", "ę": "e", "ė": "e", "ě": "e", "ē": "e",
+		"í": "i", "ì": "i", "î": "i", "ï": "i", "ı": "i", "ī": "i",
+		"ó": "o", "ò": "o", "ô": "o", "ö": "o", "õ": "o", "ø": "o", "ő": "o", "ō": "o", "ơ": "o",
+		"ú": "u", "ù": "u", "û": "u", "ü": "u", "ū": "u", "ů": "u", "ű": "u", "ų": "u", "ư": "u",
+		"ý": "y", "ÿ": "y", "ŷ": "y",
+		"ç": "c", "č": "c", "ć": "c", "ĉ": "c",
+		"ñ": "n", "ń": "n", "ň": "n", "ņ": "n",
+		"ş": "s", "ś": "s", "š": "s", "ș": "s", "ŝ": "s",
+		"ž": "z", "ź": "z", "ż": "z",
+		"ł": "l", "ĺ": "l", "ļ": "l", "ľ": "l",
+		"ť": "t", "ț": "t", "ţ": "t",
+		"ď": "d", "đ": "d",
+		"ř": "r", "ŕ": "r", "ŗ": "r",
+		"ğ": "g", "ĝ": "g", "ģ": "g", "ġ": "g",
+		"ĵ": "j", "ķ": "k", "ĥ": "h", "ħ": "h",
 
 		// Uppercase
-		"Á": "A",
-		"À": "A",
-		"Â": "A",
-		"Ä": "A",
-		"Ã": "A",
-		"Å": "A",
-		"Ą": "A",
-		"Ă": "A",
-		"Ā": "A",
-
-		"É": "E",
-		"È": "E",
-		"Ê": "E",
-		"Ë": "E",
-		"Ę": "E",
-		"Ė": "E",
-		"Ě": "E",
-		"Ē": "E",
-
-		"Í": "I",
-		"Ì": "I",
-		"Î": "I",
-		"Ï": "I",
-		"İ": "I", // Turkish dotted I
-		"Ī": "I",
-
-		"Ó": "O",
-		"Ò": "O",
-		"Ô": "O",
-		"Ö": "O",
-		"Õ": "O",
-		"Ø": "O",
-		"Ő": "O",
-		"Ō": "O",
-		"Ơ": "O",
-
-		"Ú": "U",
-		"Ù": "U",
-		"Û": "U",
-		"Ü": "U",
-		"Ū": "U",
-		"Ů": "U",
-		"Ű": "U",
-		"Ų": "U",
-		"Ư": "U",
-
-		"Ý": "Y",
-		"Ÿ": "Y",
-		"Ŷ": "Y",
-
-		"Ç": "C",
-		"Č": "C",
-		"Ć": "C",
-		"Ĉ": "C",
-
-		"Ñ": "N",
-		"Ń": "N",
-		"Ň": "N",
-		"Ņ": "N",
-
-		"Ş": "S",
-		"Ś": "S",
-		"Š": "S",
-		"Ș": "S",
-		"Ŝ": "S",
-
-		"Ž": "Z",
-		"Ź": "Z",
-		"Ż": "Z",
-
-		"Ł": "L",
-		"Ĺ": "L",
-		"Ļ": "L",
-		"Ľ": "L",
-
-		"Ť": "T",
-		"Ț": "T",
-		"Ţ": "T",
-
-		"Ď": "D",
-		"Đ": "D",
-
-		"Ř": "R",
-		"Ŕ": "R",
-		"Ŗ": "R",
-
-		"Ğ": "G",
-		"Ĝ": "G",
-		"Ģ": "G",
-		"Ġ": "G",
-
-		"Ĵ": "J",
-		"Ķ": "K",
-		"Ĥ": "H",
-		"Ħ": "H",
+		"Á": "A", "À": "A", "Â": "A", "Ä": "A", "Ã": "A", "Å": "A", "Ą": "A", "Ă": "A", "Ā": "A",
+		"É": "E", "È": "E", "Ê": "E", "Ë": "E", "Ę": "E", "Ė": "E", "Ě": "E", "Ē": "E",
+		"Í": "I", "Ì": "I", "Î": "I", "Ï": "I", "İ": "I", "Ī": "I",
+		"Ó": "O", "Ò": "O", "Ô": "O", "Ö": "O", "Õ": "O", "Ø": "O", "Ő": "O", "Ō": "O", "Ơ": "O",
+		"Ú": "U", "Ù": "U", "Û": "U", "Ü": "U", "Ū": "U", "Ů": "U", "Ű": "U", "Ų": "U", "Ư": "U",
+		"Ý": "Y", "Ÿ": "Y", "Ŷ": "Y",
+		"Ç": "C", "Č": "C", "Ć": "C", "Ĉ": "C",
+		"Ñ": "N", "Ń": "N", "Ň": "N", "Ņ": "N",
+		"Ş": "S", "Ś": "S", "Š": "S", "Ș": "S", "Ŝ": "S",
+		"Ž": "Z", "Ź": "Z", "Ż": "Z",
+		"Ł": "L", "Ĺ": "L", "Ļ": "L", "Ľ": "L",
+		"Ť": "T", "Ț": "T", "Ţ": "T",
+		"Ď": "D", "Đ": "D",
+		"Ř": "R", "Ŕ": "R", "Ŗ": "R",
+		"Ğ": "G", "Ĝ": "G", "Ģ": "G", "Ġ": "G",
+		"Ĵ": "J", "Ķ": "K", "Ĥ": "H", "Ħ": "H",
 	}
 
 	// Apply all replacements
@@ -878,35 +825,18 @@ func normalizeAccents(name string) string {
 
 func mapFighterName(name string) string {
 	knownMappings := map[string]string{
-		"Alberto Uda":             "Alberto Pereira",
-		"Alex Stiebling":          "Alex Steibling",
-		"Alexey Oleynik":          "Aleksei Oleinik",
-		"Antonio dos Santos Jr.":  "Antonio dos Santos",
-		"Antônio dos Santos Jr.":  "Antonio dos Santos",
-		"Ariane Lipski":           "Ariane da Silva",
-		"Carlo Pedersoli Jr.":     "Carlo Pedersoli",
-		"Choi Doo-ho":             "Dooho Choi",
-		"Chris Liguori":           "Chris Ligouri",
-		"Dmitry Smolyakov":        "Dmitrii Smoliakov",
-		"Гловер Тейшейра":         "Godofredo Pepey",
-		"Jose Maria Tome":         "Jose Maria",
-		"Joanne Calderwood":       "Joanne Wood",
-		"Kang Kyung-ho":           "Kyung Ho Kang",
-		"Katlyn Chookagian":       "Katlyn Cerminara",
-		"Katsuhisa Fujii":         "Katsuhisa Fuji",
-		"Kim Dong-hyun":           "Dong Hyun Kim",
-		"Lim Hyun-gyu":            "Hyun Gyu Lim",
-		"Luiz Dutra Jr.":          "Luiz Dutra",
-		"Marcio Alexandre Jr.":    "Marcio Alexandre",
-		"Márcio Alexandre Jr.":    "Marcio Alexandre",
-		"Marcos Rosa Mariano":     "Marcos Rosa",
-		"Markus Perez Echeimberg": "Markus Perez",
-		"Mostapha al-Turk":        "Mostapha Al Turk",
-		"Nina Ansaroff":           "Nina Nunes",
-		"Seo Hee Ham":             "Seohee Ham",
-		"Tony Petarra":            "Tony Peterra",
-		"Veronica Macedo":         "Veronica Hardy",
-		"Zhumabek Tursyn":         "Jumabieke Tuerxun",
+		"Гловер Тейшейра": "Godofredo Pepey",
+		"Cesar Martucci":  "Cesar Marscucci",
+
+		"Derrick Mehmen":          "MANUAL",
+		"Feng Xiaocan":            "DETOUR",
+		"Goran Reljic":            "MANUAL",
+		"Godofredo Pepey":         "MANUAL",
+		"Jason Godsey":            "MANUAL",
+		"Kiru Sahota":             "DETOUR",
+		"Marcio Alexandre Junior": "DETOUR",
+		"Virgil Zwicker":          "DETOUR",
+		"Zelim Imadaev":           "MANUAL",
 	}
 
 	mappedName, exists := knownMappings[name]
@@ -926,300 +856,4 @@ func mapFighterName(name string) string {
 	}
 
 	return name
-}
-
-// Enhanced tryEarlyUFCEvent function to handle more table structures
-func tryEarlyUFCEvent(event struct {
-	ID        string
-	Name      string
-	EventDate time.Time
-	WikiURL   string
-}) ([]scrapers.UFCScrapedFight, bool) {
-	// Check if this is an early UFC event (UFC 1-30 or named events like UFC Brazil)
-	isEarlyEvent := false
-	eventNumber := extractUFCEventNumber(event.Name)
-
-	// Check if it's a numbered event from 1-30
-	if eventNumber != "" {
-		num, err := strconv.Atoi(eventNumber)
-		if err == nil && num <= 30 {
-			isEarlyEvent = true
-		}
-	}
-
-	// Also check for special named early events
-	if strings.Contains(event.Name, "UFC Brazil") ||
-		strings.Contains(event.Name, "Ultimate Japan") ||
-		strings.Contains(event.Name, "Ultimate Ultimate") {
-		isEarlyEvent = true
-	}
-
-	if !isEarlyEvent {
-		return nil, false
-	}
-
-	log.Printf("Handling early UFC event: %s", event.Name)
-
-	// For early events, we need to look for a different table structure
-	resp, err := http.Get(event.WikiURL)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return nil, false
-	}
-
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	resp.Body.Close()
-
-	if err != nil {
-		return nil, false
-	}
-
-	var fights []scrapers.UFCScrapedFight
-
-	// Process all table.toccolours tables
-	doc.Find("table.toccolours").Each(func(i int, table *goquery.Selection) {
-		var currentSection string
-		// Remove unused isMainCard variable
-
-		table.Find("tr").Each(func(j int, row *goquery.Selection) {
-			// Check if this is a section header
-			headerCells := row.Find("th[colspan]")
-			if headerCells.Length() > 0 {
-				headerText := strings.TrimSpace(headerCells.First().Text())
-				currentSection = headerText
-
-				// Remove the isMainCard assignment since it's not used
-				return // Skip header row
-			}
-
-			// Skip column header rows
-			if row.Find("th").Length() > 0 {
-				return
-			}
-
-			// Process fight data rows
-			cells := row.Find("td")
-			if cells.Length() < 4 {
-				return // Not enough cells for a fight
-			}
-
-			// Get the weight class from the first cell
-			weightClass := strings.TrimSpace(cells.Eq(0).Text())
-			if weightClass == "" {
-				return // Skip rows without weight class
-			}
-
-			// Extract fighter names (cells 1 & 3)
-			var fighter1Name, fighter2Name string
-
-			// Try with links first, then fall back to text
-			fighter1Cell := cells.Eq(1)
-			fighter1Link := fighter1Cell.Find("a").First()
-			if fighter1Link.Length() > 0 {
-				fighter1Name = strings.TrimSpace(fighter1Link.Text())
-			} else {
-				fighter1Name = strings.TrimSpace(fighter1Cell.Text())
-			}
-
-			// Check for champion indicator and remove it
-			if strings.Contains(fighter1Name, "(c)") {
-				fighter1Name = strings.Replace(fighter1Name, "(c)", "", -1)
-				fighter1Name = strings.TrimSpace(fighter1Name)
-			}
-
-			fighter2Cell := cells.Eq(3)
-			fighter2Link := fighter2Cell.Find("a").First()
-			if fighter2Link.Length() > 0 {
-				fighter2Name = strings.TrimSpace(fighter2Link.Text())
-			} else {
-				fighter2Name = strings.TrimSpace(fighter2Cell.Text())
-			}
-
-			// Skip if either fighter name is missing
-			if fighter1Name == "" || fighter2Name == "" {
-				return
-			}
-
-			// Clean fighter names - remove footnotes
-			re := regexp.MustCompile(`\[\w+\]`)
-			fighter1Name = strings.TrimSpace(re.ReplaceAllString(fighter1Name, ""))
-			fighter2Name = strings.TrimSpace(re.ReplaceAllString(fighter2Name, ""))
-
-			// Get result (cell 2)
-			var fighter1Result, fighter2Result string
-			resultText := strings.TrimSpace(cells.Eq(2).Text())
-			if strings.Contains(resultText, "def.") {
-				fighter1Result = "Win"
-				fighter2Result = "Loss"
-			} else if strings.Contains(resultText, "draw") {
-				fighter1Result = "Draw"
-				fighter2Result = "Draw"
-			}
-
-			// Get method, round, time
-			var method, round, time string
-
-			// Method is usually in cell 4
-			if cells.Length() > 4 {
-				method = strings.TrimSpace(cells.Eq(4).Text())
-			}
-
-			// Round and time may be in cells 5 & 6, but some early events just have time
-			if cells.Length() > 6 {
-				round = strings.TrimSpace(cells.Eq(5).Text())
-				time = strings.TrimSpace(cells.Eq(6).Text())
-			} else if cells.Length() > 5 {
-				// Check if cell 5 has time or round
-				cell5Text := strings.TrimSpace(cells.Eq(5).Text())
-				if strings.Contains(cell5Text, ":") {
-					// Likely a time
-					time = cell5Text
-				} else {
-					// Likely a round
-					round = cell5Text
-				}
-			}
-
-			// For UFC 17 style tables where there's no round column but time in cell 6
-			if round == "" && cells.Length() > 6 {
-				time = strings.TrimSpace(cells.Eq(6).Text())
-			}
-
-			// Check if this is a title fight
-			isTitleFight := strings.Contains(strings.ToLower(currentSection), "championship") ||
-				strings.Contains(strings.ToLower(weightClass), "title")
-
-			// Determine if this is the main event
-			// For early UFC events, championship fights or the first fight in the first section are main events
-			isMainEvent := (j == 2 && i == 0) || // First fight in first table
-				strings.Contains(strings.ToLower(currentSection), "championship") || // Championship section
-				(currentSection != "" && strings.Contains(strings.ToLower(currentSection), "main")) // Main event section
-
-			// Create the fight
-			fight := scrapers.UFCScrapedFight{
-				Fighter1Name:     fighter1Name,
-				Fighter2Name:     fighter2Name,
-				Fighter1LastName: extractLastName(fighter1Name),
-				Fighter2LastName: extractLastName(fighter2Name),
-				Fighter1Result:   fighter1Result,
-				Fighter2Result:   fighter2Result,
-				WeightClass:      weightClass,
-				IsMainEvent:      isMainEvent,
-				IsTitleFight:     isTitleFight,
-				Method:           method,
-				Round:            round,
-				Time:             time,
-			}
-
-			fights = append(fights, fight)
-		})
-	})
-
-	// If we found fights, return them
-	if len(fights) > 0 {
-		return fights, true
-	}
-
-	// If no fights found, try more aggressive methods (older events with different table formats)
-	// Search for any tables with fight data
-	doc.Find("table").Each(func(i int, table *goquery.Selection) {
-		table.Find("tr").Each(func(j int, row *goquery.Selection) {
-			// Skip header rows
-			if row.Find("th").Length() > 0 {
-				return
-			}
-
-			cells := row.Find("td")
-			if cells.Length() < 3 {
-				return // Need at least fighter1, result, fighter2
-			}
-
-			// Try to detect if this is a fight row
-			var isFightRow bool
-			var fighter1Name, fighter2Name, weightClass, method string
-
-			// Look for text like "def." which indicates a fight result
-			row.Find("td").Each(func(k int, cell *goquery.Selection) {
-				cellText := strings.TrimSpace(cell.Text())
-				if strings.Contains(cellText, "def.") ||
-					strings.Contains(strings.ToLower(cellText), "defeat") ||
-					strings.Contains(strings.ToLower(cellText), "submission") ||
-					strings.Contains(strings.ToLower(cellText), "tko") ||
-					strings.Contains(strings.ToLower(cellText), "knockout") {
-					isFightRow = true
-				}
-			})
-
-			if !isFightRow {
-				return
-			}
-
-			// Try different patterns to extract fighter names and other info
-			// Pattern 1: Fighter1 | def. | Fighter2
-			if cells.Length() >= 3 {
-				fighter1Name = strings.TrimSpace(cells.Eq(0).Text())
-				// Use resultText instead of just declaring it
-				var resultType string
-				resultType = strings.TrimSpace(cells.Eq(1).Text())
-				fighter2Name = strings.TrimSpace(cells.Eq(2).Text())
-
-				// Check for links
-				fighter1Link := cells.Eq(0).Find("a").First()
-				if fighter1Link.Length() > 0 {
-					fighter1Name = strings.TrimSpace(fighter1Link.Text())
-				}
-
-				fighter2Link := cells.Eq(2).Find("a").First()
-				if fighter2Link.Length() > 0 {
-					fighter2Name = strings.TrimSpace(fighter2Link.Text())
-				}
-
-				// If we have more cells, try to extract method
-				if cells.Length() > 3 {
-					method = strings.TrimSpace(cells.Eq(3).Text())
-				}
-
-				// Default weight class for very old events
-				weightClass = "Heavyweight" // Early UFC was often open weight
-
-				// Create the fight if we have enough data
-				if fighter1Name != "" && fighter2Name != "" {
-					// Clean fighter names
-					re := regexp.MustCompile(`\[\w+\]`)
-					fighter1Name = strings.TrimSpace(re.ReplaceAllString(fighter1Name, ""))
-					fighter2Name = strings.TrimSpace(re.ReplaceAllString(fighter2Name, ""))
-
-					// Determine result based on resultType if possible
-					var fighter1Result, fighter2Result string
-					if strings.Contains(resultType, "def.") {
-						fighter1Result = "Win"
-						fighter2Result = "Loss"
-					} else {
-						fighter1Result = "Win"  // Default
-						fighter2Result = "Loss" // Default
-					}
-
-					fight := scrapers.UFCScrapedFight{
-						Fighter1Name:     fighter1Name,
-						Fighter2Name:     fighter2Name,
-						Fighter1LastName: extractLastName(fighter1Name),
-						Fighter2LastName: extractLastName(fighter2Name),
-						Fighter1Result:   fighter1Result,
-						Fighter2Result:   fighter2Result,
-						WeightClass:      weightClass,
-						IsMainEvent:      j == 0, // First fight is often main event
-						Method:           method,
-					}
-
-					fights = append(fights, fight)
-				}
-			}
-		})
-	})
-
-	// If we found any fights, consider it successful
-	if len(fights) > 0 {
-		return fights, true
-	}
-
-	return nil, false
 }

@@ -39,12 +39,23 @@ interface Fight {
     name: string;
     event_date: string;
   };
-  fighter1_id: string;
-  fighter2_id: string;
-  fighter1_name: string;
-  fighter2_name: string;
-  weight_class: string;
-  is_main_event: boolean;
+  fighter1_id: string,
+  fighter2_id: string,
+  fighter1_name: string,
+    fighter2_name: string,
+    fighter1_rank: string,
+    fighter2_rank: string,
+    weight_class: string,
+    is_main_event: boolean,
+    fighter1_was_champion: boolean,
+    fighter2_was_champion: boolean,
+    was_title_fight: boolean,
+    fight_order: number,
+    winner_id: string,
+    result_method: string,
+    result_method_details: string,
+    result_round: string,
+    result_time: string,
 }
 
 interface FighterRanking {
@@ -189,12 +200,12 @@ const sortedFights = allFights.sort((a, b) => {
                     {fighterData.status || 'Unknown'}
                   </span>
                 </div>
-                {fighterData.age && (
-                  <div class="stat-item">
-                    <span class="stat-label">Age</span>
-                    <span class="stat-value">{fighterData.age}</span>
-                  </div>
-                )}
+                {(fighterData.age !== null && fighterData.age !== undefined && fighterData.age > 0) && (
+  <div class="stat-item">
+    <span class="stat-label">Age</span>
+    <span class="stat-value">{fighterData.age}</span>
+  </div>
+)}
                 {fighterData.height && (
                   <div class="stat-item">
                     <span class="stat-label">Height</span>
@@ -304,58 +315,79 @@ const sortedFights = allFights.sort((a, b) => {
             </div>
           </div>
 
-          <!-- Updated Fight History Section -->
-<div class="fighter-fights">
+          <div class="fighter-fights">
   <h2>Fight History</h2>
   {sortedFights.length > 0 ? (
-    <div class="fights-list">
-      {sortedFights.map(fight => {
-        const isMainEvent = fight.is_main_event;
-        const opponent =
-          fight.fighter1_id === fighterId
-            ? fight.fighter2_name
-            : fight.fighter1_name;
-        const opponentId =
-          fight.fighter1_id === fighterId
-            ? fight.fighter2_id
-            : fight.fighter1_id;
-        const eventDate = new Date(fight.event.event_date);
+    <div>
+      <div class="fights-list" id="fights-list">
+        {sortedFights.slice(0, 3).map(fight => {
+          const isMainEvent = fight.is_main_event;
+          const opponent =
+            fight.fighter1_id === fighterId
+              ? fight.fighter2_name
+              : fight.fighter1_name;
+          const opponentId =
+            fight.fighter1_id === fighterId
+              ? fight.fighter2_id
+              : fight.fighter1_id;
+          const eventDate = new Date(fight.event.event_date);
+          const isWin = fight.winner_id === fighterId;
+          const result = fight.winner_id 
+            ? (isWin ? 'WIN' : 'LOSS') 
+            : (fight.result_method === 'Draw' ? 'DRAW' : 'NC');
 
-        return (
-          <div class={`fight-card ${isMainEvent ? 'main-event' : ''}`}>
-            <a href={`/events/event/${fight.event_id}`} class="event-link">
-              <div class="fight-date">
-                <span>{eventDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}</span>
-                {isMainEvent && <span class="main-event-badge">Main Event</span>}
-              </div>
-              
-              <div class="fight-details">
-                <span class="event-name">
-                  {fight.event.name}
-                </span>
-                
-                <div class="matchup">
-                  <span class="vs-label">vs</span>
-                  <a 
-                    href={`/fighters/${opponentId}`} 
-                    class="opponent-link"
-                  >
-                    {opponent}
-                  </a>
+          return (
+            <div class={`fight-card ${isMainEvent ? 'main-event' : ''}`}>
+              <a href={`/events/event/${fight.event_id}`} class="event-link">
+                <div class="fight-date">
+                  <span>{eventDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}</span>
+                  {isMainEvent && <span class="main-event-badge">Main Event</span>}
                 </div>
                 
-                <div class="fight-meta">
-                  <span class="weight-class-pill">{fight.weight_class}</span>
+                <div class="fight-details">
+                  <span class="event-name">{fight.event.name}</span>
+                  
+                  <div class="matchup">
+                    <span class="vs-label">vs</span>
+                    <a href={`/fighters/${opponentId}`} class="opponent-link">{opponent}</a>
+                    <span class={`result-badge ${result.toLowerCase()}`}>{result}</span>
+                  </div>
+                  
+                  <div class="fight-meta">
+                    <span class="weight-class-pill">{fight.weight_class}</span>
+                    {fight.result_method && (
+                      <span class="method-pill">
+                        {fight.result_method}
+                        {fight.result_method_details && ` (${fight.result_method_details})`}
+                        {fight.result_round && ` R${fight.result_round}`}
+                        {fight.result_time && ` ${fight.result_time}`}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </a>
-          </div>
-        );
-      })}
+              </a>
+            </div>
+          );
+        })}
+      </div>
+      
+      {sortedFights.length > 3 && (
+        <div class="load-more-container">
+          <button id="load-more-fights" class="load-more-button">
+            Load More
+          </button>
+          <p class="fights-count">
+            Showing <span id="shown-fights-count">3</span> of <span id="total-fights-count">{sortedFights.length}</span> fights
+          </p>
+        </div>
+      )}
+      
+      <div id="all-fights-data" style="display: none;">{JSON.stringify(sortedFights)}</div>
+      <div id="fighter-id-data" style="display: none;">{fighterId}</div>
     </div>
   ) : (
     <div class="no-fights">
@@ -377,5 +409,112 @@ const sortedFights = allFights.sort((a, b) => {
         </div>
       )
     }
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const loadMoreButton = document.getElementById('load-more-fights');
+    const fightsList = document.getElementById('fights-list');
+    const shownCountSpan = document.getElementById('shown-fights-count');
+    const allFightsData = JSON.parse(document.getElementById('all-fights-data').textContent || '[]');
+    const fighterId = document.getElementById('fighter-id-data').textContent;
+    
+    // Track how many fights are currently visible
+    let visibleCount = 3;
+    
+    if (loadMoreButton && fightsList) {
+      loadMoreButton.addEventListener('click', () => {
+        // Show loading state
+        loadMoreButton.innerText = 'Loading...';
+        loadMoreButton.disabled = true;
+        
+        // Calculate how many more fights to load
+        const remainingFights = allFightsData.length - visibleCount;
+        const fightsToLoad = Math.min(3, remainingFights);
+        
+        // Get the next batch of fights
+        const nextBatch = allFightsData.slice(visibleCount, visibleCount + fightsToLoad);
+        
+        // Increase visible count
+        visibleCount += fightsToLoad;
+        
+        // Add the new fights to the list
+        nextBatch.forEach(fight => {
+          const isMainEvent = fight.is_main_event;
+          
+          // Fix: Correctly determine opponent based on fighter IDs
+          const opponent = fight.fighter1_id === fighterId
+            ? fight.fighter2_name
+            : fight.fighter1_name;
+          
+          const opponentId = fight.fighter1_id === fighterId
+            ? fight.fighter2_id
+            : fight.fighter1_id;
+            
+          const eventDate = new Date(fight.event.event_date);
+          const isWin = fight.winner_id === fighterId;
+          const result = fight.winner_id 
+            ? (isWin ? 'WIN' : 'LOSS') 
+            : (fight.result_method === 'Draw' ? 'DRAW' : 'NC');
+          
+          const fightCard = document.createElement('div');
+          fightCard.className = `fight-card ${isMainEvent ? 'main-event' : ''}`;
+          
+          fightCard.innerHTML = `
+            <a href="/events/event/${fight.event_id}" class="event-link">
+              <div class="fight-date">
+                <span>${eventDate.toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}</span>
+                ${isMainEvent ? '<span class="main-event-badge">Main Event</span>' : ''}
+              </div>
+              
+              <div class="fight-details">
+                <span class="event-name">
+                  ${fight.event.name}
+                </span>
+                
+                <div class="matchup">
+                  <span class="vs-label">vs</span>
+                  <a href="/fighters/${opponentId}" class="opponent-link">${opponent}</a>
+                  <span class="result-badge ${result.toLowerCase()}">${result}</span>
+                </div>
+                
+                <div class="fight-meta">
+                  <span class="weight-class-pill">${fight.weight_class}</span>
+                  ${fight.result_method ? `
+                    <span class="method-pill">
+                      ${fight.result_method}
+                      ${fight.result_method_details ? ` (${fight.result_method_details})` : ''}
+                      ${fight.result_round ? ` R${fight.result_round}` : ''}
+                      ${fight.result_time ? ` ${fight.result_time}` : ''}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+            </a>
+          `;
+          
+          fightsList.appendChild(fightCard);
+        });
+        
+        // Update counts
+        const actualShown = Math.min(visibleCount, allFightsData.length);
+        shownCountSpan.textContent = actualShown.toString();
+        
+        // Hide load more button if all fights are loaded
+        if (visibleCount >= allFightsData.length) {
+          loadMoreButton.style.display = 'none';
+        } else {
+          // Reset button state
+          loadMoreButton.innerText = 'Load More';
+          loadMoreButton.disabled = false;
+        }
+      });
+    }
+  });
+</script>
   </main>
+
 </Layout>

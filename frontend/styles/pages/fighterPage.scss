@@ -47,18 +47,28 @@
         letter-spacing: 0.5px; /* Improved readability */
         transition: all 0.2s ease;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Strong shadow */
-
+        font-family: "Space Grotesk", sans-serif;
+        
         &:focus {
           outline: none;
           border-color: lighten($primary-color, 10%);
           box-shadow:
             0 6px 12px rgba(0, 0, 0, 0.4),
-            0 0 0 2px rgba($primary-color, 0.3); /* Stronger focus shadow */
+            0 0 0 2px rgba($primary-color, 0.3); 
         }
-
-        &::placeholder {
+        
+        &::-moz-placeholder {
+          font-family: "Space Grotesk", sans-serif;
           color: $text-tertiary;
-          font-weight: 500; /* Bolder placeholder */
+          font-weight: 500;
+          opacity: 1;
+        }
+        
+        
+        &::placeholder {
+          font-family: "Space Grotesk", sans-serif;
+          color: $text-tertiary;
+          font-weight: 500;
         }
       }
 
