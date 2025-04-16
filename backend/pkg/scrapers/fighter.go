@@ -967,22 +967,35 @@ func countFightersWithNationality(fighters []*Fighter) int {
 }
 
 func InsertFighter(db *sql.DB, fighter *Fighter) error {
-	// Now that we're using ufc_id as the unique constraint, we can use a simple UPSERT pattern
-	_, err := db.Exec(`
-		INSERT INTO fighters
-		(name, nickname, weight_class, record, status, ranking, ufc_id, ufc_url, nationality)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		ON CONFLICT (ufc_id) DO UPDATE SET
-			name = EXCLUDED.name,
-			nickname = EXCLUDED.nickname,
-			weight_class = EXCLUDED.weight_class, 
-			record = EXCLUDED.record,
-			status = EXCLUDED.status,
-			ranking = EXCLUDED.ranking,
-			ufc_url = EXCLUDED.ufc_url,
-			nationality = EXCLUDED.nationality
-	`, fighter.Name, fighter.Nickname, fighter.WeightClass, fighter.Record,
-		fighter.Status, fighter.Ranking, fighter.UFCID, fighter.UFCURL, fighter.Nationality)
+    // Parse the wins, losses, draws from the struct fields
+    wins := fighter.KOWins + fighter.SubWins + fighter.DecWins
+    
+    // Now that we're using ufc_id as the unique constraint, we can use a simple UPSERT pattern
+    _, err := db.Exec(`
+        INSERT INTO fighters
+        (name, nickname, weight_class, status, rank, ufc_id, ufc_url, nationality,
+         wins, ko_wins, sub_wins, dec_wins, age, height, weight, reach)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ON CONFLICT (ufc_id) DO UPDATE SET
+            name = EXCLUDED.name,
+            nickname = EXCLUDED.nickname,
+            weight_class = EXCLUDED.weight_class,
+            status = EXCLUDED.status,
+            rank = EXCLUDED.rank,
+            ufc_url = EXCLUDED.ufc_url,
+            nationality = EXCLUDED.nationality,
+            wins = EXCLUDED.wins,
+            ko_wins = EXCLUDED.ko_wins,
+            sub_wins = EXCLUDED.sub_wins,
+            dec_wins = EXCLUDED.dec_wins,
+            age = EXCLUDED.age,
+            height = EXCLUDED.height,
+            weight = EXCLUDED.weight,
+            reach = EXCLUDED.reach
+    `, fighter.Name, fighter.Nickname, fighter.WeightClass, 
+       fighter.Status, fighter.Ranking, fighter.UFCID, fighter.UFCURL, fighter.Nationality,
+       wins, fighter.KOWins, fighter.SubWins, fighter.DecWins,
+       fighter.Age, fighter.Height, fighter.Weight, fighter.Reach)
 
-	return err
+    return err
 }

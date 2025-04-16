@@ -27,13 +27,22 @@ interface Fight {
   fighter2_id: string;
   fighter1_name: string;
   fighter2_name: string;
-  fighter1_rank: string | null; // Added fighter1_rank
-  fighter2_rank: string | null; // Added fighter2_rank
+  fighter1_rank: string | null;
+  fighter2_rank: string | null;
   weight_class: string;
   is_main_event: boolean;
+  fighter1_was_champion: boolean;
+  fighter2_was_champion: boolean;
+  was_title_fight: boolean;
   fight_order: number | null;
+  winner_id: string | null;
+  result_method: string | null;
+  result_method_details: string | null;
+  result_round: number | null;
+  result_time: string | null;
   fighter1: Fighter;
   fighter2: Fighter;
+  winner: Fighter | null;
 }
 
 // Get the event ID from the URL
@@ -57,14 +66,17 @@ if (eventError) {
 
 const eventData = event as Event | null;
 
-// Fetch the fights for this event, including fighter1_rank and fighter2_rank
+// Fetch the fights for this event, including all fields
 const { data: fights, error: fightsError } = await supabase
   .from('fights')
-  .select(`
+  .select(
+    `
     *,
     fighter1:fighter1_id(id, name, nickname, weight_class),
-    fighter2:fighter2_id(id, name, nickname, weight_class)
-  `)
+    fighter2:fighter2_id(id, name, nickname, weight_class),
+    winner:winner_id(id, name)
+  `,
+  )
   .eq('event_id', eventId)
   .order('fight_order', { ascending: true });
 
@@ -72,194 +84,300 @@ if (fightsError) {
   console.error('Error fetching fights:', fightsError);
 }
 
-const fightsList = fights as Fight[] || [];
+const fightsList = (fights as Fight[]) || [];
+
+// Determine if the event is in the past based on status
+const isEventCompleted = eventData?.status === 'Completed';
 ---
 
-<Layout title={eventData ? eventData.name : "Event Details"}>
+<Layout title={eventData ? eventData.name : 'Event Details'}>
   <main class="event-page">
-    {eventData ? (
-      <div class="event-details-container">
-        <div class="event-header">
-          <h1>{eventData.name}</h1>
-          <div class="event-meta">
-            {(() => {
-              // Safely parse the date from the database
-              const eventDate = new Date(eventData.event_date);
-              
-              // Skip if the date is invalid
-              if (isNaN(eventDate.getTime())) {
-                return <div>Date not available</div>;
-              }
-              
-              // Use UTC methods to ensure we get the date as stored, without timezone shifting
-              const utcYear = eventDate.getUTCFullYear();
-              const utcMonth = eventDate.getUTCMonth();
-              const utcDay = eventDate.getUTCDate();
-              const utcHours = eventDate.getUTCHours();
-              const utcMinutes = eventDate.getUTCMinutes();
-              
-              // Create a new date object at the same UTC time, but interpret it as local
-              // This preserves the date as intended in the database
-              const displayDate = new Date(utcYear, utcMonth, utcDay, utcHours, utcMinutes);
-              
-              const formattedDate = displayDate.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              });
-              
-              const formattedTime = displayDate.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZoneName: 'short'
-              });
-              
-              return (
-                <>
-                  <div class="event-date">{formattedDate}</div>
-                  <div class="event-time">{formattedTime}</div>
-                </>
-              );
-            })()}
-            
-            <div class="event-location">
-              {eventData.venue && <span class="venue">{eventData.venue}</span>}
-              {eventData.city && eventData.country && (
-                <span class="location">{eventData.city}, {eventData.country}</span>
-              )}
-            </div>
-          </div>
-          
-          <div class="event-countdown">
-            {(() => {
-              // Safely parse the date from the database
-              const eventDate = new Date(eventData.event_date);
-              
-              // Skip if the date is invalid
-              if (isNaN(eventDate.getTime())) {
-                return <div>Date not available</div>;
-              }
-              
-              // Use UTC methods to ensure we get the date as stored, without timezone shifting
-              const utcYear = eventDate.getUTCFullYear();
-              const utcMonth = eventDate.getUTCMonth();
-              const utcDay = eventDate.getUTCDate();
-              
-              // Create a new date object at the same UTC time, but interpret it as local
-              // This preserves the date as intended in the database
-              const displayDate = new Date(utcYear, utcMonth, utcDay);
-              
-              // Get today's date with time set to midnight for proper day comparison
-              const today = new Date();
-              const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-              
-              // Calculate if the event is in the past
-              const isPastEvent = displayDate < todayAtMidnight;
-              
-              // Calculate days difference more accurately
-              const calculateDaysDifference = (date1: Date, date2: Date): number => {
-                // Set both dates to midnight to get accurate day count
-                const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
-                const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
-                
-                // Get the time difference in milliseconds
-                const timeDiff = Math.abs(d2.getTime() - d1.getTime());
-                
-                // Convert to days and round to handle DST changes
-                return Math.round(timeDiff / (1000 * 60 * 60 * 24));
-              };
-              
-              const diffDays = calculateDaysDifference(displayDate, todayAtMidnight);
-              
-              // Handle "tomorrow", "today" and other cases with proper day calculations
-              let timeDisplay: string;
-              if (!isPastEvent) {
-                // Future event
-                if (diffDays === 0) {
-                  timeDisplay = "Today";
-                } else if (diffDays === 1) {
-                  timeDisplay = "Tomorrow";
-                } else {
-                  timeDisplay = `${diffDays} days until event`;
-                }
-              } else {
-                // Past event
-                if (diffDays === 0) {
-                  timeDisplay = "Today";
-                } else if (diffDays === 1) {
-                  timeDisplay = "Yesterday";
-                } else {
-                  timeDisplay = `${diffDays} days ago`;
-                }
-              }
-              
-              return (
-                <div class="countdown-display">
-                  <span class="countdown-value">{timeDisplay}</span>
-                  <span class="countdown-label">{eventData.status}</span>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
+    {
+      eventData ? (
+        <div class="event-details-container">
+          <div class="event-header">
+            <h1>{eventData.name}</h1>
+            <div class="event-meta">
+              <div class="event-date-time">
+                {(() => {
+                  // Safely parse the date from the database
+                  const eventDate = new Date(eventData.event_date);
 
-        <section class="fight-card">
-          <h2>Fight Card</h2>
-          
-          {fightsList.length > 0 ? (
-            <div class="fights-list">
-              {fightsList.map((fight) => (
-                <div class={`fight ${fight.is_main_event ? 'main-event' : ''}`}>
-                  {fight.is_main_event && <div class="main-event-tag">Main Event</div>}
-                  
-                  <div class="weight-class">{fight.weight_class}</div>
-                  
-                  <div class="fighters">
-                    <a href={`/fighters/${fight.fighter1.id}`} class="fighter fighter-1">
-                      <div class="fighter-name">
-                        <span class="name">{fight.fighter1.name}</span>
-                        {fight.fighter1.nickname && (
-                          <span class="nickname">{fight.fighter1.nickname}</span>
-                        )}
-                      </div>
-                      {/* Use fighter1_rank from the fights table instead of fighter1.rank */}
-                      {fight.fighter1_rank && fight.fighter1_rank !== 'NR' && (
-                        <div class="fighter-rank">#{fight.fighter1_rank}</div>
-                      )}
-                    </a>
-                    
-                    <div class="vs">VS</div>
-                    
-                    <a href={`/fighters/${fight.fighter2.id}`} class="fighter fighter-2">
-                      <div class="fighter-name">
-                        <span class="name">{fight.fighter2.name}</span>
-                        {fight.fighter2.nickname && (
-                          <span class="nickname">{fight.fighter2.nickname}</span>
-                        )}
-                      </div>
-                      {/* Use fighter2_rank from the fights table instead of fighter2.rank */}
-                      {fight.fighter2_rank && fight.fighter2_rank !== 'NR' && (
-                        <div class="fighter-rank">#{fight.fighter2_rank}</div>
-                      )}
-                    </a>
+                  // Skip if the date is invalid
+                  if (isNaN(eventDate.getTime())) {
+                    return <div>Date not available</div>;
+                  }
+
+                  // Use UTC methods to ensure we get the date as stored, without timezone shifting
+                  const utcYear = eventDate.getUTCFullYear();
+                  const utcMonth = eventDate.getUTCMonth();
+                  const utcDay = eventDate.getUTCDate();
+                  const utcHours = eventDate.getUTCHours();
+                  const utcMinutes = eventDate.getUTCMinutes();
+
+                  // Create a new date object at the same UTC time, but interpret it as local
+                  // This preserves the date as intended in the database
+                  const displayDate = new Date(
+                    utcYear,
+                    utcMonth,
+                    utcDay,
+                    utcHours,
+                    utcMinutes,
+                  );
+
+                  const formattedDate = displayDate.toLocaleDateString(
+                    'en-US',
+                    {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    },
+                  );
+
+                  const formattedTime = displayDate.toLocaleTimeString(
+                    'en-US',
+                    {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZoneName: 'short',
+                    },
+                  );
+
+                  return (
+                    <>
+                      <div class="event-date">{formattedDate}</div>
+                      <div class="event-time">{formattedTime}</div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div class="event-location">
+                {eventData.venue && (
+                  <span class="venue">{eventData.venue}</span>
+                )}
+                {eventData.city && eventData.country && (
+                  <span class="location">
+                    {eventData.city}, {eventData.country}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div class="event-countdown">
+              {(() => {
+                // Safely parse the date from the database
+                const eventDate = new Date(eventData.event_date);
+
+                // Skip if the date is invalid
+                if (isNaN(eventDate.getTime())) {
+                  return <div>Date not available</div>;
+                }
+
+                // Use UTC methods to ensure we get the date as stored, without timezone shifting
+                const utcYear = eventDate.getUTCFullYear();
+                const utcMonth = eventDate.getUTCMonth();
+                const utcDay = eventDate.getUTCDate();
+
+                // Create a new date object at the same UTC time, but interpret it as local
+                // This preserves the date as intended in the database
+                const displayDate = new Date(utcYear, utcMonth, utcDay);
+
+                // Get today's date with time set to midnight for proper day comparison
+                const today = new Date();
+                const todayAtMidnight = new Date(
+                  today.getFullYear(),
+                  today.getMonth(),
+                  today.getDate(),
+                );
+
+                // Calculate if the event is in the past
+                const isPastEvent = displayDate < todayAtMidnight;
+
+                // Calculate days difference more accurately
+                const calculateDaysDifference = (
+                  date1: Date,
+                  date2: Date,
+                ): number => {
+                  // Set both dates to midnight to get accurate day count
+                  const d1 = new Date(
+                    date1.getFullYear(),
+                    date1.getMonth(),
+                    date1.getDate(),
+                  );
+                  const d2 = new Date(
+                    date2.getFullYear(),
+                    date2.getMonth(),
+                    date2.getDate(),
+                  );
+
+                  // Get the time difference in milliseconds
+                  const timeDiff = Math.abs(d2.getTime() - d1.getTime());
+
+                  // Convert to days and round to handle DST changes
+                  return Math.round(timeDiff / (1000 * 60 * 60 * 24));
+                };
+
+                const diffDays = calculateDaysDifference(
+                  displayDate,
+                  todayAtMidnight,
+                );
+
+                // Handle "tomorrow", "today" and other cases with proper day calculations
+                let timeDisplay: string;
+                if (!isPastEvent) {
+                  // Future event
+                  if (diffDays === 0) {
+                    timeDisplay = 'Today';
+                  } else if (diffDays === 1) {
+                    timeDisplay = 'Tomorrow';
+                  } else {
+                    timeDisplay = `${diffDays} days until event`;
+                  }
+                } else {
+                  // Past event
+                  if (diffDays === 0) {
+                    timeDisplay = 'Today';
+                  } else if (diffDays === 1) {
+                    timeDisplay = 'Yesterday';
+                  } else {
+                    timeDisplay = `${diffDays} days ago`;
+                  }
+                }
+
+                return (
+                  <div class="countdown-display">
+                    <span class="countdown-value">{timeDisplay}</span>
+                    <span class="countdown-label">{eventData.status}</span>
                   </div>
-                </div>
-              ))}
+                );
+              })()}
             </div>
-          ) : (
-            <div class="no-fights">
-              <p>No fights announced yet for this event.</p>
-            </div>
-          )}
-        </section>
-      </div>
-    ) : (
-      <div class="event-not-found">
-        <h1>Event Not Found</h1>
-        <p>Sorry, the event you're looking for doesn't exist or has been removed.</p>
-        <a href="/events" class="back-button">Back to Events</a>
-      </div>
-    )}
+          </div>
+
+          <section class="fight-card">
+            <h2>Fight Card</h2>
+
+            {fightsList.length > 0 ? (
+              <div class="fights-list">
+                {fightsList.map(fight => (
+                  <div
+                    class={`fight ${fight.is_main_event ? 'main-event' : ''} ${fight.was_title_fight ? 'title-fight' : ''}`}
+                  >
+                    <div>
+                      {fight.is_main_event && (
+                        <span class="main-event-tag">Main Event</span>
+                      )}
+                      {fight.was_title_fight && (
+                        <span class="title-fight-tag">Title Fight</span>
+                      )}
+
+                      <span class="weight-class">
+                        {fight.weight_class}
+                        {fight.was_title_fight && ' Championship'}
+                      </span>
+                    </div>
+
+                    <div class="fighters">
+                      <a
+                        href={`/fighters/${fight.fighter1.id}`}
+                        class={`fighter fighter-1 ${fight.winner_id === fight.fighter1_id ? 'winner' : ''}`}
+                      >
+                        <div class="fighter-name">
+                          <span class="name">{fight.fighter1.name}</span>
+                        </div>
+                        <div class="fighter-status">
+                          {/* If they were champion, show champion badge */}
+                          {fight.fighter1_was_champion ? (
+                            <div class="champion-badge">C</div>
+                          ) : fight.fighter1_rank &&
+                            fight.fighter1_rank !== 'NR' ? (
+                            /* If they had a rank, show it */
+                            <div class="fighter-rank">
+                              #{fight.fighter1_rank}
+                            </div>
+                          ) : (
+                            /* Otherwise show Unranked */
+                            <div class="fighter-unranked">Unranked</div>
+                          )}
+                        </div>
+                      </a>
+
+                      <div class="vs">VS</div>
+
+                      <a
+                        href={`/fighters/${fight.fighter2.id}`}
+                        class={`fighter fighter-2 ${fight.winner_id === fight.fighter2_id ? 'winner' : ''}`}
+                      >
+                        <div class="fighter-name">
+                          <span class="name">{fight.fighter2.name}</span>
+                        </div>
+                        <div class="fighter-status">
+                          {/* If they were champion, show champion badge */}
+                          {fight.fighter2_was_champion ? (
+                            <div class="champion-badge">C</div>
+                          ) : fight.fighter2_rank &&
+                            fight.fighter2_rank !== 'NR' ? (
+                            /* If they had a rank, show it */
+                            <div class="fighter-rank">
+                              #{fight.fighter2_rank}
+                            </div>
+                          ) : (
+                            /* Otherwise show Unranked */
+                            <div class="fighter-unranked">Unranked</div>
+                          )}
+                        </div>
+                      </a>
+                    </div>
+
+                    {/* Show fight result if the event is completed and there's a winner */}
+                    {isEventCompleted && fight.winner_id && (
+                      <div class="fight-result">
+                        <div class="result-header">
+                          <span class="winner-name">{fight.winner?.name}</span>{' '}
+                          wins by{' '}
+                          <span class="method">{fight.result_method}</span>
+                        </div>
+
+                        {fight.result_method_details && (
+                          <div class="result-details">
+                            {fight.result_method_details}
+                          </div>
+                        )}
+
+                        {(fight.result_round || fight.result_time) && (
+                          <div class="result-timing">
+                            {fight.result_round &&
+                              `Round ${fight.result_round}`}
+                            {fight.result_round && fight.result_time && ` • `}
+                            {fight.result_time && fight.result_time}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div class="no-fights">
+                <p>No fights announced yet for this event.</p>
+              </div>
+            )}
+          </section>
+        </div>
+      ) : (
+        <div class="event-not-found">
+          <h1>Event Not Found</h1>
+          <p>
+            Sorry, the event you're looking for doesn't exist or has been
+            removed.
+          </p>
+          <a href="/events" class="back-button">
+            Back to Events
+          </a>
+        </div>
+      )
+    }
   </main>
 </Layout>

@@ -3,6 +3,7 @@ package scrapers
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -16,25 +17,27 @@ var (
 )
 
 type ScraperConfig struct {
-	BaseURL          string
-	UserAgent        string
-	RequestTimeout   time.Duration
-	RetryCount       int
-	RetryWait       time.Duration
-	RateLimit       time.Duration
-	ParallelRequests int
+	UserAgent          string
+	Timeout            time.Duration 
+	RetryCount         int
+	RetryWaitTime      time.Duration
+	MaxIdleConns       int
+	MaxIdleConnsPerHost int
+	MaxConnsPerHost    int
+	IdleConnTimeout    time.Duration
 }
 
 func DefaultConfig() ScraperConfig {
-	return ScraperConfig{
-		BaseURL:          "https://www.ufc.com",
-		UserAgent:        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
-		RequestTimeout:   30 * time.Second,
-		RetryCount:      3,
-		RetryWait:       5 * time.Second,
-		RateLimit:       2 * time.Second,
-		ParallelRequests: 2,
-	}
+    return ScraperConfig{
+        UserAgent:          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
+        Timeout:            30 * time.Second,
+        RetryCount:         3,
+        RetryWaitTime:      5 * time.Second,
+        MaxIdleConns:       100,
+        MaxIdleConnsPerHost: 20,
+        MaxConnsPerHost:     20,
+        IdleConnTimeout:     90 * time.Second,
+    }
 }
 
 type Scraper interface {
@@ -50,26 +53,31 @@ type BaseScraper struct {
 }
 
 func NewBaseScraper(config ScraperConfig) *BaseScraper {
-	c := colly.NewCollector(
-		colly.UserAgent(config.UserAgent),
-		colly.MaxDepth(2),
-		colly.AllowedDomains("www.ufc.com", "ufc.com"),
-	)
+	// Create a custom transport with optimized connection pooling
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:        config.MaxIdleConns,
+		MaxIdleConnsPerHost: config.MaxIdleConnsPerHost,
+		MaxConnsPerHost:     config.MaxConnsPerHost,
+		IdleConnTimeout:     config.IdleConnTimeout,
+		TLSHandshakeTimeout: 10 * time.Second,
+		ForceAttemptHTTP2:   true,
+	}
 
-	c.Limit(&colly.LimitRule{
-		DomainGlob:  "*",
-		RandomDelay: config.RateLimit,
-		Parallelism: config.ParallelRequests,
-	})
-
+	// Create HTTP client with the optimized transport
 	client := &http.Client{
-		Timeout: config.RequestTimeout,
+		Transport: transport,
+		Timeout:   config.Timeout,
 	}
 
 	return &BaseScraper{
-		config:    config,
-		collector: c,
-		client:    client,
+		config: config,
+		client: client,
 	}
 }
 

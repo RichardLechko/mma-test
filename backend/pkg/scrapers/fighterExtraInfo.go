@@ -1,11 +1,13 @@
 package scrapers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -18,36 +20,230 @@ type FighterExtraInfo struct {
 	DQLosses      int
 	NoContests    int
 	FightingOutOf string
-	// Win methods
+	
 	KOWins  int
 	SubWins int
 	DecWins int
 }
 
 type WikiFighterScraper struct {
-	config *ScraperConfig
-	client *http.Client
+	config       *ScraperConfig
+	client       *http.Client
+	clientPool   []*http.Client
+	poolMutex    sync.Mutex
+	rateLimiter  <-chan time.Time
+	urlAttempts  int
+	proxyEnabled bool
 }
 
 func NewWikiFighterScraper(config *ScraperConfig) *WikiFighterScraper {
+	// Number of concurrent HTTP clients to maintain
+	const clientPoolSize = 8
+
+	// Create a pool of HTTP clients
+	clientPool := make([]*http.Client, clientPoolSize)
+	for i := 0; i < clientPoolSize; i++ {
+		clientPool[i] = &http.Client{
+			Timeout: 15 * time.Second, // Slightly longer timeout for reliability
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 20,
+				IdleConnTimeout:     30 * time.Second,
+				DisableCompression:  false,
+			},
+		}
+	}
+
+	// Create a rate limiter to avoid overwhelming Wikipedia
+	// 3 requests per second is generally safe
+	rateLimiter := time.Tick(333 * time.Millisecond)
+
 	return &WikiFighterScraper{
-		config: config,
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		config:      config,
+		client:      clientPool[0], // Fallback client
+		clientPool:  clientPool,
+		urlAttempts: 3,
+		rateLimiter: rateLimiter,
 	}
 }
 
-func (s *WikiFighterScraper) ScrapeExtraInfo(fighterName, wikiURL, ufcURL string, ufcWins, ufcLosses int) (*FighterExtraInfo, error) {
-	var finalResp *http.Response
-	var finalErr error
+// getClient returns an HTTP client from the pool
+func (s *WikiFighterScraper) getClient() *http.Client {
+	s.poolMutex.Lock()
+	defer s.poolMutex.Unlock()
 
-	// Prepare alternative URLs to try
+	// Simple round-robin from the client pool
+	client := s.clientPool[0]
+	// Rotate the pool
+	s.clientPool = append(s.clientPool[1:], s.clientPool[0])
+	return client
+}
+
+// fetchURL attempts to fetch and validate a URL with concurrency control
+func (s *WikiFighterScraper) fetchURL(ctx context.Context, url string, fighterName string) (*goquery.Document, error) {
+	if url == "" {
+		return nil, fmt.Errorf("empty URL")
+	}
+
+	// Respect rate limiting
+	select {
+	case <-s.rateLimiter:
+		// Continue after rate limit delay
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
+	// Get a client from the pool
+	client := s.getClient()
+
+	// Create the request with context for timeout/cancellation
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", s.config.UserAgent)
+
+	// Execute the HTTP request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
+	}
+
+	// Parse the HTML document
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if this is a disambiguation page
+	if isDisambiguationPage(doc) {
+		return nil, fmt.Errorf("disambiguation page")
+	}
+
+	// Verify it's a fighter page
+	if evidenceScore := isFighterPage(doc, fighterName); evidenceScore < 2 {
+		return nil, fmt.Errorf("not a fighter page (score: %d)", evidenceScore)
+	}
+
+	return doc, nil
+}
+
+// isDisambiguationPage checks if the page is a Wikipedia disambiguation page
+func isDisambiguationPage(doc *goquery.Document) bool {
+	// Method 1: Check for the "disambigbox" template
+	if doc.Find(".disambigbox").Length() > 0 {
+		return true
+	}
+
+	// Method 2: Check for "may refer to" text in first paragraph
+	firstPara := doc.Find(".mw-parser-output > p").First().Text()
+	if strings.Contains(strings.ToLower(firstPara), "may refer to") ||
+		strings.Contains(strings.ToLower(firstPara), "commonly refers to") ||
+		strings.Contains(strings.ToLower(firstPara), "disambiguation") {
+		return true
+	}
+
+	// Method 3: Check for dmbox class
+	if doc.Find(".dmbox").Length() > 0 {
+		return true
+	}
+
+	return false
+}
+
+// isFighterPage calculates an evidence score for whether this is an MMA fighter page
+func isFighterPage(doc *goquery.Document, fighterName string) int {
+	evidenceScore := 0
+	pageTitle := doc.Find("h1#firstHeading").Text()
+
+	// Check page title - does it contain the fighter's name?
+	if strings.Contains(strings.ToLower(pageTitle), strings.ToLower(fighterName)) {
+		evidenceScore += 2
+	}
+
+	// Check for MMA-related links
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		href, exists := s.Attr("href")
+		if !exists {
+			return
+		}
+
+		if strings.Contains(href, "/wiki/Ultimate_Fighting_Championship") ||
+			strings.Contains(href, "/wiki/Mixed_martial_arts") ||
+			strings.Contains(href, "/wiki/Featherweight_(MMA)") ||
+			strings.Contains(href, "/wiki/Lightweight_(MMA)") ||
+			strings.Contains(href, "/wiki/Welterweight_(MMA)") ||
+			strings.Contains(href, "/wiki/Middleweight_(MMA)") ||
+			strings.Contains(href, "/wiki/Light_Heavyweight_(MMA)") ||
+			strings.Contains(href, "/wiki/Heavyweight_(MMA)") ||
+			strings.Contains(href, "/wiki/Bantamweight_(MMA)") ||
+			strings.Contains(href, "/wiki/Flyweight_(MMA)") {
+			evidenceScore += 3
+		}
+	})
+
+	// Check categories
+	doc.Find(".mw-normal-catlinks ul li a").Each(func(i int, s *goquery.Selection) {
+		category := strings.ToLower(s.Text())
+		if strings.Contains(category, "mixed martial artists") ||
+			strings.Contains(category, "ufc") ||
+			strings.Contains(category, "ultimate fighting championship") {
+			evidenceScore += 3
+		}
+	})
+
+	// Check infobox
+	doc.Find("table.infobox th, table.infobox td").Each(func(i int, s *goquery.Selection) {
+		text := strings.ToLower(s.Text())
+
+		if strings.Contains(text, "mma record") ||
+			strings.Contains(text, "fight record") ||
+			strings.Contains(text, "ufc") ||
+			strings.Contains(text, "weight class") ||
+			strings.Contains(text, "team") ||
+			strings.Contains(text, "trainer") ||
+			strings.Contains(text, "wrestling") ||
+			strings.Contains(text, "boxing") ||
+			strings.Contains(text, "martial art") {
+			evidenceScore += 2
+		}
+	})
+
+	// Check full text for MMA-related keywords
+	fullText := doc.Text()
+	lowerFullText := strings.ToLower(fullText)
+
+	if strings.Contains(lowerFullText, "ufc") {
+		evidenceScore += 2
+	}
+	if strings.Contains(lowerFullText, "mixed martial artist") {
+		evidenceScore += 3
+	}
+	if strings.Contains(lowerFullText, "professional mixed martial artist") {
+		evidenceScore += 4
+	}
+	if strings.Contains(lowerFullText, "ultimate fighting championship") {
+		evidenceScore += 3
+	}
+
+	return evidenceScore
+}
+
+func (s *WikiFighterScraper) ScrapeExtraInfo(fighterName, wikiURL, ufcURL string, ufcWins, ufcLosses int) (*FighterExtraInfo, error) {
+	// Create a context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+
+	// Prepare alternative URLs to try in parallel
 	cleanName := strings.ReplaceAll(fighterName, " ", "_")
 	cleanName = strings.ReplaceAll(cleanName, ".", "") // Remove periods
 	cleanName = strings.ReplaceAll(cleanName, "'", "") // Remove apostrophes
 
-	// Collection of URLs to try in order
+	// Collection of URLs to try
 	allURLs := []string{
 		// Original URL passed in (if it exists)
 		wikiURL,
@@ -61,193 +257,87 @@ func (s *WikiFighterScraper) ScrapeExtraInfo(fighterName, wikiURL, ufcURL string
 		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(The_Ultimate_Fighter)", cleanName),
 	}
 
-	// Try each URL in sequence until one works
+	// Filter out empty URLs
+	var urls []string
 	for _, url := range allURLs {
-		if url == "" {
-			continue // Skip empty URLs
-		}
-
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			continue
-		}
-		req.Header.Set("User-Agent", s.config.UserAgent)
-
-		resp, err := s.client.Do(req)
-		if err != nil {
-			continue
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			continue
-		}
-
-		// Successfully got a page, now check if it's about our fighter
-		doc, err := goquery.NewDocumentFromReader(resp.Body)
-		resp.Body.Close() // Close the body as we've read it
-
-		if err != nil {
-			continue
-		}
-
-		// CRITICAL: Check if this is a disambiguation page
-		// These pages list multiple people with the same name
-		isDisambiguation := false
-
-		// Method 1: Check for the "disambigbox" template
-		if doc.Find(".disambigbox").Length() > 0 {
-			isDisambiguation = true
-		}
-
-		// Method 2: Check for "may refer to" text in first paragraph
-		firstPara := doc.Find(".mw-parser-output > p").First().Text()
-		if strings.Contains(strings.ToLower(firstPara), "may refer to") ||
-			strings.Contains(strings.ToLower(firstPara), "commonly refers to") ||
-			strings.Contains(strings.ToLower(firstPara), "disambiguation") {
-			isDisambiguation = true
-		}
-
-		// Method 3: Check for dmbox class
-		if doc.Find(".dmbox").Length() > 0 {
-			isDisambiguation = true
-		}
-
-		// Skip disambiguation pages
-		if isDisambiguation {
-			continue
-		}
-
-		// Extract some text to verify it's an MMA fighter page
-		// We'll build up evidence
-		evidenceScore := 0
-		pageTitle := doc.Find("h1#firstHeading").Text()
-
-		// Check page title - does it contain the fighter's name?
-		if strings.Contains(strings.ToLower(pageTitle), strings.ToLower(fighterName)) {
-			evidenceScore += 2
-		}
-
-		doc.Find("a").Each(func(i int, s *goquery.Selection) {
-			href, exists := s.Attr("href")
-			if !exists {
-				return
-			}
-
-			if strings.Contains(href, "/wiki/Ultimate_Fighting_Championship") ||
-				strings.Contains(href, "/wiki/Mixed_martial_arts") ||
-				strings.Contains(href, "/wiki/Featherweight_(MMA)") ||
-				strings.Contains(href, "/wiki/Lightweight_(MMA)") ||
-				strings.Contains(href, "/wiki/Welterweight_(MMA)") ||
-				strings.Contains(href, "/wiki/Middleweight_(MMA)") ||
-				strings.Contains(href, "/wiki/Light_Heavyweight_(MMA)") ||
-				strings.Contains(href, "/wiki/Heavyweight_(MMA)") ||
-				strings.Contains(href, "/wiki/Bantamweight_(MMA)") ||
-				strings.Contains(href, "/wiki/Flyweight_(MMA)") {
-				evidenceScore += 3
-			}
-		})
-
-		doc.Find(".mw-normal-catlinks ul li a").Each(func(i int, s *goquery.Selection) {
-			category := strings.ToLower(s.Text())
-			if strings.Contains(category, "mixed martial artists") ||
-				strings.Contains(category, "ufc") ||
-				strings.Contains(category, "ultimate fighting championship") {
-				evidenceScore += 3
-			}
-		})
-
-		doc.Find("table.infobox th, table.infobox td").Each(func(i int, s *goquery.Selection) {
-			text := strings.ToLower(s.Text())
-
-			if strings.Contains(text, "mma record") ||
-				strings.Contains(text, "fight record") ||
-				strings.Contains(text, "ufc") ||
-				strings.Contains(text, "weight class") ||
-				strings.Contains(text, "team") ||
-				strings.Contains(text, "trainer") ||
-				strings.Contains(text, "wrestling") ||
-				strings.Contains(text, "boxing") ||
-				strings.Contains(text, "martial art") {
-				evidenceScore += 2
-			}
-		})
-
-		fullText := doc.Text()
-		lowerFullText := strings.ToLower(fullText)
-
-		if strings.Contains(lowerFullText, "ufc") {
-			evidenceScore += 2
-		}
-		if strings.Contains(lowerFullText, "mixed martial artist") {
-			evidenceScore += 3
-		}
-		if strings.Contains(lowerFullText, "professional mixed martial artist") {
-			evidenceScore += 4
-		}
-		if strings.Contains(lowerFullText, "ultimate fighting championship") {
-			evidenceScore += 3
-		}
-
-		if strings.Contains(lowerFullText, "featherweight") ||
-			strings.Contains(lowerFullText, "lightweight") ||
-			strings.Contains(lowerFullText, "welterweight") ||
-			strings.Contains(lowerFullText, "middleweight") ||
-			strings.Contains(lowerFullText, "heavyweight") ||
-			strings.Contains(lowerFullText, "bantamweight") ||
-			strings.Contains(lowerFullText, "flyweight") {
-			evidenceScore += 1
-		}
-
-		if strings.Contains(lowerFullText, "professional record") ||
-			strings.Contains(lowerFullText, "fight record") ||
-			strings.Contains(lowerFullText, "mma record") ||
-			(strings.Contains(lowerFullText, "wins") && (strings.Contains(lowerFullText, "losses") || strings.Contains(lowerFullText, "defeats"))) {
-			evidenceScore += 3
-		}
-
-		doc.Find(".mw-parser-output > p").Each(func(i int, s *goquery.Selection) {
-			if i > 3 {
-				return
-			}
-
-			text := strings.ToLower(s.Text())
-			if strings.Contains(text, "ufc") ||
-				strings.Contains(text, "ultimate fighting championship") ||
-				strings.Contains(text, "mixed martial") ||
-				strings.Contains(text, "mma") ||
-				strings.Contains(text, "fighter") ||
-				strings.Contains(text, "bout") ||
-				strings.Contains(text, "octagon") {
-				evidenceScore += 1
-			}
-		})
-
-		if evidenceScore >= 2 {
-			req, _ = http.NewRequest("GET", url, nil)
-			req.Header.Set("User-Agent", s.config.UserAgent)
-
-			finalResp, err = s.client.Do(req)
-			if err == nil {
-				break
-			}
+		if url != "" {
+			urls = append(urls, url)
 		}
 	}
 
-	if finalResp == nil {
-		return nil, fmt.Errorf("failed to access Wikipedia page for %s: %v", fighterName, finalErr)
+	// Use a WaitGroup to wait for all goroutines to finish
+	var wg sync.WaitGroup
+	
+	// Create a channel to receive successful results
+	resultChan := make(chan *goquery.Document, len(urls))
+	
+	// Create a context with cancellation for early termination
+	fetchCtx, fetchCancel := context.WithCancel(ctx)
+	defer fetchCancel()
+
+	// Launch concurrent requests to all URLs
+	for _, url := range urls {
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			
+			// Try to fetch and validate the URL
+			doc, err := s.fetchURL(fetchCtx, url, fighterName)
+			if err == nil && doc != nil {
+				// Successfully found a valid page, send it to the result channel
+				select {
+				case resultChan <- doc:
+					// Cancel other requests since we found a valid result
+					fetchCancel()
+				default:
+					// Channel is full, which means we already have a result
+				}
+			}
+		}(url)
 	}
 
-	defer finalResp.Body.Close()
+	// Use a goroutine to close the result channel when all URL fetches are done
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
 
-	doc, err := goquery.NewDocumentFromReader(finalResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing HTML: %v", err)
+	// Wait for a successful result or for all goroutines to finish
+	var doc *goquery.Document
+	select {
+	case doc = <-resultChan:
+		// We got a valid document
+	case <-ctx.Done():
+		return nil, fmt.Errorf("timeout while fetching Wikipedia page for %s", fighterName)
 	}
 
+	// If we didn't get a valid document, return an error
+	if doc == nil {
+		return nil, fmt.Errorf("failed to find a valid Wikipedia page for %s", fighterName)
+	}
+
+	// Use goroutines to extract different types of information in parallel
+	var wgExtract sync.WaitGroup
 	info := &FighterExtraInfo{}
-	info.FightingOutOf = extractFightingOutOf(doc)
-	extractRecordData(doc, info)
+	
+	// Extract fighting out of information
+	wgExtract.Add(1)
+	go func() {
+		defer wgExtract.Done()
+		info.FightingOutOf = extractFightingOutOf(doc)
+	}()
+	
+	// Extract record data
+	wgExtract.Add(1)
+	go func() {
+		defer wgExtract.Done()
+		extractRecordData(doc, info)
+	}()
+	
+	// Wait for all extraction goroutines to complete
+	wgExtract.Wait()
+	
+	// Final validation
 	validateFighterInfo(info, ufcWins, ufcLosses)
 
 	if isEmpty(info) {

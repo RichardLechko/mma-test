@@ -47,10 +47,10 @@ func main() {
 	defer db.Close()
 
 	// Optimize connection pool settings
-	db.SetMaxOpenConns(50)  // Increased from 25
-	db.SetMaxIdleConns(20)  // Increased from 10
-	db.SetConnMaxLifetime(time.Hour)
-	db.SetConnMaxIdleTime(30 * time.Minute) // Add idle timeout
+	db.SetMaxOpenConns(10)  // Increased from 25
+	db.SetMaxIdleConns(5)  // Increased from 10
+	db.SetConnMaxLifetime(30 * time.Minute)
+	db.SetConnMaxIdleTime(5 * time.Minute) // Add idle timeout
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -82,12 +82,12 @@ func main() {
 	
 	// Process fighters in parallel using a worker pool with batching
 	numWorkers := runtime.NumCPU() * 2
-	if numWorkers > 16 {
-		numWorkers = 16 // Cap at a reasonable maximum
+	if numWorkers > 5 {
+		numWorkers = 5 // Cap at a reasonable maximum
 	}
 	
 	// Create a channel to distribute work - use batches for better efficiency
-	batchSize := 10 // Process multiple fighters per transaction
+	batchSize := 20 // Process multiple fighters per transaction
 	numBatches := (len(fighters) + batchSize - 1) / batchSize
 	fighterBatchCh := make(chan []*scrapers.Fighter, numBatches)
 	
@@ -100,25 +100,40 @@ func main() {
 		go func(workerID int) {
 			defer wg.Done()
 			
-			// Each worker gets its own database transaction context
-			dbCtx, dbCancel := context.WithTimeout(context.Background(), 30*time.Minute)
+			// Each worker gets its own database connection context
+			dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Minute) // Reduced timeout
 			defer dbCancel()
 			
 			// Process fighter batches from the channel
 			for fighterBatch := range fighterBatchCh {
-				// Start a new transaction for each batch
-				tx, err := db.BeginTx(dbCtx, nil)
-				if err != nil {
-					log.Printf("Worker %d: Failed to begin transaction: %v", workerID, err)
+				var tx *sql.Tx
+				var committed bool
+				
+				// Use a retry mechanism for transaction begin
+				var beginErr error
+				for retries := 0; retries < 3; retries++ {
+					tx, beginErr = db.BeginTx(dbCtx, nil)
+					if beginErr == nil {
+						break
+					}
+					
+					log.Printf("Worker %d: Retry %d - Failed to begin transaction: %v", 
+						workerID, retries+1, beginErr)
+					time.Sleep(time.Duration(2<<retries) * time.Second) // Exponential backoff
+				}
+				
+				if beginErr != nil {
+					log.Printf("Worker %d: Failed to begin transaction after retries: %v", 
+						workerID, beginErr)
 					atomic.AddInt64(&errorCount, int64(len(fighterBatch)))
 					continue
 				}
 				
 				// Ensure the transaction is either committed or rolled back
-				var committed bool
 				defer func() {
 					if tx != nil && !committed {
 						_ = tx.Rollback()
+						tx = nil
 					}
 				}()
 				
@@ -322,7 +337,6 @@ func main() {
 					}
 				}
 				
-				// Commit the transaction if all operations were successful
 				if batchSuccess {
 					if err = tx.Commit(); err != nil {
 						log.Printf("Worker %d: Failed to commit transaction: %v", workerID, err)
@@ -331,6 +345,10 @@ func main() {
 						atomic.AddInt64(&errorCount, int64(len(fighterBatch)))
 						continue
 					}
+					
+					// Only set committed = true if the commit succeeded
+					committed = true
+					tx = nil
 					
 					// Update global counters
 					atomic.AddInt64(&insertCount, int64(batchInsertCount))
@@ -342,15 +360,12 @@ func main() {
 						log.Printf("Progress: %d/%d fighters processed", totalProcessed, len(fighters))
 					}
 				} else {
-					// Roll back the transaction if any operation failed
 					_ = tx.Rollback()
 					tx = nil
 					atomic.AddInt64(&errorCount, int64(len(fighterBatch)))
 					continue
 				}
 				
-				committed = true
-				tx = nil
 			}
 			
 			log.Printf("Worker %d completed", workerID)
