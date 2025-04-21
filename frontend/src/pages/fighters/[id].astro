@@ -29,6 +29,7 @@ interface Fighter {
   loss_by_ko: number | null;
   loss_by_sub: number | null;
   loss_by_dec: number | null;
+  loss_by_dq: number | null;
 }
 
 interface Fight {
@@ -39,23 +40,23 @@ interface Fight {
     name: string;
     event_date: string;
   };
-  fighter1_id: string,
-  fighter2_id: string,
-  fighter1_name: string,
-    fighter2_name: string,
-    fighter1_rank: string,
-    fighter2_rank: string,
-    weight_class: string,
-    is_main_event: boolean,
-    fighter1_was_champion: boolean,
-    fighter2_was_champion: boolean,
-    was_title_fight: boolean,
-    fight_order: number,
-    winner_id: string,
-    result_method: string,
-    result_method_details: string,
-    result_round: string,
-    result_time: string,
+  fighter1_id: string;
+  fighter2_id: string;
+  fighter1_name: string;
+  fighter2_name: string;
+  fighter1_rank: string;
+  fighter2_rank: string;
+  weight_class: string;
+  is_main_event: boolean;
+  fighter1_was_champion: boolean;
+  fighter2_was_champion: boolean;
+  was_title_fight: boolean;
+  fight_order: number;
+  winner_id: string | null;
+  result_method: string;
+  result_method_details: string | null;
+  result_round: number | null;
+  result_time: string | null;
 }
 
 interface FighterRanking {
@@ -96,7 +97,7 @@ if (rankingsError) {
   console.error('Error fetching fighter rankings:', rankingsError);
 }
 
-const fighterRankings = rankings as FighterRanking[] || [];
+const fighterRankings = (rankings as FighterRanking[]) || [];
 
 // Fetch the fighter's fights (both as fighter1 and fighter2)
 const { data: fights1, error: fights1Error } = await supabase
@@ -144,18 +145,21 @@ const sortedFights = allFights.sort((a, b) => {
           <div class="fighter-header">
             <div class="fighter-info">
               <h1>{fighterData.name}</h1>
-              
+
               {/* Display multiple rankings if available */}
               {fighterRankings.length > 0 ? (
                 <div class="fighter-rankings">
-                  {fighterRankings.map((ranking) => (
+                  {fighterRankings.map(ranking => (
                     <div class="fighter-rank">
                       {ranking.rank === 'Champion' ? (
                         <span class="champion-badge">Champion</span>
                       ) : (
                         <>Ranked {ranking.rank}</>
                       )}
-                      <span class="rank-division"> at {ranking.weight_class}</span>
+                      <span class="rank-division">
+                        {' '}
+                        at {ranking.weight_class}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -163,7 +167,9 @@ const sortedFights = allFights.sort((a, b) => {
                 /* Fall back to single weight class and rank if no multiple rankings */
                 <>
                   {fighterData.weight_class && (
-                    <p class="fighter-weight-class">{fighterData.weight_class}</p>
+                    <p class="fighter-weight-class">
+                      {fighterData.weight_class}
+                    </p>
                   )}
                   {fighterData.rank && fighterData.rank !== 'NR' && (
                     <div class="fighter-rank">
@@ -200,12 +206,14 @@ const sortedFights = allFights.sort((a, b) => {
                     {fighterData.status || 'Unknown'}
                   </span>
                 </div>
-                {(fighterData.age !== null && fighterData.age !== undefined && fighterData.age > 0) && (
-  <div class="stat-item">
-    <span class="stat-label">Age</span>
-    <span class="stat-value">{fighterData.age}</span>
-  </div>
-)}
+                {fighterData.age !== null &&
+                  fighterData.age !== undefined &&
+                  fighterData.age > 0 && (
+                    <div class="stat-item">
+                      <span class="stat-label">Age</span>
+                      <span class="stat-value">{fighterData.age}</span>
+                    </div>
+                  )}
                 {fighterData.height && (
                   <div class="stat-item">
                     <span class="stat-label">Height</span>
@@ -231,11 +239,33 @@ const sortedFights = allFights.sort((a, b) => {
                   </div>
                 )}
                 {fighterData.fighting_out_of && (
-                  <div class="stat-item">
+                  <div class="stat-item fighting-locations">
                     <span class="stat-label">Fighting Out Of</span>
-                    <span class="stat-value">
-                      {fighterData.fighting_out_of}
-                    </span>
+                    {fighterData.fighting_out_of.includes('{') ? (
+                      (() => {
+                        const locations = fighterData.fighting_out_of
+                          .replace(/^\{|\}$/g, '')
+                          .split('}, {');
+
+                        // If there's only one location, display it as text
+                        if (locations.length === 1) {
+                          return <span class="stat-value">{locations[0]}</span>;
+                        }
+
+                        // If there are multiple locations, display as list
+                        return (
+                          <ul class="locations-list">
+                            {locations.map(location => (
+                              <li>{location}</li>
+                            ))}
+                          </ul>
+                        );
+                      })()
+                    ) : (
+                      <span class="stat-value">
+                        {fighterData.fighting_out_of}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -243,15 +273,26 @@ const sortedFights = allFights.sort((a, b) => {
 
             <div class="fighter-record">
               <h2>Fight Record</h2>
-              <div class="record-summary">
-                <div class="record-total">
-                  <span class="record-value">
-                    {fighterData.wins || 0}-{fighterData.losses || 0}-{fighterData.draws || 0}
-                  </span>
-                  <span class="record-label">W-L-D</span>
-                  <span class="record-nc">
-                    {fighterData.no_contests || 0} NC
-                  </span>
+              <div class="record-card">
+                <div class="record-main">
+                  <div class="win-box">
+                    <span class="count">{fighterData.wins || 0}</span>
+                    <span class="label">WINS</span>
+                  </div>
+                  <div class="loss-box">
+                    <span class="count">{fighterData.losses || 0}</span>
+                    <span class="label">LOSSES</span>
+                  </div>
+                  <div class="draw-box">
+                    <span class="count">{fighterData.draws || 0}</span>
+                    <span class="label">DRAWS</span>
+                  </div>
+                  {fighterData.no_contests && fighterData.no_contests > 0 ? (
+                    <div class="nc-box">
+                      <span class="count">{fighterData.no_contests}</span>
+                      <span class="label">NC</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -283,7 +324,6 @@ const sortedFights = allFights.sort((a, b) => {
                       </div>
                     </div>
                   )}
-
                 {fighterData.loss_by_ko !== null &&
                   fighterData.loss_by_sub !== null &&
                   fighterData.loss_by_dec !== null && (
@@ -308,6 +348,17 @@ const sortedFights = allFights.sort((a, b) => {
                           </span>
                           <span class="method-label">Decision</span>
                         </div>
+                        {/* Only show DQ losses if the value exists AND is greater than 0 */}
+                        {fighterData.loss_by_dq !== null &&
+                          fighterData.loss_by_dq !== undefined &&
+                          fighterData.loss_by_dq > 0 && (
+                            <div class="method-item">
+                              <span class="method-value">
+                                {fighterData.loss_by_dq}
+                              </span>
+                              <span class="method-label">DQ</span>
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}
@@ -316,85 +367,185 @@ const sortedFights = allFights.sort((a, b) => {
           </div>
 
           <div class="fighter-fights">
-  <h2>Fight History</h2>
-  {sortedFights.length > 0 ? (
-    <div>
-      <div class="fights-list" id="fights-list">
-        {sortedFights.slice(0, 3).map(fight => {
-          const isMainEvent = fight.is_main_event;
-          const opponent =
-            fight.fighter1_id === fighterId
-              ? fight.fighter2_name
-              : fight.fighter1_name;
-          const opponentId =
-            fight.fighter1_id === fighterId
-              ? fight.fighter2_id
-              : fight.fighter1_id;
-          const eventDate = new Date(fight.event.event_date);
-          const isWin = fight.winner_id === fighterId;
-          const result = fight.winner_id 
-            ? (isWin ? 'WIN' : 'LOSS') 
-            : (fight.result_method === 'Draw' ? 'DRAW' : 'NC');
+            <h2>Fight History</h2>
+            {sortedFights.length > 0 ? (
+              <div>
+                <div class="fights-list" id="fights-list">
+                  {sortedFights.slice(0, 3).map(fight => {
+                    const isMainEvent = fight.is_main_event;
+                    const isTitleFight = fight.was_title_fight;
+                    const fighterName = fighter.name;
+                    const opponent =
+                      fight.fighter1_id === fighterId
+                        ? fight.fighter2_name
+                        : fight.fighter1_name;
+                    const opponentId =
+                      fight.fighter1_id === fighterId
+                        ? fight.fighter2_id
+                        : fight.fighter1_id;
 
-          return (
-            <div class={`fight-card ${isMainEvent ? 'main-event' : ''}`}>
-              <a href={`/events/event/${fight.event_id}`} class="event-link">
-                <div class="fight-date">
-                  <span>{eventDate.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}</span>
-                  {isMainEvent && <span class="main-event-badge">Main Event</span>}
+                    // Get the historical ranks from the fight data
+                    let fighterRank =
+                      fight.fighter1_id === fighterId
+                        ? fight.fighter1_rank
+                        : fight.fighter2_rank;
+                    let opponentRank =
+                      fight.fighter1_id === fighterId
+                        ? fight.fighter2_rank
+                        : fight.fighter1_rank;
+
+                    // Fix any "#C" or "C" champion designation
+                    if (fighterRank === '#C' || fighterRank === 'C') {
+                      fighterRank = 'Champion';
+                    }
+
+                    if (opponentRank === '#C' || opponentRank === 'C') {
+                      opponentRank = 'Champion';
+                    }
+
+                    const eventDate = new Date(fight.event.event_date);
+                    const isWin = fight.winner_id === fighterId;
+                    const result = fight.winner_id
+                      ? isWin
+                        ? 'WIN'
+                        : 'LOSS'
+                      : fight.result_method === 'Draw'
+                        ? 'DRAW'
+                        : '';
+
+                    return (
+                      <div
+                        class={`fight-card ${isMainEvent ? 'main-event' : ''} result-${result.toLowerCase()}`}
+                      >
+                        <div class="fight-date">
+                          <span>
+                            {eventDate.toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                          <div class="event-badges">
+                            <span class="weight-class-badge">
+                              {fight.weight_class}
+                            </span>
+                            {isMainEvent && (
+                              <span class="main-event-badge">Main Event</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div class="fight-details">
+                          <a
+                            href={`/events/event/${fight.event_id}`}
+                            class="event-link"
+                          >
+                            <span class="event-name">{fight.event.name}</span>
+                          </a>
+
+                          <div class="matchup">
+                            <div class="fighter-vs">
+                              <div
+                                class={`fighter-name-container${isWin ? ' winner' : ''}`}
+                              >
+                                <a
+                                  href={`/fighters/${fighterId}`}
+                                  class="fighter-link"
+                                >
+                                  {fighterName}
+                                </a>
+                                {fighterRank && (
+                                  <span
+                                    class={`rank ${fighterRank === 'Champion' ? 'champion' : ''}`}
+                                  >
+                                    {fighterRank === 'Champion'
+                                      ? 'C'
+                                      : !fighterRank?.trim()
+                                        ? 'Unranked'
+                                        : `#${fighterRank}`}
+                                  </span>
+                                )}
+                              </div>
+                              <span class="vs">vs</span>
+                              <div
+                                class={`fighter-name-container${!isWin && fight.winner_id ? ' winner' : ''}`}
+                              >
+                                <a
+                                  href={`/fighters/${opponentId}`}
+                                  class="fighter-link"
+                                >
+                                  {opponent}
+                                </a>
+                                {opponentRank !== null &&
+                                  opponentRank !== undefined && (
+                                    <span
+                                      class={`rank ${opponentRank === 'Champion' ? 'champion' : ''}`}
+                                    >
+                                      {opponentRank === 'Champion'
+                                        ? 'C'
+                                        : opponentRank === ''
+                                          ? 'Unranked'
+                                          : `#${opponentRank}`}
+                                    </span>
+                                  )}
+                              </div>
+                              <span
+                                class={`result-badge ${result.toLowerCase()}`}
+                              >
+                                {result}
+                              </span>
+                            </div>
+                          </div>
+
+                          {fight.result_method && (
+                            <div class="result-method">
+                              {fight.result_method}
+                              {fight.result_method_details &&
+                                ` (${fight.result_method_details})`}
+                              {fight.result_round && ` R${fight.result_round}`}
+                              {fight.result_time &&
+                                ` ${
+                                  fight.result_time.match(/^(\d+:\d{2})\1$/)
+                                    ? fight.result_time.substring(
+                                        0,
+                                        fight.result_time.length / 2,
+                                      )
+                                    : fight.result_time
+                                }`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                
-                <div class="fight-details">
-                  <span class="event-name">{fight.event.name}</span>
-                  
-                  <div class="matchup">
-                    <span class="vs-label">vs</span>
-                    <a href={`/fighters/${opponentId}`} class="opponent-link">{opponent}</a>
-                    <span class={`result-badge ${result.toLowerCase()}`}>{result}</span>
+
+                {sortedFights.length > 3 && (
+                  <div class="load-more-container">
+                    <button id="load-more-fights" class="load-more-button">
+                      Load More
+                    </button>
+                    <p class="fights-count">
+                      Showing <span id="shown-fights-count">3</span> of{' '}
+                      <span id="total-fights-count">{sortedFights.length}</span>{' '}
+                      fights
+                    </p>
                   </div>
-                  
-                  <div class="fight-meta">
-                    <span class="weight-class-pill">{fight.weight_class}</span>
-                    {fight.result_method && (
-                      <span class="method-pill">
-                        {fight.result_method}
-                        {fight.result_method_details && ` (${fight.result_method_details})`}
-                        {fight.result_round && ` R${fight.result_round}`}
-                        {fight.result_time && ` ${fight.result_time}`}
-                      </span>
-                    )}
-                  </div>
+                )}
+
+                <div id="all-fights-data" style="display: none;">
+                  {JSON.stringify(sortedFights)}
                 </div>
-              </a>
-            </div>
-          );
-        })}
-      </div>
-      
-      {sortedFights.length > 3 && (
-        <div class="load-more-container">
-          <button id="load-more-fights" class="load-more-button">
-            Load More
-          </button>
-          <p class="fights-count">
-            Showing <span id="shown-fights-count">3</span> of <span id="total-fights-count">{sortedFights.length}</span> fights
-          </p>
-        </div>
-      )}
-      
-      <div id="all-fights-data" style="display: none;">{JSON.stringify(sortedFights)}</div>
-      <div id="fighter-id-data" style="display: none;">{fighterId}</div>
-    </div>
-  ) : (
-    <div class="no-fights">
-      <p>No fights on record.</p>
-    </div>
-  )}
-</div>
+                <div id="fighter-id-data" style="display: none;">
+                  {fighterId}
+                </div>
+              </div>
+            ) : (
+              <div class="no-fights">
+                <p>No fights on record.</p>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div class="fighter-not-found">
@@ -410,111 +561,233 @@ const sortedFights = allFights.sort((a, b) => {
       )
     }
 
-<script is:inline>
-  document.addEventListener('DOMContentLoaded', () => {
-    const loadMoreButton = document.getElementById('load-more-fights');
-    const fightsList = document.getElementById('fights-list');
-    const shownCountSpan = document.getElementById('shown-fights-count');
-    const allFightsData = JSON.parse(document.getElementById('all-fights-data').textContent || '[]');
-    const fighterId = document.getElementById('fighter-id-data').textContent;
-    
-    // Track how many fights are currently visible
-    let visibleCount = 3;
-    
-    if (loadMoreButton && fightsList) {
-      loadMoreButton.addEventListener('click', () => {
-        // Show loading state
-        loadMoreButton.innerText = 'Loading...';
-        loadMoreButton.disabled = true;
-        
-        // Calculate how many more fights to load
-        const remainingFights = allFightsData.length - visibleCount;
-        const fightsToLoad = Math.min(3, remainingFights);
-        
-        // Get the next batch of fights
-        const nextBatch = allFightsData.slice(visibleCount, visibleCount + fightsToLoad);
-        
-        // Increase visible count
-        visibleCount += fightsToLoad;
-        
-        // Add the new fights to the list
-        nextBatch.forEach(fight => {
-          const isMainEvent = fight.is_main_event;
-          
-          // Fix: Correctly determine opponent based on fighter IDs
-          const opponent = fight.fighter1_id === fighterId
-            ? fight.fighter2_name
-            : fight.fighter1_name;
-          
-          const opponentId = fight.fighter1_id === fighterId
-            ? fight.fighter2_id
-            : fight.fighter1_id;
-            
-          const eventDate = new Date(fight.event.event_date);
-          const isWin = fight.winner_id === fighterId;
-          const result = fight.winner_id 
-            ? (isWin ? 'WIN' : 'LOSS') 
-            : (fight.result_method === 'Draw' ? 'DRAW' : 'NC');
-          
-          const fightCard = document.createElement('div');
-          fightCard.className = `fight-card ${isMainEvent ? 'main-event' : ''}`;
-          
-          fightCard.innerHTML = `
-            <a href="/events/event/${fight.event_id}" class="event-link">
-              <div class="fight-date">
-                <span>${eventDate.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}</span>
-                ${isMainEvent ? '<span class="main-event-badge">Main Event</span>' : ''}
-              </div>
-              
-              <div class="fight-details">
-                <span class="event-name">
-                  ${fight.event.name}
-                </span>
-                
-                <div class="matchup">
-                  <span class="vs-label">vs</span>
-                  <a href="/fighters/${opponentId}" class="opponent-link">${opponent}</a>
-                  <span class="result-badge ${result.toLowerCase()}">${result}</span>
-                </div>
-                
-                <div class="fight-meta">
-                  <span class="weight-class-pill">${fight.weight_class}</span>
-                  ${fight.result_method ? `
-                    <span class="method-pill">
-                      ${fight.result_method}
-                      ${fight.result_method_details ? ` (${fight.result_method_details})` : ''}
-                      ${fight.result_round ? ` R${fight.result_round}` : ''}
-                      ${fight.result_time ? ` ${fight.result_time}` : ''}
-                    </span>
-                  ` : ''}
-                </div>
-              </div>
-            </a>
-          `;
-          
-          fightsList.appendChild(fightCard);
-        });
-        
-        // Update counts
-        const actualShown = Math.min(visibleCount, allFightsData.length);
-        shownCountSpan.textContent = actualShown.toString();
-        
-        // Hide load more button if all fights are loaded
-        if (visibleCount >= allFightsData.length) {
-          loadMoreButton.style.display = 'none';
-        } else {
-          // Reset button state
-          loadMoreButton.innerText = 'Load More';
-          loadMoreButton.disabled = false;
-        }
-      });
-    }
-  });
-</script>
-  </main>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Get DOM elements with type safety
+        const loadMoreButton = document.getElementById(
+          'load-more-fights',
+        ) as HTMLButtonElement | null;
+        const fightsList = document.getElementById('fights-list');
+        const shownCountSpan = document.getElementById('shown-fights-count');
+        const allFightsDataElement = document.getElementById('all-fights-data');
+        const fighterIdElement = document.getElementById('fighter-id-data');
 
+        // Check if all required elements exist
+        if (
+          !loadMoreButton ||
+          !fightsList ||
+          !shownCountSpan ||
+          !allFightsDataElement ||
+          !fighterIdElement
+        ) {
+          console.error('Required DOM elements not found');
+          return;
+        }
+
+        // Define fight interface
+        interface Fight {
+          id: string;
+          event_id: string;
+          fighter1_id: string;
+          fighter2_id: string;
+          fighter1_name: string;
+          fighter2_name: string;
+          fighter1_rank: string;
+          fighter2_rank: string;
+          weight_class: string;
+          is_main_event: boolean;
+          winner_id: string | null;
+          result_method: string;
+          result_method_details: string | null;
+          result_round: number | null;
+          result_time: string | null;
+          event: {
+            id: string;
+            name: string;
+            event_date: string;
+          };
+        }
+
+        // Safely parse JSON data and extract fighter ID
+        const allFightsData = JSON.parse(
+          allFightsDataElement.textContent || '[]',
+        ) as Fight[];
+        const fighterId = fighterIdElement.textContent?.trim() || '';
+
+        // Track how many fights are currently visible
+        let visibleCount = 3;
+
+        loadMoreButton.addEventListener('click', () => {
+          // Show loading state
+          loadMoreButton.innerText = 'Loading...';
+          loadMoreButton.disabled = true;
+
+          // Calculate how many more fights to load
+          const remainingFights = allFightsData.length - visibleCount;
+          const fightsToLoad = Math.min(3, remainingFights);
+
+          // Get the next batch of fights
+          const nextBatch = allFightsData.slice(
+            visibleCount,
+            visibleCount + fightsToLoad,
+          );
+
+          // Increase visible count
+          visibleCount += fightsToLoad;
+
+          // Get fighter name safely
+          const h1Element = document.querySelector('h1');
+          const fighterName = h1Element ? h1Element.textContent || '' : '';
+
+          // Add the new fights to the list
+          nextBatch.forEach(fight => {
+            const isMainEvent = fight.is_main_event;
+
+            // Determine opponent and ranks
+            const opponent =
+              fight.fighter1_id === fighterId
+                ? fight.fighter2_name
+                : fight.fighter1_name;
+
+            const opponentId =
+              fight.fighter1_id === fighterId
+                ? fight.fighter2_id
+                : fight.fighter1_id;
+
+            let fighterRank =
+              fight.fighter1_id === fighterId
+                ? fight.fighter1_rank
+                : fight.fighter2_rank;
+
+            let opponentRank =
+              fight.fighter1_id === fighterId
+                ? fight.fighter2_rank
+                : fight.fighter1_rank;
+
+            // Fix any "#C" or "C" champion designation
+            if (fighterRank === '#C' || fighterRank === 'C') {
+              fighterRank = 'Champion';
+            }
+
+            if (opponentRank === '#C' || opponentRank === 'C') {
+              opponentRank = 'Champion';
+            }
+
+            const eventDate = new Date(fight.event.event_date);
+            const isWin = fight.winner_id === fighterId;
+            const result = fight.winner_id
+              ? isWin
+                ? 'WIN'
+                : 'LOSS'
+              : fight.result_method === 'Draw'
+                ? 'DRAW'
+                : 'NC';
+
+            const fightCard = document.createElement('div');
+            fightCard.className = `fight-card ${isMainEvent ? 'main-event' : ''} result-${result.toLowerCase()}`;
+
+            fightCard.innerHTML = `
+      <div class="fight-date">
+        <span>
+          ${eventDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}
+        </span>
+        <div class="event-badges">
+          <span class="weight-class-badge">
+            ${fight.weight_class}
+          </span>
+          ${isMainEvent ? '<span class="main-event-badge">Main Event</span>' : ''}
+        </div>
+      </div>
+
+      <div class="fight-details">
+        <a href="/events/event/${fight.event_id}" class="event-link">
+          <span class="event-name">${fight.event.name}</span>
+        </a>
+
+        <div class="matchup">
+          <div class="fighter-vs">
+            <div class="fighter-name-container${isWin ? ' winner' : ''}">
+              <a href="/fighters/${fighterId}" class="fighter-link">
+                ${fighterName}
+              </a>
+              <span class="${fighterRank === 'Champion' ? 'rank champion' : 'rank'}">
+                ${
+                  fighterRank === 'Champion'
+                    ? 'C'
+                    : !fighterRank || !fighterRank.trim()
+                      ? 'Unranked'
+                      : `#${fighterRank}`
+                }
+              </span>
+            </div>
+            <span class="vs">vs</span>
+            <div class="fighter-name-container${!isWin && fight.winner_id ? ' winner' : ''}">
+              <a href="/fighters/${opponentId}" class="fighter-link">
+                ${opponent}
+              </a>
+              <span class="${opponentRank === 'Champion' ? 'rank champion' : 'rank'}">
+                ${
+                  opponentRank === 'Champion'
+                    ? 'C'
+                    : !opponentRank || opponentRank === ''
+                      ? 'Unranked'
+                      : `#${opponentRank}`
+                }
+              </span>
+            </div>
+            <span class="result-badge ${result.toLowerCase()}">
+              ${result}
+            </span>
+          </div>
+        </div>
+
+        ${
+          fight.result_method
+            ? `
+          <div class="result-method">
+            ${fight.result_method}
+            ${fight.result_method_details ? ` (${fight.result_method_details})` : ''}
+            ${fight.result_round ? ` R${fight.result_round}` : ''}
+            ${
+              fight.result_time
+                ? ` ${
+                    fight.result_time.match(/^(\d+:\d{2})\1$/)
+                      ? fight.result_time.substring(
+                          0,
+                          fight.result_time.length / 2,
+                        )
+                      : fight.result_time
+                  }`
+                : ''
+            }
+          </div>
+        `
+            : ''
+        }
+      </div>
+    `;
+
+            fightsList.appendChild(fightCard);
+          });
+
+          // Update counts
+          const actualShown = Math.min(visibleCount, allFightsData.length);
+          shownCountSpan.textContent = actualShown.toString();
+
+          // Hide load more button if all fights are loaded
+          if (visibleCount >= allFightsData.length) {
+            loadMoreButton.style.display = 'none';
+          } else {
+            // Reset button state
+            loadMoreButton.innerText = 'Load More';
+            loadMoreButton.disabled = false;
+          }
+        });
+      });
+    </script>
+  </main>
 </Layout>

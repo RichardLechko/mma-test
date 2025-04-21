@@ -97,26 +97,22 @@ const isEventCompleted = eventData?.status === 'Completed';
         <div class="event-details-container">
           <div class="event-header">
             <h1>{eventData.name}</h1>
+
             <div class="event-meta">
               <div class="event-date-time">
                 {(() => {
-                  // Safely parse the date from the database
                   const eventDate = new Date(eventData.event_date);
 
-                  // Skip if the date is invalid
                   if (isNaN(eventDate.getTime())) {
                     return <div>Date not available</div>;
                   }
 
-                  // Use UTC methods to ensure we get the date as stored, without timezone shifting
                   const utcYear = eventDate.getUTCFullYear();
                   const utcMonth = eventDate.getUTCMonth();
                   const utcDay = eventDate.getUTCDate();
                   const utcHours = eventDate.getUTCHours();
                   const utcMinutes = eventDate.getUTCMinutes();
 
-                  // Create a new date object at the same UTC time, but interpret it as local
-                  // This preserves the date as intended in the database
                   const displayDate = new Date(
                     utcYear,
                     utcMonth,
@@ -167,24 +163,18 @@ const isEventCompleted = eventData?.status === 'Completed';
 
             <div class="event-countdown">
               {(() => {
-                // Safely parse the date from the database
                 const eventDate = new Date(eventData.event_date);
 
-                // Skip if the date is invalid
                 if (isNaN(eventDate.getTime())) {
                   return <div>Date not available</div>;
                 }
 
-                // Use UTC methods to ensure we get the date as stored, without timezone shifting
                 const utcYear = eventDate.getUTCFullYear();
                 const utcMonth = eventDate.getUTCMonth();
                 const utcDay = eventDate.getUTCDate();
 
-                // Create a new date object at the same UTC time, but interpret it as local
-                // This preserves the date as intended in the database
                 const displayDate = new Date(utcYear, utcMonth, utcDay);
 
-                // Get today's date with time set to midnight for proper day comparison
                 const today = new Date();
                 const todayAtMidnight = new Date(
                   today.getFullYear(),
@@ -192,15 +182,12 @@ const isEventCompleted = eventData?.status === 'Completed';
                   today.getDate(),
                 );
 
-                // Calculate if the event is in the past
                 const isPastEvent = displayDate < todayAtMidnight;
 
-                // Calculate days difference more accurately
                 const calculateDaysDifference = (
                   date1: Date,
                   date2: Date,
                 ): number => {
-                  // Set both dates to midnight to get accurate day count
                   const d1 = new Date(
                     date1.getFullYear(),
                     date1.getMonth(),
@@ -212,10 +199,7 @@ const isEventCompleted = eventData?.status === 'Completed';
                     date2.getDate(),
                   );
 
-                  // Get the time difference in milliseconds
                   const timeDiff = Math.abs(d2.getTime() - d1.getTime());
-
-                  // Convert to days and round to handle DST changes
                   return Math.round(timeDiff / (1000 * 60 * 60 * 24));
                 };
 
@@ -224,10 +208,8 @@ const isEventCompleted = eventData?.status === 'Completed';
                   todayAtMidnight,
                 );
 
-                // Handle "tomorrow", "today" and other cases with proper day calculations
                 let timeDisplay: string;
                 if (!isPastEvent) {
-                  // Future event
                   if (diffDays === 0) {
                     timeDisplay = 'Today';
                   } else if (diffDays === 1) {
@@ -236,7 +218,6 @@ const isEventCompleted = eventData?.status === 'Completed';
                     timeDisplay = `${diffDays} days until event`;
                   }
                 } else {
-                  // Past event
                   if (diffDays === 0) {
                     timeDisplay = 'Today';
                   } else if (diffDays === 1) {
@@ -247,10 +228,10 @@ const isEventCompleted = eventData?.status === 'Completed';
                 }
 
                 return (
-                  <div class="countdown-display">
+                  <>
                     <span class="countdown-value">{timeDisplay}</span>
                     <span class="countdown-label">{eventData.status}</span>
-                  </div>
+                  </>
                 );
               })()}
             </div>
@@ -351,7 +332,13 @@ const isEventCompleted = eventData?.status === 'Completed';
                             {fight.result_round &&
                               `Round ${fight.result_round}`}
                             {fight.result_round && fight.result_time && ` • `}
-                            {fight.result_time && fight.result_time}
+                            {fight.result_time &&
+                              (fight.result_time.match(/^(\d+:\d{2})\1$/)
+                                ? fight.result_time.substring(
+                                    0,
+                                    fight.result_time.length / 2,
+                                  )
+                                : fight.result_time)}
                           </div>
                         )}
                       </div>

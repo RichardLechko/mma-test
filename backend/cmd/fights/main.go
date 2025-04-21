@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"mma-scheduler/config"
@@ -232,98 +231,99 @@ var manualFightersData = map[string]ManualFighterData{
 }
 
 func main() {
-	// Set up logging
-	log.Println("🚀 Starting Fight Scraper")
-	startTime := time.Now()
+    // Set up logging
+    log.Println("🚀 Starting Fight Scraper")
+    startTime := time.Now()
 
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		// Silently continue if .env not found
-	}
+    // Load environment variables
+    if err := godotenv.Load(); err != nil {
+        // Silently continue if .env not found
+    }
 
-	// Load configuration
-	if err := config.LoadConfig("config/config.json"); err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
+    // Load configuration
+    if err := config.LoadConfig("config/config.json"); err != nil {
+        log.Fatalf("Failed to load configuration: %v", err)
+    }
 
-	// Connect to database
-	db, err := connectToDatabase()
-	if err != nil {
-		log.Fatalf("Database connection error: %v", err)
-	}
-	defer db.Close()
+    // Connect to database
+    db, err := connectToDatabase()
+    if err != nil {
+        log.Fatalf("Database connection error: %v", err)
+    }
+    defer db.Close()
 
-	// Get events with UFC URLs from the database
-	events, err := getEventsWithUFCURLs(db)
-	if err != nil {
-		log.Fatalf("Error fetching events: %v", err)
-	}
+    // Get events with UFC URLs from the database
+    events, err := getEventsWithUFCURLs(db)
+    if err != nil {
+        log.Fatalf("Error fetching events: %v", err)
+    }
 
-	log.Printf("Found %d events with UFC URLs to process", len(events))
+    log.Printf("Found %d events with UFC URLs to process", len(events))
 
-	// Create scraper with configuration
-	scraperConfig := &scrapers.ScraperConfig{
-		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-	}
-	ufcScraper := scrapers.NewUFCFightScraper(scraperConfig)
+    // Create scraper with configuration
+    scraperConfig := &scrapers.ScraperConfig{
+        UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    }
 
-	// Create database context with longer timeout for the entire operation
-	dbCtx, dbCancel := context.WithTimeout(context.Background(), 120*time.Minute)
-	defer dbCancel()
+    // Create database context with longer timeout for the entire operation
+    dbCtx, dbCancel := context.WithTimeout(context.Background(), 3*time.Hour)
+    defer dbCancel()
 
-	// Set up concurrency control
-	const maxConcurrentEvents = 3 // Process 3 events at a time
-	sem := make(chan struct{}, maxConcurrentEvents)
+    // Create a results channel for sequential processing
+    resultChan := make(chan FightResult, 10)
 
-	var wg sync.WaitGroup
-	resultChan := make(chan FightResult, 100) // Buffer for results
+    // Start result processor
+    go processResults(resultChan)
 
-	// Stats tracking
-	var statsMutex sync.Mutex
-	totalFightsSaved := 0
-	totalEventsProcessed := 0
+    // Create a reusable scraper
+    ufcScraper := createAndManageScraper(scraperConfig)
+    defer ufcScraper.Close()
 
-	// Start result processor
-	go processResults(resultChan)
+    // Stats tracking
+    totalFightsSaved := 0
+    totalEventsProcessed := 0
+    failedEvents := 0
 
-	// Process events concurrently
-	for i, event := range events {
-		wg.Add(1)
-		sem <- struct{}{} // Acquire semaphore slot
+    // Process events sequentially
+    for i, event := range events {
+        log.Printf("Processing event %d/%d: %s", i+1, len(events), event.Name)
 
-		go func(idx int, event EventInfo) {
-			defer wg.Done()
-			defer func() { <-sem }() // Release semaphore slot
+        // Restart the scraper every 50 events
+        if i > 0 && i%50 == 0 {
+            log.Printf("🔄 Restarting ChromeDriver after %d events", i)
+            ufcScraper.Close()
+            time.Sleep(5 * time.Second)
+            ufcScraper = createAndManageScraper(scraperConfig)
+        }
 
-			log.Printf("Processing event %d/%d: %s", idx+1, len(events), event.Name)
+        // Create context with timeout for this event
+        eventCtx, eventCancel := context.WithTimeout(dbCtx, 5*time.Minute)
 
-			// Create context with timeout for this event
-			eventCtx, eventCancel := context.WithTimeout(dbCtx, 5*time.Minute)
-			defer eventCancel()
+        // Process a single event with retry mechanism
+        fightsSaved, err := processEventWithRetry(eventCtx, db, ufcScraper, event, resultChan, 3)
+        eventCancel()
 
-			// Process a single event
-			fightsSaved := processEvent(eventCtx, db, ufcScraper, event, resultChan)
+        if err != nil {
+            log.Printf("❌ Failed to process event '%s' after retries: %v", event.Name, err)
+            failedEvents++
+        }
 
-			// Update stats
-			statsMutex.Lock()
-			totalEventsProcessed++
-			totalFightsSaved += fightsSaved
-			statsMutex.Unlock()
+        // Update stats
+        totalEventsProcessed++
+        totalFightsSaved += fightsSaved
 
-			// Add a small delay between requests to avoid rate limiting
-			time.Sleep(1 * time.Second)
-		}(i, event)
-	}
+        // Add a delay between events
+        time.Sleep(3 * time.Second)
+    }
 
-	// Wait for all events to be processed
-	wg.Wait()
-	close(resultChan)
+    // Close the result channel after all events are processed
+    close(resultChan)
 
-	// Wait a moment for the result processor to finish
-	time.Sleep(100 * time.Millisecond)
+    // Wait a moment for the result processor to finish
+    time.Sleep(100 * time.Millisecond)
 
-	log.Printf("🏁 Scraping completed in %v! Processed %d/%d events, saved %d fights total.",
-		time.Since(startTime).Round(time.Second), totalEventsProcessed, len(events), totalFightsSaved)
+    log.Printf("🏁 Scraping completed in %v! Processed %d/%d events, saved %d fights total. Failed events: %d",
+        time.Since(startTime).Round(time.Second), totalEventsProcessed, len(events), totalFightsSaved, failedEvents)
 }
 
 // connectToDatabase establishes a connection to the database
@@ -408,185 +408,228 @@ func processResults(resultChan <-chan FightResult) {
 	}
 }
 
-// processEvent handles a single event, scraping and saving fights
 func processEvent(ctx context.Context, db *sql.DB, scraper *scrapers.UFCFightScraper,
-	event EventInfo, resultChan chan<- FightResult) int {
+    event EventInfo, resultChan chan<- FightResult) int {
 
-	// Scrape fights from the UFC URL
-	ufcFights, err := scraper.ScrapeFightsWithContext(ctx, event.UFCURL)
-	if err != nil || len(ufcFights) == 0 {
-		resultChan <- FightResult{
-			EventName: event.Name,
-			FightName: "Event scraping",
-			Success:   false,
-			Error:     fmt.Errorf("failed to scrape event from URL %s: %w", event.UFCURL, err),
-		}
-		return 0
-	}
+    // Add recovery function for panics
+    defer func() {
+        if r := recover(); r != nil {
+            resultChan <- FightResult{
+                EventName: event.Name,
+                FightName: "Event processing",
+                Success:   false,
+                Error:     fmt.Errorf("panic during event processing: %v", r),
+            }
+        }
+    }()
 
-	// Use a wait group to process fights concurrently
-	var fightWg sync.WaitGroup
-	fightSem := make(chan struct{}, 5) // Process up to 5 fights concurrently
+    // First try with HTTP client (which is faster)
+    log.Printf("Attempting to scrape event '%s' with HTTP client first", event.Name)
+    httpFights, err := scraper.ScrapeFightsWithHTTP(ctx, event.UFCURL)
 
-	var fightsMutex sync.Mutex
-	fightsSavedForEvent := 0
+    // Check if we got incomplete results from HTTP scraping
+    needsSelenium := false
 
-	// Process each fight - the order from the scraper already has the main event first
-	for j, fight := range ufcFights {
-		fightWg.Add(1)
-		fightSem <- struct{}{} // Acquire fight semaphore
+    if err != nil || len(httpFights) == 0 {
+        needsSelenium = true
+        log.Printf("HTTP scraping failed for event '%s': %v", event.Name, err)
+    } else {
+        // Count fights with missing results
+        fightsMissingResult := 0
+        for _, fight := range httpFights {
+            // Check if this fight has no valid result
+            if fight.Fighter1Result != "Win" && fight.Fighter2Result != "Win" &&
+                fight.Fighter1Result != "Draw" && fight.Fighter2Result != "Draw" &&
+                fight.Fighter1Result != "No Contest" && fight.Fighter2Result != "No Contest" {
+                fightsMissingResult++
+            }
+        }
 
-		go func(idx int, fight scrapers.UFCScrapedFight) {
-			defer fightWg.Done()
-			defer func() { <-fightSem }() // Release fight semaphore
+        // If even one fight is missing a valid result, use Selenium
+        if fightsMissingResult > 0 {
+            needsSelenium = true
+            log.Printf("HTTP scraping incomplete for event '%s': %d fights missing valid result",
+                event.Name, fightsMissingResult)
+        } else {
+            log.Printf("HTTP scraping complete for event '%s': all %d fights have valid results",
+                event.Name, len(httpFights))
+        }
+    }
 
-			// Process a single fight
-			fightName := fmt.Sprintf("%s vs %s", fight.Fighter1Name, fight.Fighter2Name)
+    // Use Selenium if needed
+    var ufcFights []scrapers.UFCScrapedFight
+    if needsSelenium {
+        log.Printf("Switching to Selenium for event '%s'", event.Name)
+        ufcFights, err = scraper.ScrapeFightsWithSelenium(ctx, event.UFCURL)
+        if err != nil || len(ufcFights) == 0 {
+            resultChan <- FightResult{
+                EventName: event.Name,
+                FightName: "Event scraping",
+                Success:   false,
+                Error:     fmt.Errorf("failed to scrape event from URL %s with Selenium: %w", event.UFCURL, err),
+            }
+            return 0
+        }
 
-			fighter1ID, err := findFighterId(ctx, db, fight.Fighter1Name, fight.Fighter1LastName, event.Name)
-			if err != nil {
-				resultChan <- FightResult{
-					EventName: event.Name,
-					FightName: fightName,
-					Success:   false,
-					Error:     fmt.Errorf("fighter '%s' not found: %w", fight.Fighter1Name, err),
-				}
-				return
-			}
+        // Debug log to verify Selenium results
+        log.Printf("Selenium scraping found %d fights for event '%s'", len(ufcFights), event.Name)
+        for i, fight := range ufcFights {
+            log.Printf("  Fight %d: %s vs %s - Results: %s vs %s",
+                i+1, fight.Fighter1Name, fight.Fighter2Name, fight.Fighter1Result, fight.Fighter2Result)
+        }
+    } else {
+        // Use HTTP results if they were good
+        ufcFights = httpFights
+    }
 
-			fighter2ID, err := findFighterId(ctx, db, fight.Fighter2Name, fight.Fighter2LastName, event.Name)
-			if err != nil {
-				resultChan <- FightResult{
-					EventName: event.Name,
-					FightName: fightName,
-					Success:   false,
-					Error:     fmt.Errorf("fighter '%s' not found: %w", fight.Fighter2Name, err),
-				}
-				return
-			}
+    fightsSavedForEvent := 0
 
-			// Determine winner ID if available
-			var winnerID *string
-			if fight.Fighter1Result == "Win" {
-				winnerID = &fighter1ID
-			} else if fight.Fighter2Result == "Win" {
-				winnerID = &fighter2ID
-			}
+    // Process each fight sequentially
+    for j, fight := range ufcFights {
+        // Process a single fight
+        fightName := fmt.Sprintf("%s vs %s", fight.Fighter1Name, fight.Fighter2Name)
 
-			// Determine championship status
-			fighter1WasChampion := strings.Contains(strings.ToLower(fight.Fighter1Rank), "c")
-			fighter2WasChampion := strings.Contains(strings.ToLower(fight.Fighter2Rank), "c")
+        fighter1ID, err := findFighterId(ctx, db, fight.Fighter1Name, fight.Fighter1LastName, event.Name)
+        if err != nil {
+            resultChan <- FightResult{
+                EventName: event.Name,
+                FightName: fightName,
+                Success:   false,
+                Error:     fmt.Errorf("fighter '%s' not found: %w", fight.Fighter1Name, err),
+            }
+            continue
+        }
 
-			// Extract round as integer
-			var resultRound *int
-			if fight.Round != "" {
-				roundInt, err := strconv.Atoi(strings.TrimSpace(fight.Round))
-				if err == nil {
-					resultRound = &roundInt
-				}
-			}
+        fighter2ID, err := findFighterId(ctx, db, fight.Fighter2Name, fight.Fighter2LastName, event.Name)
+        if err != nil {
+            resultChan <- FightResult{
+                EventName: event.Name,
+                FightName: fightName,
+                Success:   false,
+                Error:     fmt.Errorf("fighter '%s' not found: %w", fight.Fighter2Name, err),
+            }
+            continue
+        }
 
-			// Process method details
-			var resultMethod, resultMethodDetails string
-			methodParts := strings.Split(fight.Method, " - ")
-			if len(methodParts) > 0 {
-				resultMethod = methodParts[0]
-				if len(methodParts) > 1 {
-					resultMethodDetails = methodParts[1]
-				}
-			}
+        // Determine winner ID if available
+        var winnerID *string
+        if fight.Fighter1Result == "Win" {
+            winnerID = &fighter1ID
+        } else if fight.Fighter2Result == "Win" {
+            winnerID = &fighter2ID
+        }
 
-			// Convert ranks to just the number
-			fighter1Rank := stripRankPrefix(fight.Fighter1Rank)
-			fighter2Rank := stripRankPrefix(fight.Fighter2Rank)
+        // Determine championship status
+        fighter1WasChampion := strings.Contains(strings.ToLower(fight.Fighter1Rank), "c")
+        fighter2WasChampion := strings.Contains(strings.ToLower(fight.Fighter2Rank), "c")
 
-			// Create query
-			query := `
-			INSERT INTO fights (
-				event_id, fighter1_id, fighter2_id, fighter1_name, fighter2_name, 
-				weight_class, is_main_event, fight_order, 
-				fighter1_was_champion, fighter2_was_champion, was_title_fight,
-				winner_id, result_method, result_method_details, result_round, result_time,
-				fighter1_rank, fighter2_rank,
-				created_at, updated_at
-			) VALUES (
-				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			)
-			ON CONFLICT (event_id, fighter1_id, fighter2_id) 
-			DO UPDATE SET
-				fighter1_name = EXCLUDED.fighter1_name,
-				fighter2_name = EXCLUDED.fighter2_name,
-				weight_class = EXCLUDED.weight_class,
-				is_main_event = EXCLUDED.is_main_event,
-				fight_order = EXCLUDED.fight_order,
-				fighter1_was_champion = EXCLUDED.fighter1_was_champion,
-				fighter2_was_champion = EXCLUDED.fighter2_was_champion,
-				was_title_fight = EXCLUDED.was_title_fight,
-				winner_id = EXCLUDED.winner_id,
-				result_method = EXCLUDED.result_method,
-				result_method_details = EXCLUDED.result_method_details,
-				result_round = EXCLUDED.result_round,
-				result_time = EXCLUDED.result_time,
-				fighter1_rank = EXCLUDED.fighter1_rank,
-				fighter2_rank = EXCLUDED.fighter2_rank,
-				updated_at = EXCLUDED.updated_at
-			RETURNING id`
+        // Extract round as integer
+        var resultRound *int
+        if fight.Round != "" {
+            roundInt, err := strconv.Atoi(strings.TrimSpace(fight.Round))
+            if err == nil {
+                resultRound = &roundInt
+            }
+        }
 
-			now := time.Now()
-			var fightID string
+        // Process method details
+        var resultMethod, resultMethodDetails string
+        methodParts := strings.Split(fight.Method, " - ")
+        if len(methodParts) > 0 {
+            resultMethod = methodParts[0]
+            if len(methodParts) > 1 {
+                resultMethodDetails = methodParts[1]
+            }
+        }
 
-			// For fight_order, use index+1 directly - this preserves the order from the UFC website
-			err = db.QueryRowContext(ctx, query,
-				event.ID,            // $1
-				fighter1ID,          // $2
-				fighter2ID,          // $3
-				fight.Fighter1Name,  // $4
-				fight.Fighter2Name,  // $5
-				fight.WeightClass,   // $6
-				fight.IsMainEvent,   // $7
-				idx+1,               // $8 - fight_order (preserves UFC website order)
-				fighter1WasChampion, // $9
-				fighter2WasChampion, // $10
-				fight.IsTitleFight,  // $11
-				winnerID,            // $12
-				resultMethod,        // $13
-				resultMethodDetails, // $14
-				resultRound,         // $15
-				fight.Time,          // $16
-				fighter1Rank,        // $17
-				fighter2Rank,        // $18
-				now,                 // $19
-				now,                 // $20
-			).Scan(&fightID)
+        // Convert ranks to just the number
+        fighter1Rank := stripRankPrefix(fight.Fighter1Rank)
+        fighter2Rank := stripRankPrefix(fight.Fighter2Rank)
 
-			if err != nil {
-				resultChan <- FightResult{
-					EventName: event.Name,
-					FightName: fightName,
-					Success:   false,
-					Error:     fmt.Errorf("failed to save fight: %w", err),
-				}
-				return
-			}
+        // Create query
+        query := `
+        INSERT INTO fights (
+            event_id, fighter1_id, fighter2_id, fighter1_name, fighter2_name, 
+            weight_class, is_main_event, fight_order, 
+            fighter1_was_champion, fighter2_was_champion, was_title_fight,
+            winner_id, result_method, result_method_details, result_round, result_time,
+            fighter1_rank, fighter2_rank,
+            created_at, updated_at
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+        )
+        ON CONFLICT (event_id, fighter1_id, fighter2_id) 
+        DO UPDATE SET
+            fighter1_name = EXCLUDED.fighter1_name,
+            fighter2_name = EXCLUDED.fighter2_name,
+            weight_class = EXCLUDED.weight_class,
+            is_main_event = EXCLUDED.is_main_event,
+            fight_order = EXCLUDED.fight_order,
+            fighter1_was_champion = EXCLUDED.fighter1_was_champion,
+            fighter2_was_champion = EXCLUDED.fighter2_was_champion,
+            was_title_fight = EXCLUDED.was_title_fight,
+            winner_id = EXCLUDED.winner_id,
+            result_method = EXCLUDED.result_method,
+            result_method_details = EXCLUDED.result_method_details,
+            result_round = EXCLUDED.result_round,
+            result_time = EXCLUDED.result_time,
+            fighter1_rank = EXCLUDED.fighter1_rank,
+            fighter2_rank = EXCLUDED.fighter2_rank,
+            updated_at = EXCLUDED.updated_at
+        RETURNING id`
 
-			// Update fight count
-			fightsMutex.Lock()
-			fightsSavedForEvent++
-			fightsMutex.Unlock()
+        now := time.Now()
+        var fightID string
 
-			resultChan <- FightResult{
-				EventName: event.Name,
-				FightName: fightName,
-				Success:   true,
-			}
-		}(j, fight)
-	}
+        // For fight_order, use index+1 directly - this preserves the order from the UFC website
+        err = db.QueryRowContext(ctx, query,
+            event.ID,            // $1
+            fighter1ID,          // $2
+            fighter2ID,          // $3
+            fight.Fighter1Name,  // $4
+            fight.Fighter2Name,  // $5
+            fight.WeightClass,   // $6
+            fight.IsMainEvent,   // $7
+            j+1,                 // $8 - fight_order (preserves UFC website order)
+            fighter1WasChampion, // $9
+            fighter2WasChampion, // $10
+            fight.IsTitleFight,  // $11
+            winnerID,            // $12
+            resultMethod,        // $13
+            resultMethodDetails, // $14
+            resultRound,         // $15
+            fight.Time,          // $16
+            fighter1Rank,        // $17
+            fighter2Rank,        // $18
+            now,                 // $19
+            now,                 // $20
+        ).Scan(&fightID)
 
-	// Wait for all fights to be processed
-	fightWg.Wait()
+        if err != nil {
+            resultChan <- FightResult{
+                EventName: event.Name,
+                FightName: fightName,
+                Success:   false,
+                Error:     fmt.Errorf("failed to save fight: %w", err),
+            }
+            continue
+        }
 
-	log.Printf("✅ Saved %d fights for event '%s'", fightsSavedForEvent, event.Name)
-	return fightsSavedForEvent
+        // Update fight count
+        fightsSavedForEvent++
+
+        resultChan <- FightResult{
+            EventName: event.Name,
+            FightName: fightName,
+            Success:   true,
+        }
+
+        // Add a small delay between fight processing
+        time.Sleep(100 * time.Millisecond)
+    }
+
+    log.Printf("✅ Saved %d fights for event '%s'", fightsSavedForEvent, event.Name)
+    return fightsSavedForEvent
 }
 
 func findFighterId(ctx context.Context, db *sql.DB, fighterName, fighterLastName, eventName string) (string, error) {
@@ -856,4 +899,78 @@ func mapFighterName(name string) string {
 	}
 
 	return name
+}
+
+// createAndManageScraper creates a new scraper and handles setup
+func createAndManageScraper(config *scrapers.ScraperConfig) *scrapers.UFCFightScraper {
+	scraper := scrapers.NewUFCFightScraper(config)
+
+	// If Selenium wasn't set up successfully, try again with a different port
+	if !scraper.IsUsingSelenium() {
+		// Try to set up Selenium with a different port
+		chromeConfig := &scrapers.ChromeDriverConfig{
+			Path:       "C:\\Users\\richa\\AppData\\Local\\Programs\\chromedriver.exe",
+			Port:       4445, // Use a different port
+			WaitTimeS:  15,
+			Headless:   true,
+			UserAgent:  config.UserAgent,
+			EnableLogs: false,
+		}
+
+		err := scraper.SetupSelenium(chromeConfig)
+		if err != nil {
+			log.Printf("Second attempt to set up Selenium failed: %v", err)
+			log.Printf("Falling back to HTTP client for scraping")
+		}
+	}
+
+	return scraper
+}
+
+// processEventWithRetry attempts to process an event with retries on failure
+func processEventWithRetry(ctx context.Context, db *sql.DB, scraper *scrapers.UFCFightScraper,
+	event EventInfo, resultChan chan<- FightResult, maxRetries int) (int, error) {
+
+	var lastErr error
+	var fightsSaved int
+
+	// Attempt to process with retries
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			// Log retry attempt
+			log.Printf("🔄 Retry #%d for event '%s'", attempt, event.Name)
+
+			// Add increasing delay between retries (exponential backoff)
+			retryDelay := time.Duration(2<<uint(attempt)) * time.Second
+			if retryDelay > 30*time.Second {
+				retryDelay = 30 * time.Second // Cap at 30 seconds
+			}
+			time.Sleep(retryDelay)
+		}
+
+		// Check if context is canceled
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		default:
+			// Continue with retry
+		}
+
+		// Create a new context for this attempt with a timeout
+		attemptCtx, cancelAttempt := context.WithTimeout(ctx, 60*time.Second)
+
+		// Process the event
+		fightsSaved = processEvent(attemptCtx, db, scraper, event, resultChan)
+		cancelAttempt() // Clean up the context
+
+		if fightsSaved > 0 {
+			// Success, exit retry loop
+			return fightsSaved, nil
+		}
+
+		// If we got here, processing didn't save any fights
+		lastErr = fmt.Errorf("event processing failed to save any fights (attempt %d)", attempt+1)
+	}
+
+	return fightsSaved, lastErr
 }
