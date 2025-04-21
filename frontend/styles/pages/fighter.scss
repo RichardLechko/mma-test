@@ -5,43 +5,47 @@
   max-width: 900px;
   margin: 0 auto;
   padding: $spacing-lg $spacing-sm;
-  
+
   .fighter-container {
     background: $background-dark;
     border-radius: $border-radius-md;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
-  
+
   .fighter-header {
-    background: linear-gradient(90deg, $primary-color 0%, $secondary-color 100%);
+    background: linear-gradient(
+      90deg,
+      $primary-color 0%,
+      $secondary-color 100%
+    );
     padding: $spacing-lg;
     color: $text-primary;
     position: relative;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    
+
     .fighter-info {
       h1 {
         font-size: $font-size-xxl;
         margin: 0 0 $spacing-xs 0;
         line-height: 1.2;
       }
-      
+
       .fighter-nickname {
         font-style: italic;
         font-size: $font-size-md;
         margin: 0 0 $spacing-sm 0;
         opacity: 0.9;
       }
-      
+
       .fighter-weight-class {
         font-size: $font-size-md;
         margin: $spacing-xs 0;
         text-transform: uppercase;
       }
-      
+
       .fighter-rank {
         display: inline-block;
         background: rgba(0, 0, 0, 0.3);
@@ -52,7 +56,7 @@
         margin-top: $spacing-xs;
       }
     }
-    
+
     .ufc-profile-link {
       display: inline-block;
       background: rgba(0, 0, 0, 0.3);
@@ -63,19 +67,19 @@
       font-size: $font-size-sm;
       font-weight: bold;
       transition: background-color 0.2s ease;
-      
+
       &:hover {
         background: rgba(0, 0, 0, 0.5);
       }
     }
   }
-  
+
   .fighter-profile {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: $spacing-md;
     padding: $spacing-lg;
-    
+
     h2 {
       font-size: $font-size-xl;
       margin: 0 0 $spacing-md 0;
@@ -83,104 +87,169 @@
       border-bottom: 2px solid $primary-color;
       color: $text-primary;
     }
-    
+
     .fighter-stats {
       .stats-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: $spacing-sm;
-        
+
         .stat-item {
           background: $background-card;
           padding: $spacing-sm;
           border-radius: $border-radius-sm;
-          
+
+          /* Make height consistent with content */
+          height: fit-content;
+
           .stat-label {
             display: block;
             font-size: $font-size-xs;
             color: $text-tertiary;
             margin-bottom: $spacing-xs * 0.5;
           }
-          
+
           .stat-value {
             display: block;
             font-size: $font-size-md;
             color: $text-primary;
             font-weight: bold;
           }
+
+          .locations-list {
+            margin: 0;
+            padding-left: 20px;
+            list-style-type: disc;
+
+            li {
+              font-size: $font-size-md;
+              color: $text-primary;
+              font-weight: bold;
+              margin-bottom: 5px;
+
+              &:last-child {
+                margin-bottom: 0;
+              }
+            }
+          }
+        }
+
+        .fighting-locations {
+          grid-column: span 2;
         }
       }
     }
-    
+
     .fighter-record {
-      .record-summary {
+      .record-card {
         background: $background-card;
         padding: $spacing-md;
         border-radius: $border-radius-sm;
         margin-bottom: $spacing-md;
-        
-        .record-total {
-          text-align: center;
-          
-          .record-value {
-            display: block;
-            font-size: $font-size-xxl;
-            font-weight: bold;
-            color: $text-primary;
+
+        .record-main {
+          display: flex;
+          justify-content: space-around;
+          align-items: stretch;
+          gap: 1px;
+
+          .win-box,
+          .loss-box,
+          .draw-box,
+          .nc-box {
+            flex: 1;
+            padding: $spacing-sm;
+            text-align: center;
+            border-radius: $border-radius-sm;
           }
-          
-          .record-label {
-            display: block;
-            font-size: $font-size-sm;
-            color: $text-tertiary;
-            margin-top: $spacing-xs * 0.5;
+
+          .win-box {
+            background: rgba(39, 174, 96, 0.1);
+            border-left: 3px solid #27ae60;
           }
-          
-          .record-nc {
+
+          .loss-box {
+            background: rgba(231, 76, 60, 0.1);
+            border-left: 3px solid #e74c3c;
+          }
+
+          .draw-box {
+            background: rgba(243, 156, 18, 0.1);
+            border-left: 3px solid #f39c12;
+          }
+
+          .nc-box {
+            background: rgba(142, 142, 166, 0.1);
+            border-left: 3px solid #8e8ea6;
+          }
+
+          .count {
             display: block;
-            font-size: $font-size-sm;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.1rem;
+          }
+
+          .label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
             color: $text-tertiary;
-            margin-top: $spacing-xs;
+            text-transform: uppercase;
           }
         }
       }
-      
+
       .win-methods {
         display: grid;
         grid-template-columns: 1fr;
         gap: $spacing-md;
-        
+
         .methods-container {
+          margin-bottom: $spacing-md;
+
           h3 {
             font-size: $font-size-md;
             margin: 0 0 $spacing-sm 0;
             color: $text-secondary;
+            font-weight: 600;
+            border-bottom: 1px solid rgba($text-tertiary, 0.2);
+            padding-bottom: $spacing-xs;
           }
-          
+
           .method-items {
-            display: flex;
-            justify-content: space-between;
-            gap: $spacing-xs;
-            
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: $spacing-sm;
+
+            /* When DQ is present (4 items), use 2x2 grid */
+            &.has-four-methods,
+            &:has(.method-item:nth-child(4)) {
+              grid-template-columns: repeat(2, 1fr);
+              grid-template-rows: repeat(2, auto);
+            }
+
             .method-item {
-              flex: 1;
               background: $background-card;
               padding: $spacing-sm;
               border-radius: $border-radius-sm;
               text-align: center;
-              
+              border-bottom: 2px solid $primary-color;
+
               .method-value {
                 display: block;
                 font-size: $font-size-lg;
                 font-weight: bold;
                 color: $text-primary;
               }
-              
+
               .method-label {
                 display: block;
                 font-size: $font-size-xs;
                 color: $text-tertiary;
                 margin-top: $spacing-xs * 0.5;
+                text-transform: uppercase;
               }
             }
           }
@@ -188,230 +257,325 @@
       }
     }
   }
-  
+
   .fighter-fights {
     padding: $spacing-lg;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    
+  
     h2 {
       font-size: $font-size-xl;
       margin: 0 0 $spacing-md 0;
       padding-bottom: $spacing-xs;
-      border-bottom: 2px solid $primary-color;
       color: $text-primary;
+      display: inline-block;
+      border-bottom: 2px solid $primary-color;
     }
-    
+  
     .fights-list {
       display: grid;
       gap: $spacing-md;
       margin-top: $spacing-md;
     }
-    
+  
     .fight-card {
-      background: $background-card;
+      background: linear-gradient(
+        to bottom,
+        rgba(40, 44, 52, 0.8),
+        rgba(20, 24, 32, 0.9)
+      );
       border-radius: $border-radius-sm;
       overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
       position: relative;
       
-      &.main-event {
-        border-left: 3px solid gold;
+      &.main-event::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: #ffc107;
+      }
+  
+      &.result-win::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 100%;
+        background: #10b981;
+      }
+  
+      &.result-loss::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 100%;
+        background: #ef4444;
+      }
+  
+      &.result-draw::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 100%;
+        background: #f59e0b;
+      }
+  
+      &.result-nc::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 100%;
+        background: #64748b;
       }
     }
-    
-    .event-link {
-      display: block;
-      text-decoration: none;
-      color: $text-primary;
-      
-      &:hover {
-        .event-name {
-          color: $primary-color;
-        }
-      }
-    }
-    
+  
     .fight-date {
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(10, 12, 16, 0.9);
       padding: $spacing-xs $spacing-sm;
-      font-size: $font-size-sm;
-      color: $text-tertiary;
+      font-size: 0.95rem;
+      color: #94a3b8;
       display: flex;
       justify-content: space-between;
       align-items: center;
+  
+      .event-badges {
+        display: flex;
+        gap: $spacing-xs;
+      }
     }
-    
-    .main-event-badge {
-      background-color: rgba(255, 215, 0, 0.2);
-      border: 1px solid rgba(255, 215, 0, 0.5);
-      color: gold;
-      font-size: $font-size-xs;
-      padding: 0 $spacing-xs;
+  
+    .weight-class-badge,
+    .weight-class-pill {
+      background-color: rgba(30, 41, 59, 0.7);
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      padding: 2px $spacing-xs;
       border-radius: $border-radius-sm;
       font-weight: bold;
       text-transform: uppercase;
     }
-    
-    .fight-details {
-      padding: $spacing-sm;
+  
+    .main-event-badge {
+      background-color: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+      font-size: 0.85rem;
+      padding: 2px $spacing-xs;
+      border-radius: $border-radius-sm;
+      font-weight: bold;
+      text-transform: uppercase;
     }
-    
+  
+    .fight-details {
+      padding: $spacing-md;
+    }
+  
+    .event-link {
+      text-decoration: none;
+      color: $text-primary;
+      transition: color 0.3s ease;
+      
+      &:hover {
+        color: #38bdf8;
+      }
+    }
+  
     .event-name {
       display: block;
       font-weight: bold;
-      font-size: $font-size-md;
+      font-size: 1.05rem;
       margin-bottom: $spacing-sm;
-      transition: color 0.2s ease;
     }
-    
+  
     .matchup {
       display: flex;
-      align-items: center;
       margin-bottom: $spacing-sm;
-      flex-wrap: wrap;
-      
-      .vs-label {
-        font-size: $font-size-xs;
-        color: $text-tertiary;
-        margin-right: $spacing-xs;
-        text-transform: uppercase;
+    }
+  
+    .fighter-vs {
+      display: flex;
+      align-items: center;
+      width: 100%;
+  
+      .fighter-name-container {
+        display: flex;
+        align-items: center;
+        
+        &.winner .fighter-link {
+          color: #ffffff;
+          position: relative;
+          
+          &::after {
+            content: '✓';
+            display: inline-block;
+            margin-left: 5px;
+            color: #10b981;
+            font-weight: bold;
+          }
+          
+          &:hover {
+            color: #38bdf8;
+          }
+        }
+      }
+  
+      .fighter-link {
+        color: #94a3b8;
+        text-decoration: none;
+        font-weight: bold;
+        margin-right: 15px;
+        transition: color 0.3s ease;
+        font-size: 0.95rem;
+        
+        &:hover {
+          color: #38bdf8;
+        }
+      }
+  
+      .vs {
+        margin: 0 15px;
+        color: #64748b;
+        font-weight: normal;
+        font-size: 0.95rem;
+      }
+    }
+  
+    .rank {
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: rgba(30, 41, 59, 0.7);
+      margin-right: 15px;
+      font-weight: bold;
+  
+      &.champion {
+        color: #000000;
+        background: rgb(255, 215, 0);
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
         font-weight: bold;
       }
     }
-    
-    .opponent-link {
-      position: relative;
-      font-weight: bold;
-      color: $text-primary;
-      text-decoration: none;
-      
-      &:hover {
-        color: $primary-color;
-        text-decoration: underline;
-      }
-    }
-    
-    .fight-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: $spacing-xs;
-      margin-top: $spacing-xs;
-    }
-    
-    .weight-class-pill {
-      display: inline-block;
-      background: rgba(255, 255, 255, 0.1);
-      padding: $spacing-xs * 0.5 $spacing-xs;
-      border-radius: $border-radius-sm;
-      font-size: $font-size-xs;
-      color: $text-tertiary;
-      text-transform: uppercase;
-    }
-    
-    .method-pill {
-      display: inline-block;
-      background: rgba(30, 30, 35, 0.7);
-      padding: $spacing-xs * 0.5 $spacing-xs;
-      border-radius: $border-radius-sm;
-      font-size: $font-size-xs;
-      color: rgba(255, 255, 255, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-     
-    .no-fights {
-      background: $background-card;
-      padding: $spacing-md;
-      border-radius: $border-radius-sm;
-      text-align: center;
-      color: $text-tertiary;
-      font-style: italic;
-    }
-
-    .load-more-container {
-      margin-top: $spacing-md;
-      text-align: center;
-    }
-    
-    .load-more-button {
-      background: $primary-color;
-      color: $text-primary;
-      border: none;
-      padding: $spacing-sm $spacing-md;
-      border-radius: $border-radius-sm;
-      font-family: "Space Grotesk", sans-serif;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      
-      &:hover {
-        background-color: $secondary-color;
-      }
-      
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-    }
-    
-    .fights-count {
-      margin-top: $spacing-sm;
-      font-size: $font-size-sm;
-      color: $text-tertiary;
-    }
-
+  
     .result-badge {
+      margin-left: auto;
+      margin-right: 0;
+      font-size: 0.85rem;
       font-weight: bold;
-      padding: 2px 6px;
+      padding: 4px 10px;
       border-radius: 4px;
-      margin-left: 8px;
-      font-size: $font-size-xs;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       display: inline-flex;
       align-items: center;
     }
-    
+  
     .result-badge.win {
-      background-color: rgba(76, 175, 80, 0.2);
-      color: #4caf50;
-      border: 1px solid rgba(76, 175, 80, 0.3);
+      background-color: rgba(16, 185, 129, 0.2);
+      color: #10b981;
     }
-    
+  
     .result-badge.loss {
-      background-color: rgba(244, 67, 54, 0.2);
-      color: #f44336;
-      border: 1px solid rgba(244, 67, 54, 0.3);
+      background-color: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
     }
-    
+  
     .result-badge.draw {
-      background-color: rgba(255, 152, 0, 0.2);
-      color: #ff9800;
-      border: 1px solid rgba(255, 152, 0, 0.3);
+      background-color: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
     }
-    
+  
     .result-badge.nc {
-      background-color: rgba(158, 158, 158, 0.2);
-      color: #9e9e9e;
-      border: 1px solid rgba(158, 158, 158, 0.3);
+      background-color: rgba(100, 116, 139, 0.2);
+      color: #64748b;
+    }
+  
+    .result-method {
+      text-align: center;
+      font-size: 1.05rem;
+      color: #cbd5e1;
+      padding: $spacing-sm 0;
+      margin-top: $spacing-sm;
+    }
+  
+    .no-fights {
+      background: $background-card;
+      padding: $spacing-lg;
+      border-radius: $border-radius-sm;
+      text-align: center;
+      color: $text-tertiary;
+      font-style: italic;
+    }
+  
+    .load-more-container {
+      margin-top: $spacing-md;
+      text-align: center;
+    }
+  
+    .load-more-button {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: $spacing-sm $spacing-lg;
+      border-radius: $border-radius-sm;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-size: 0.95rem;
+      
+      &:hover {
+        background-color: #2563eb;
+      }
+      
+      &:active {
+        background-color: #1d4ed8;
+      }
+  
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  
+    .fights-count {
+      margin-top: $spacing-sm;
+      font-size: 0.9rem;
+      color: $text-tertiary;
     }
   }
-  
+
   .fighter-not-found {
     text-align: center;
     padding: $spacing-xl;
-    
+
     h1 {
       font-size: $font-size-xxl;
       margin-bottom: $spacing-md;
       color: $text-primary;
     }
-    
+
     p {
       font-size: $font-size-md;
       color: $text-secondary;
       margin-bottom: $spacing-lg;
     }
-    
+
     .back-button {
       display: inline-block;
       background: $primary-color;
@@ -421,7 +585,7 @@
       border-radius: $border-radius-sm;
       font-weight: bold;
       transition: background-color 0.2s ease;
-      
+
       &:hover {
         background-color: $secondary-color;
       }

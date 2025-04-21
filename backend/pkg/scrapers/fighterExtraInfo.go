@@ -20,7 +20,8 @@ type FighterExtraInfo struct {
 	DQLosses      int
 	NoContests    int
 	FightingOutOf string
-	
+	Age           int
+
 	KOWins  int
 	SubWins int
 	DecWins int
@@ -267,10 +268,10 @@ func (s *WikiFighterScraper) ScrapeExtraInfo(fighterName, wikiURL, ufcURL string
 
 	// Use a WaitGroup to wait for all goroutines to finish
 	var wg sync.WaitGroup
-	
+
 	// Create a channel to receive successful results
 	resultChan := make(chan *goquery.Document, len(urls))
-	
+
 	// Create a context with cancellation for early termination
 	fetchCtx, fetchCancel := context.WithCancel(ctx)
 	defer fetchCancel()
@@ -280,7 +281,7 @@ func (s *WikiFighterScraper) ScrapeExtraInfo(fighterName, wikiURL, ufcURL string
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			
+
 			// Try to fetch and validate the URL
 			doc, err := s.fetchURL(fetchCtx, url, fighterName)
 			if err == nil && doc != nil {
@@ -319,24 +320,31 @@ func (s *WikiFighterScraper) ScrapeExtraInfo(fighterName, wikiURL, ufcURL string
 	// Use goroutines to extract different types of information in parallel
 	var wgExtract sync.WaitGroup
 	info := &FighterExtraInfo{}
-	
+
 	// Extract fighting out of information
 	wgExtract.Add(1)
 	go func() {
 		defer wgExtract.Done()
 		info.FightingOutOf = extractFightingOutOf(doc)
 	}()
-	
+
 	// Extract record data
 	wgExtract.Add(1)
 	go func() {
 		defer wgExtract.Done()
 		extractRecordData(doc, info)
 	}()
-	
+
+	// Extract age information
+	wgExtract.Add(1)
+	go func() {
+		defer wgExtract.Done()
+		info.Age = extractAge(doc)
+	}()
+
 	// Wait for all extraction goroutines to complete
 	wgExtract.Wait()
-	
+
 	// Final validation
 	validateFighterInfo(info, ufcWins, ufcLosses)
 
@@ -357,40 +365,94 @@ func isEmpty(info *FighterExtraInfo) bool {
 		info.FightingOutOf == "" &&
 		info.KOWins == 0 &&
 		info.SubWins == 0 &&
-		info.DecWins == 0
+		info.DecWins == 0 &&
+		info.Age == 0
 }
 
-// Extract the "Fighting out of" information
+// Extract the "Fighting out of" information as a JSON array string
 func extractFightingOutOf(doc *goquery.Document) string {
-	var result string
+    var locations []string
 
-	// Look for the "Fighting out of" row
-	doc.Find("tr").Each(func(i int, row *goquery.Selection) {
-		headerCell := row.Find("th").First()
-		if headerCell.Length() == 0 {
-			return
-		}
+    // Look for the "Fighting out of" row
+    doc.Find("tr").Each(func(i int, row *goquery.Selection) {
+        headerCell := row.Find("th").First()
+        if headerCell.Length() == 0 {
+            return
+        }
 
-		headerText := strings.ToLower(strings.TrimSpace(headerCell.Text()))
-		if strings.Contains(headerText, "fighting out of") {
-			dataCell := row.Find("td").First()
-			if dataCell.Length() > 0 {
-				// Get the raw text and clean it
-				rawText := dataCell.Text()
+        headerText := strings.ToLower(strings.TrimSpace(headerCell.Text()))
+        if strings.Contains(headerText, "fighting out of") {
+            dataCell := row.Find("td").First()
+            if dataCell.Length() > 0 {
+                // First, try to handle lists with <li> elements
+                listItems := dataCell.Find("li")
+                if listItems.Length() > 0 {
+                    // Handle structured list
+                    listItems.Each(func(i int, item *goquery.Selection) {
+                        locationText := sanitizeLocationText(item.Text())
+                        if locationText != "" {
+                            locations = append(locations, locationText)
+                        }
+                    })
+                } else {
+                    // For cells with <br> tags, we need to process each element separately
+                    // Clone the cell to avoid modifying the original
+                    cellContents := dataCell.Clone()
+                    
+                    // Replace <br> tags with a special marker
+                    html, _ := cellContents.Html()
+                    html = strings.ReplaceAll(html, "<br>", "|||BREAK|||")
+                    html = strings.ReplaceAll(html, "<br/>", "|||BREAK|||")
+                    html = strings.ReplaceAll(html, "<br />", "|||BREAK|||")
+                    
+                    // Create a new document with the modified HTML
+                    tempDoc, err := goquery.NewDocumentFromReader(strings.NewReader("<div>" + html + "</div>"))
+                    if err == nil {
+                        // Get the text with our special markers
+                        fullText := tempDoc.Find("div").Text()
+                        
+                        // Split by our special marker
+                        parts := strings.Split(fullText, "|||BREAK|||")
+                        
+                        for _, part := range parts {
+                            locationText := sanitizeLocationText(part)
+                            if locationText != "" {
+                                locations = append(locations, locationText)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
 
-				// Remove citations like [1], [2], etc.
-				re := regexp.MustCompile(`\[\d+\]`)
-				text := re.ReplaceAllString(rawText, "")
+    // If we have locations, format them as a JSON array string
+    if len(locations) > 0 {
+        // Format as {loc1}, {loc2}, {loc3}
+        var formattedLocations []string
+        for _, loc := range locations {
+            formattedLocations = append(formattedLocations, "{"+loc+"}")
+        }
+        return strings.Join(formattedLocations, ", ")
+    }
 
-				// Replace multiple spaces with a single space
-				text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
+    return ""
+}
 
-				result = strings.TrimSpace(text)
-			}
-		}
-	})
-
-	return result
+// Helper function to sanitize location text
+func sanitizeLocationText(text string) string {
+    // Remove CSS styles that might be part of the content
+    styleRegex := regexp.MustCompile(`\.mw-parser-output[^}]+}`)
+    text = styleRegex.ReplaceAllString(text, "")
+    
+    // Remove citations like [1], [2], etc.
+    citationRegex := regexp.MustCompile(`\[\d+\]`)
+    text = citationRegex.ReplaceAllString(text, "")
+    
+    // Remove extra whitespace
+    text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
+    
+    return strings.TrimSpace(text)
 }
 
 // Extract record data from the infobox or record table
@@ -762,4 +824,46 @@ func validateFighterInfo(info *FighterExtraInfo, ufcWins, ufcLosses int) {
 			info.DQLosses = 0
 		}
 	}
+}
+
+// Add this function to extract age information
+func extractAge(doc *goquery.Document) int {
+	var age int
+
+	// Try to extract age directly from the ForceAgeToShow span
+	doc.Find(".noprint.ForceAgeToShow").Each(func(i int, ageSpan *goquery.Selection) {
+		// Extract text from format like "(age 59)"
+		ageText := ageSpan.Text()
+		re := regexp.MustCompile(`\(age\D*(\d+)\)`)
+		matches := re.FindStringSubmatch(ageText)
+		if len(matches) > 1 {
+			extractedAge, err := strconv.Atoi(matches[1])
+			if err == nil {
+				age = extractedAge
+				return
+			}
+		}
+	})
+
+	// If age not found directly, try to calculate from birthdate
+	if age == 0 {
+		doc.Find(".bday").Each(func(i int, bdaySpan *goquery.Selection) {
+			birthDateStr := bdaySpan.Text()
+			// Parse birthdate in format "YYYY-MM-DD"
+			birthDate, err := time.Parse("2006-01-02", birthDateStr)
+			if err == nil {
+				// Calculate age based on current time
+				now := time.Now()
+				age = now.Year() - birthDate.Year()
+
+				// Adjust age if birthday hasn't occurred yet this year
+				if now.Month() < birthDate.Month() || (now.Month() == birthDate.Month() && now.Day() < birthDate.Day()) {
+					age--
+				}
+				return
+			}
+		})
+	}
+
+	return age
 }
