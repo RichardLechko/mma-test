@@ -217,7 +217,6 @@ func (s *FighterScraper) GetAvailableCountries() ([]CountryCode, error) {
 	return countries, nil
 }
 
-// Modified Fighter struct with Nationality
 type Fighter struct {
 	Name        string
 	Nickname    string
@@ -238,6 +237,7 @@ type Fighter struct {
 	KOWins  int
 	SubWins int
 	DecWins int
+	Draws   int
 }
 
 // FighterRanking represents a single ranking in a specific weight class
@@ -364,64 +364,64 @@ func (s *FighterScraper) ScrapeFightersByAllCountries(ctx context.Context) ([]*F
 	log.Printf("Starting to scrape fighters from %d countries in parallel", len(countries))
 
 	// Determine optimal number of workers
-	numWorkers := runtime.NumCPU() 
+	numWorkers := runtime.NumCPU()
 	if numWorkers > 8 {
 		numWorkers = 8 // Cap at a reasonable number to avoid overwhelming the UFC server
 	}
 
 	// Create a channel to distribute countries
 	countryCh := make(chan CountryCode, len(countries))
-	
+
 	// Create a wait group to wait for all workers to finish
 	var wg sync.WaitGroup
-	
+
 	// Launch worker goroutines
 	var processedCountries, totalFighters int32
-	
+
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			
+
 			for country := range countryCh {
 				select {
 				case <-ctx.Done():
 					return
 				default:
 				}
-				
+
 				fighters, err := s.ScrapeFightersByCountry(country.Code)
 				if err != nil {
-					log.Printf("Worker %d: Error scraping %s fighters: %v", 
+					log.Printf("Worker %d: Error scraping %s fighters: %v",
 						workerID, country.Name, err)
 					continue
 				}
-				
+
 				// Add fighters to the global list
 				if len(fighters) > 0 {
 					mu.Lock()
 					allFighters = append(allFighters, fighters...)
 					mu.Unlock()
-					
+
 					atomic.AddInt32(&totalFighters, int32(len(fighters)))
 				}
-				
+
 				count := atomic.AddInt32(&processedCountries, 1)
 				log.Printf("Progress: %d/%d countries processed, %d fighters found so far",
 					count, len(countries), atomic.LoadInt32(&totalFighters))
-				
+
 				// Be nice to the server with a short delay between countries
 				time.Sleep(100 * time.Millisecond)
 			}
 		}(i)
 	}
-	
+
 	// Send countries to the workers
 	for _, country := range countries {
 		countryCh <- country
 	}
 	close(countryCh)
-	
+
 	// Wait for all workers to finish
 	wg.Wait()
 
@@ -515,7 +515,7 @@ func (s *FighterScraper) ScrapeFightersDirectly() ([]*Fighter, error) {
 			emptyPageCount = 0
 			allFighters = append(allFighters, pageFighters...)
 		}
-		
+
 		// Add a small delay between pages to avoid overwhelming the server
 		time.Sleep(200 * time.Millisecond)
 	}
@@ -574,9 +574,34 @@ func (s *FighterScraper) GetFighterDetails(fighter *Fighter) error {
 		fighter.WeightClass = strings.TrimSpace(weightClass)
 	}
 
-	// Update record if needed
-	if fighter.Record == "" {
-		fighter.Record = strings.TrimSpace(doc.Find("p.hero-profile__division-body").First().Text())
+	// Parse W-L-D from record
+	var totalWins int
+	recordText := strings.TrimSpace(doc.Find("p.hero-profile__division-body").First().Text())
+	
+	if recordText != "" {
+		// Update fighter record if it's empty
+		if fighter.Record == "" {
+			fighter.Record = recordText
+		}
+		
+		// Log the record text for debugging
+		log.Printf("Fighter %s record: %s", fighter.Name, recordText)
+		
+		// Parse wins, losses, and draws from the record
+		// Example format: "23-5-0 (W-L-D)" or "21-1-1" 
+		recordRegex := regexp.MustCompile(`^(\d+)-(\d+)-(\d+)`)
+		matches := recordRegex.FindStringSubmatch(recordText)
+		if len(matches) >= 4 {
+			totalWins, _ = strconv.Atoi(matches[1])
+			_, _ = strconv.Atoi(matches[2])  // Ignore losses with blank identifier
+			draws, _ := strconv.Atoi(matches[3])
+			
+			// Set the draws in the fighter struct
+			fighter.Draws = draws
+			log.Printf("Parsed record for %s: wins=%d, draws=%d", fighter.Name, totalWins, draws)
+		} else {
+			log.Printf("Failed to parse record for %s: %s", fighter.Name, recordText)
+		}
 	}
 
 	// Extract bio info from the tabs section
@@ -634,6 +659,11 @@ func (s *FighterScraper) GetFighterDetails(fighter *Fighter) error {
 		}
 	})
 
+	// Reset win methods
+	fighter.KOWins = 0
+	fighter.SubWins = 0
+	fighter.DecWins = 0
+
 	// Extract win methods from the stats-records section
 	doc.Find("div.stats-records--three-column").Each(func(i int, statsDiv *goquery.Selection) {
 		// Find the title to ensure we're in the right section
@@ -664,6 +694,17 @@ func (s *FighterScraper) GetFighterDetails(fighter *Fighter) error {
 			})
 		}
 	})
+
+	// Sanity check win methods
+	sumOfWinMethods := fighter.KOWins + fighter.SubWins + fighter.DecWins
+	if totalWins > 0 && sumOfWinMethods != totalWins {
+		// Reset win methods if they don't match the total wins
+		log.Printf("Win methods don't match for %s: totalWins=%d, sumOfMethods=%d (KO=%d, SUB=%d, DEC=%d)",
+			fighter.Name, totalWins, sumOfWinMethods, fighter.KOWins, fighter.SubWins, fighter.DecWins)
+		fighter.KOWins = 0
+		fighter.SubWins = 0
+		fighter.DecWins = 0
+	}
 
 	return nil
 }
@@ -761,31 +802,31 @@ func (s *FighterScraper) processAndEnrichFighters(ctx context.Context, fighters 
 	if numWorkers > 10 {
 		numWorkers = 10 // Cap at a reasonable maximum
 	}
-	
+
 	fighterCh := make(chan *Fighter, len(uniqueFighters))
 	var wg sync.WaitGroup
-	
+
 	// Stats counters
 	var successCount, failureCount int32
-	
+
 	// Start workers
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			
+
 			for fighter := range fighterCh {
 				select {
 				case <-ctx.Done():
 					return
 				default:
 				}
-				
+
 				// Attempt to get fighter details with retries
 				success := false
 				attempts := 0
 				maxAttempts := 3
-				
+
 				for !success && attempts < maxAttempts {
 					err := s.GetFighterDetails(fighter)
 					if err == nil {
@@ -807,7 +848,7 @@ func (s *FighterScraper) processAndEnrichFighters(ctx context.Context, fighters 
 						}
 					}
 				}
-				
+
 				// Log progress periodically
 				totalProcessed := atomic.LoadInt32(&successCount) + atomic.LoadInt32(&failureCount)
 				if totalProcessed%50 == 0 || totalProcessed == int32(len(uniqueFighters)) {
@@ -817,16 +858,16 @@ func (s *FighterScraper) processAndEnrichFighters(ctx context.Context, fighters 
 			}
 		}(i)
 	}
-	
+
 	// Send fighters to workers
 	for _, fighter := range uniqueFighters {
 		fighterCh <- fighter
 	}
 	close(fighterCh)
-	
+
 	// Wait for all workers to finish
 	wg.Wait()
-	
+
 	log.Printf("Completed getting fighter details: %d successful, %d failed",
 		successCount, failureCount)
 
@@ -967,15 +1008,15 @@ func countFightersWithNationality(fighters []*Fighter) int {
 }
 
 func InsertFighter(db *sql.DB, fighter *Fighter) error {
-    // Parse the wins, losses, draws from the struct fields
-    wins := fighter.KOWins + fighter.SubWins + fighter.DecWins
-    
-    // Now that we're using ufc_id as the unique constraint, we can use a simple UPSERT pattern
-    _, err := db.Exec(`
+	// Parse the wins, losses, draws from the struct fields
+	wins := fighter.KOWins + fighter.SubWins + fighter.DecWins
+
+	// Now that we're using ufc_id as the unique constraint, we can use a simple UPSERT pattern
+	_, err := db.Exec(`
         INSERT INTO fighters
         (name, nickname, weight_class, status, rank, ufc_id, ufc_url, nationality,
-         wins, ko_wins, sub_wins, dec_wins, age, height, weight, reach)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         wins, ko_wins, sub_wins, dec_wins, draws, age, height, weight, reach)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         ON CONFLICT (ufc_id) DO UPDATE SET
             name = EXCLUDED.name,
             nickname = EXCLUDED.nickname,
@@ -988,14 +1029,15 @@ func InsertFighter(db *sql.DB, fighter *Fighter) error {
             ko_wins = EXCLUDED.ko_wins,
             sub_wins = EXCLUDED.sub_wins,
             dec_wins = EXCLUDED.dec_wins,
+            draws = EXCLUDED.draws,
             age = EXCLUDED.age,
             height = EXCLUDED.height,
             weight = EXCLUDED.weight,
             reach = EXCLUDED.reach
-    `, fighter.Name, fighter.Nickname, fighter.WeightClass, 
-       fighter.Status, fighter.Ranking, fighter.UFCID, fighter.UFCURL, fighter.Nationality,
-       wins, fighter.KOWins, fighter.SubWins, fighter.DecWins,
-       fighter.Age, fighter.Height, fighter.Weight, fighter.Reach)
+    `, fighter.Name, fighter.Nickname, fighter.WeightClass,
+		fighter.Status, fighter.Ranking, fighter.UFCID, fighter.UFCURL, fighter.Nationality,
+		wins, fighter.KOWins, fighter.SubWins, fighter.DecWins, fighter.Draws,
+		fighter.Age, fighter.Height, fighter.Weight, fighter.Reach)
 
-    return err
+	return err
 }

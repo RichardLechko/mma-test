@@ -32,10 +32,6 @@ const {
   .select('*', { count: 'exact' })
   .order('name', { ascending: true });
 
-if (error) {
-  console.error('Error fetching fighters:', error);
-}
-
 const fightersList = (allFighters as Fighter[]) || [];
 const totalFighters = count || 0;
 
@@ -302,11 +298,8 @@ const nationalityOptions: FilterOption[] = [
   </main>
 </Layout>
 
-<!-- SCRIPT TAG -->
 <script is:inline>
-  // Load More and Filter functionality
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing fighter filters');
 
     // Elements for searching
     const searchInput = document.getElementById('fighter-search');
@@ -340,7 +333,6 @@ const nationalityOptions: FilterOption[] = [
       }
     });
 
-    console.log(`Loaded ${allFighters.length} fighters for filtering`);
 
     let filteredFighters = [...allFighters];
     let visibleCount = parseInt(
@@ -419,10 +411,7 @@ const nationalityOptions: FilterOption[] = [
       });
     }
 
-    // Apply filters function
     function applyFilters() {
-      console.log('Applying filters');
-      // Get filter values
       const status = statusFilter.value;
       const isChampion = championFilter.value === 'champion';
 
@@ -725,15 +714,11 @@ const nationalityOptions: FilterOption[] = [
       }
     }
 
-    // Load more fighters
     if (loadMoreButton) {
       loadMoreButton.addEventListener('click', () => {
-        console.log('Load more clicked');
-        // Show loading state
         loadMoreButton.innerText = 'Loading...';
         loadMoreButton.disabled = true;
 
-        // Increase visible count
         visibleCount += 10;
         loadMoreButton.setAttribute(
           'data-current-count',

@@ -173,47 +173,46 @@ func (s *EventService) CreateEvent(ctx context.Context, event *models.Event) err
 		return fmt.Errorf("failed to insert event: %w", err)
 	}
 
-	log.Printf("Created event %s: %s at %s on %s", event.ID, event.Name, event.Venue, event.Date.Format("2006-01-02"))
+	log.Printf("Created event %s: %s at %s on %s", event.ID, event.Name, event.Venue, event.Date)
 	return nil
 }
 
-// UpdateEvent updates an existing event in the database
 func (s *EventService) UpdateEvent(ctx context.Context, event *models.Event) error {
-	query := `
-		UPDATE events
-		SET name = $1, event_date = $2, venue = $3, city = $4, country = $5, ufc_url = $6, status = $7, updated_at = CURRENT_TIMESTAMP, attendance = $8
-		WHERE id = $8
-	`
+    query := `
+        UPDATE events
+        SET name = $1, event_date = $2, venue = $3, city = $4, country = $5, ufc_url = $6, status = $7, updated_at = CURRENT_TIMESTAMP, attendance = $8
+        WHERE id = $9
+    `
 
-	result, err := s.db.ExecContext(
-		ctx,
-		query,
-		event.Name,
-		event.Date,
-		event.Venue,
-		event.City,
-		event.Country,
-		event.UFCURL,
-		event.Status,
-		event.ID,
-		event.Attendance,
-	)
-	
-	if err != nil {
-		return fmt.Errorf("failed to update event: %w", err)
-	}
+    result, err := s.db.ExecContext(
+        ctx,
+        query,
+        event.Name,
+        event.Date,
+        event.Venue,
+        event.City,
+        event.Country,
+        event.UFCURL,
+        event.Status,
+        event.Attendance,
+        event.ID,  // This should be the 9th parameter
+    )
+    
+    if err != nil {
+        return fmt.Errorf("failed to update event: %w", err)
+    }
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("failed to get rows affected: %w", err)
+    }
 
-	if rowsAffected == 0 {
-		return fmt.Errorf("event with ID %s not found", event.ID)
-	}
+    if rowsAffected == 0 {
+        return fmt.Errorf("event with ID %s not found", event.ID)
+    }
 
-	log.Printf("Updated event %s: %s", event.ID, event.Name)
-	return nil
+    log.Printf("Updated event %s: %s", event.ID, event.Name)
+    return nil
 }
 
 // DeleteEvent removes an event from the database

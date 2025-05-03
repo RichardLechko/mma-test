@@ -193,7 +193,6 @@ func main() {
 	log.Println("All workers have completed")
 }
 
-// updateFighterInDatabase updates a fighter with the scraped information
 func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, info *scrapers.FighterExtraInfo) error {
 	// Update win methods if appropriate
 	shouldUpdateWinMethods := false
@@ -218,6 +217,9 @@ func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, i
 	if fighter.Losses > 0 && scrapedLossMethods == fighter.Losses {
 		shouldUpdateLossMethods = true
 	}
+
+	// Log No Contests information
+	log.Printf("  - No Contests: %d", info.NoContests)
 
 	// Begin transaction
 	tx, err := db.BeginTx(ctx, nil)
@@ -265,10 +267,38 @@ func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, i
 		log.Printf("  - SKIPPING loss method update")
 	}
 
+	// Update No Contests if available
+	if info.NoContests > 0 {
+		_, err = tx.ExecContext(ctx, `
+			UPDATE fighters SET 
+				no_contests = $1,
+				updated_at = NOW()
+			WHERE id = $2
+		`, info.NoContests, fighter.ID)
+
+		if err != nil {
+			return fmt.Errorf("failed to update no contests: %v", err)
+		}
+		log.Printf("%s: No Contests updated", fighter.Name)
+	}
+
+	// Update wiki_url if we found it and it's currently NULL or empty
+	if info.WikiURL != "" && (fighter.WikiURL == "" || fighter.WikiURL == "NULL") {
+		_, err = tx.ExecContext(ctx, `
+			UPDATE fighters SET 
+				wiki_url = $1,
+				updated_at = NOW()
+			WHERE id = $2
+		`, info.WikiURL, fighter.ID)
+
+		if err != nil {
+			return fmt.Errorf("failed to update wiki URL: %v", err)
+		}
+		log.Printf("%s: Wiki URL updated to %s", fighter.Name, info.WikiURL)
+	}
+
 	// Update fighting location if available
 	if info.FightingOutOf != "" {
-		log.Printf("  - Fighting out of: %s", info.FightingOutOf)
-		
 		_, err = tx.ExecContext(ctx, `
 			UPDATE fighters SET 
 				fighting_out_of = $1,
