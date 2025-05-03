@@ -1,0 +1,5 @@
+WIKI-SCRAPER: 2025/05/03 15:50:07 🚀 Starting Wiki Event Scraper
+WIKI-SCRAPER: 2025/05/03 15:50:08 Running recent event wiki enhancement (future + last 2 months)
+WIKI-SCRAPER: 2025/05/03 15:50:08 Starting recent event enhancement with Wikipedia data...
+WIKI-SCRAPER: 2025/05/03 15:50:08 Using cutoff date: 2025-03-03
+WIKI-SCRAPER: 2025/05/03 15:50:09 🏁 Successfully enhanced 21 recent events with Wikipedia data in 2s!

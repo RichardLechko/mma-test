@@ -505,7 +505,15 @@ const sortedFights = allFights.sort((a, b) => {
                               {fight.result_round && ` R${fight.result_round}`}
                               {fight.result_time &&
                                 ` ${
-                                  fight.result_time.match(/^(\d+:\d{2})\1$/)
+                                  // Check if the time is duplicated (e.g., "00:04:1400:04:14")
+                                  fight.result_time.length % 2 === 0 &&
+                                  fight.result_time.substring(
+                                    0,
+                                    fight.result_time.length / 2,
+                                  ) ===
+                                    fight.result_time.substring(
+                                      fight.result_time.length / 2,
+                                    )
                                     ? fight.result_time.substring(
                                         0,
                                         fight.result_time.length / 2,
@@ -748,24 +756,24 @@ const sortedFights = allFights.sort((a, b) => {
         ${
           fight.result_method
             ? `
-          <div class="result-method">
-            ${fight.result_method}
-            ${fight.result_method_details ? ` (${fight.result_method_details})` : ''}
-            ${fight.result_round ? ` R${fight.result_round}` : ''}
-            ${
-              fight.result_time
-                ? ` ${
-                    fight.result_time.match(/^(\d+:\d{2})\1$/)
-                      ? fight.result_time.substring(
-                          0,
-                          fight.result_time.length / 2,
-                        )
-                      : fight.result_time
-                  }`
-                : ''
-            }
-          </div>
-        `
+  <div class="result-method">
+    ${fight.result_method}
+    ${fight.result_method_details ? ` (${fight.result_method_details})` : ''}
+    ${fight.result_round ? ` R${fight.result_round}` : ''}
+    ${
+      fight.result_time
+        ? ` ${
+            // Check if the time is duplicated (e.g., "00:04:1400:04:14")
+            fight.result_time.length % 2 === 0 &&
+            fight.result_time.substring(0, fight.result_time.length / 2) ===
+              fight.result_time.substring(fight.result_time.length / 2)
+              ? fight.result_time.substring(0, fight.result_time.length / 2)
+              : fight.result_time
+          }`
+        : ''
+    }
+  </div>
+`
             : ''
         }
       </div>

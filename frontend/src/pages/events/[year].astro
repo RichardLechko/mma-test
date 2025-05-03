@@ -107,6 +107,17 @@ if (isCurrentYear) {
     new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
   );
 }
+
+// Status badge based on event status
+const getStatusClass = (eventStatus: string | null): string => {
+  switch(eventStatus?.toLowerCase()) {
+    case 'scheduled': return 'status-scheduled';
+    case 'canceled': return 'status-canceled';
+    case 'postponed': return 'status-postponed';
+    case 'completed': return 'status-completed';
+    default: return '';
+  }
+};
 ---
 
 <Layout title={`UFC Events - ${validYear}`}>
@@ -125,95 +136,16 @@ if (isCurrentYear) {
       {sortedEvents.length > 0 ? (
         <div class="events-grid">
           {sortedEvents.map((event) => {
-            // Safely parse the date - preserve correct date by handling UTC properly
-            const eventDate = new Date(event.event_date);
-            
-            // Skip rendering this event if the date is invalid
-            if (isNaN(eventDate.getTime())) {
-              return null;
-            }
-            
-            // Use UTC methods to ensure we get the date as stored, without timezone shifting
-            const utcYear = eventDate.getUTCFullYear();
-            const utcMonth = eventDate.getUTCMonth();
-            const utcDay = eventDate.getUTCDate();
-            
-            // Create a new date object at the same UTC time, but interpret it as local
-            // This preserves the date as intended in the database
-            const displayDate = new Date(utcYear, utcMonth, utcDay);
-            
-            const formattedDate = displayDate.toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-            
-            // Get today's date with time set to midnight for proper day comparison
-            const todayDate = new Date();
-            const todayAtMidnight = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
-            
-            // Calculate if the event is in the past
-            const isPastEvent = displayDate < todayAtMidnight;
-            
-            // Calculate days difference more accurately
-            const calculateDaysDifference = (date1: Date, date2: Date): number => {
-              // Set both dates to midnight to get accurate day count
-              const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
-              const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
-              
-              // Get the time difference in milliseconds
-              const timeDiff = Math.abs(d2.getTime() - d1.getTime());
-              
-              // Convert to days and round to handle DST changes
-              return Math.round(timeDiff / (1000 * 60 * 60 * 24));
-            };
-            
-            const diffDays = calculateDaysDifference(displayDate, todayAtMidnight);
-            
-            // Handle "tomorrow", "today" and other cases with proper day calculations
-            let timeDisplay: string;
-            if (!isPastEvent) {
-              // Future event
-              if (diffDays === 0) {
-                timeDisplay = "Today";
-              } else if (diffDays === 1) {
-                timeDisplay = "Tomorrow";
-              } else {
-                timeDisplay = `${diffDays} days away`;
-              }
-            } else {
-              // Past event
-              if (diffDays === 0) {
-                timeDisplay = "Today";
-              } else if (diffDays === 1) {
-                timeDisplay = "Yesterday";
-              } else {
-                timeDisplay = `${diffDays} days ago`;
-              }
-            }
-            
-            // Status badge based on event status
-            const getStatusClass = (eventStatus: string | null): string => {
-              switch(eventStatus?.toLowerCase()) {
-                case 'scheduled': return 'status-scheduled';
-                case 'canceled': return 'status-canceled';
-                case 'postponed': return 'status-postponed';
-                case 'completed': return 'status-completed';
-                default: return '';
-              }
-            };
-            
+            // Convert the UTC date string to a proper Date object
+            // Store the original date string in a data attribute for client-side processing
             return (
-              <a href={`/events/event/${event.id}`} class="event-card">
+              <a href={`/events/event/${event.id}`} class="event-card" data-event-date={event.event_date}>
                 <div class={`event-header ${getStatusClass(event.status)}`}>
                   <h2>{event.name}</h2>
-                  <span class="event-countdown">
-                    {timeDisplay}
-                  </span>
+                  <span class="event-countdown"></span>
                 </div>
                 <div class="event-details">
-                  <p class="event-date">{formattedDate}</p>
+                  <p class="event-date"></p>
                   <p class="event-location">
                     {event.venue ? (
                       <>
@@ -240,3 +172,92 @@ if (isCurrentYear) {
     </section>
   </main>
 </Layout>
+
+<script>
+  // Client-side script to handle timezone conversion properly
+  document.addEventListener('DOMContentLoaded', () => {
+    // Get all event cards
+    const eventCards = document.querySelectorAll('.event-card');
+    
+    // Get today's date with time set to midnight for proper day comparison
+    const today = new Date();
+    const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    // Calculate days difference function
+    const calculateDaysDifference = (date1: Date, date2: Date): number => {
+      // Set both dates to midnight to get accurate day count
+      const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+      const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+      
+      // Get the time difference in milliseconds
+      const timeDiff = Math.abs(d2.getTime() - d1.getTime());
+      
+      // Convert to days and round to handle DST changes
+      return Math.round(timeDiff / (1000 * 60 * 60 * 24));
+    };
+    
+    eventCards.forEach(card => {
+      // Get the UTC date string
+      const utcDateStr = card.getAttribute('data-event-date');
+      if (!utcDateStr) return;
+      
+      // Create a date object which automatically converts to local time
+      const localDate = new Date(utcDateStr);
+      
+      // Format date in user's locale
+      const formattedDate = localDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Add time in local timezone
+      const formattedTime = localDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+      
+      // Update date display with local time
+      const dateElement = card.querySelector('.event-date');
+      if (dateElement) {
+        dateElement.textContent = `${formattedDate} at ${formattedTime}`;
+      }
+      
+      // Calculate if the event is in the past
+      const isPastEvent = localDate < todayAtMidnight;
+      
+      // Calculate days difference
+      const diffDays = calculateDaysDifference(localDate, todayAtMidnight);
+      
+      // Handle "tomorrow", "today" and other cases
+      let timeDisplay;
+      if (!isPastEvent) {
+        // Future event
+        if (diffDays === 0) {
+          timeDisplay = "Today";
+        } else if (diffDays === 1) {
+          timeDisplay = "Tomorrow";
+        } else {
+          timeDisplay = `${diffDays} days away`;
+        }
+      } else {
+        // Past event
+        if (diffDays === 0) {
+          timeDisplay = "Today";
+        } else if (diffDays === 1) {
+          timeDisplay = "Yesterday";
+        } else {
+          timeDisplay = `${diffDays} days ago`;
+        }
+      }
+      
+      // Update the countdown display
+      const countdownElement = card.querySelector('.event-countdown');
+      if (countdownElement) {
+        countdownElement.textContent = timeDisplay;
+      }
+    });
+  });
+</script>

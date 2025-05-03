@@ -76,33 +76,27 @@ func (s *UFCEventScraper) getClient() *http.Client {
 	return client
 }
 
-// ScrapeEvents scrapes events from UFC.com, focusing on UFC URL, event date, venue, city, and country
 func (s *UFCEventScraper) ScrapeEvents(ctx context.Context) ([]*models.Event, error) {
 	var allEvents []*models.Event
 	processedEvents := make(map[string]bool)
 	var mu sync.Mutex
 	
-	// Process each page sequentially
 	page := 0
 	consecutiveEmptyPages := 0
 	maxConsecutiveEmpty := 5
 	
 	for consecutiveEmptyPages < maxConsecutiveEmpty {
-		// Check if context is cancelled
 		select {
 		case <-ctx.Done():
 			return allEvents, ctx.Err()
 		default:
-			// Continue processing
 		}
 		
-		// Construct URL with pagination
 		pageURL := s.baseURL
 		if page > 0 {
 			pageURL = fmt.Sprintf("%s?page=%d", s.baseURL, page)
 		}
 		
-		// Process page
 		log.Printf("Processing page %d", page)
 		events, err := s.processPage(ctx, pageURL)
 		if err != nil {
@@ -112,7 +106,6 @@ func (s *UFCEventScraper) ScrapeEvents(ctx context.Context) ([]*models.Event, er
 			continue
 		}
 		
-		// Check if we found any events
 		if len(events) == 0 {
 			consecutiveEmptyPages++
 			log.Printf("Page %d empty, consecutive empty pages: %d/%d", 
@@ -121,7 +114,6 @@ func (s *UFCEventScraper) ScrapeEvents(ctx context.Context) ([]*models.Event, er
 			consecutiveEmptyPages = 0
 			log.Printf("Page %d found %d events", page, len(events))
 			
-			// Add events to our collection
 			mu.Lock()
 			for _, event := range events {
 				if !processedEvents[event.UFCURL] {
@@ -138,7 +130,6 @@ func (s *UFCEventScraper) ScrapeEvents(ctx context.Context) ([]*models.Event, er
 		
 		page++
 		
-		// Add delay between pages
 		time.Sleep(250 * time.Millisecond)
 	}
 	
@@ -146,43 +137,34 @@ func (s *UFCEventScraper) ScrapeEvents(ctx context.Context) ([]*models.Event, er
 	return allEvents, nil
 }
 
-// processPage processes a single page and returns all events found
 func (s *UFCEventScraper) processPage(ctx context.Context, pageURL string) ([]*models.Event, error) {
-	// Respect rate limiting
 	select {
 	case <-s.rateLimiter:
-		// Continue after rate limit delay
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
 	
-	// Get client from pool
 	client := s.getClient()
 	
-	// Create request
 	req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 	
-	// Set headers
 	req.Header.Set("User-Agent", s.userAgent)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	
-	// Make request
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching page: %w", err)
 	}
 	defer resp.Body.Close()
 	
-	// Check response status
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("bad status code: %d", resp.StatusCode)
 	}
 	
-	// Parse HTML
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing HTML: %w", err)
@@ -190,49 +172,38 @@ func (s *UFCEventScraper) processPage(ctx context.Context, pageURL string) ([]*m
 	
 	var events []*models.Event
 	
-	// Find all event cards
 	doc.Find(".c-card-event--result").Each(func(i int, card *goquery.Selection) {
-		// Find event link
 		linkElem := card.Find(".c-card-event--result__headline a")
 		eventURL, exists := linkElem.Attr("href")
 		if !exists || eventURL == "" {
 			return
 		}
 		
-		// Ensure full URL
 		if !strings.HasPrefix(eventURL, "http") {
 			eventURL = "https://www.ufc.com" + eventURL
 		}
 		
-		// Extract event name
 		eventName := strings.TrimSpace(linkElem.Text())
 		
-		// Create event with the URL
 		event := &models.Event{
 			UFCURL: eventURL,
 			Name:   eventName,
 		}
 		
-		// Extract date information
 		dateElem := card.Find(".c-card-event--result__date")
 		dateText := strings.TrimSpace(dateElem.Text())
 		
-		// Try to get timestamp from data attribute
 		timestampStr, exists := dateElem.Attr("data-main-card-timestamp")
 		if exists {
-			// Convert Unix timestamp to time.Time
 			timestampInt := 0
 			fmt.Sscanf(timestampStr, "%d", &timestampInt)
 			if timestampInt > 0 {
-				// Use the original timestamp with correct date and time
-				event.Date = time.Unix(int64(timestampInt), 0)
+				event.Date = time.Unix(int64(timestampInt), 0).UTC()
 			}
 		}
 		
-		// If timestamp failed, try to parse the text date
 		if event.Date.IsZero() {
-			// Clean up the date text before parsing
-			dateText = strings.Split(dateText, " / ")[0] // Take only the date part
+			dateText = strings.Split(dateText, " / ")[0]
 			dateFormats := []string{
 				"Mon, Jan 2",
 				"Monday, January 2",
@@ -241,7 +212,6 @@ func (s *UFCEventScraper) processPage(ctx context.Context, pageURL string) ([]*m
 			for _, format := range dateFormats {
 				parsed, err := time.Parse(format, dateText)
 				if err == nil {
-					// Use current year for the date since we couldn't get exact year
 					currentYear := time.Now().Year()
 					event.Date = time.Date(
 						currentYear, 
@@ -251,9 +221,7 @@ func (s *UFCEventScraper) processPage(ctx context.Context, pageURL string) ([]*m
 						time.UTC,
 					)
 					
-					// If the resulting date is in the past by more than a month, 
-					// assume it's for next year
-					if event.Date.Before(time.Now().AddDate(0, -1, 0)) {
+					if event.Date.Before(time.Now().UTC().AddDate(0, -1, 0)) {
 						event.Date = time.Date(
 							currentYear + 1, 
 							parsed.Month(), 
@@ -267,16 +235,13 @@ func (s *UFCEventScraper) processPage(ctx context.Context, pageURL string) ([]*m
 			}
 		}
 		
-		// Extract location information
 		locationElem := card.Find(".c-card-event--result__location")
 		
-		// Extract venue
 		venueElem := locationElem.Find(".field--name-taxonomy-term-title h5")
 		if venueElem.Length() > 0 {
 			event.Venue = strings.TrimSpace(venueElem.Text())
 		}
 		
-		// Extract city and country
 		cityElem := locationElem.Find(".field--name-location .locality")
 		if cityElem.Length() > 0 {
 			event.City = strings.TrimSpace(cityElem.Text())
@@ -287,18 +252,15 @@ func (s *UFCEventScraper) processPage(ctx context.Context, pageURL string) ([]*m
 			event.Country = strings.TrimSpace(countryElem.Text())
 		}
 		
-		// Determine status based on date
-		if !event.Date.IsZero() && event.Date.Before(time.Now()) {
+		if !event.Date.IsZero() && event.Date.Before(time.Now().UTC()) {
 			event.Status = "Completed"
 		} else {
 			event.Status = "Upcoming"
 		}
 		
-		// If we have incomplete basic info, fetch the details
 		if event.Date.IsZero() || event.Venue == "" || event.City == "" || event.Country == "" {
 			detailEvent, err := s.scrapeEventDetails(ctx, eventURL)
 			if err == nil && detailEvent != nil {
-				// Merge detail data
 				if event.Date.IsZero() && !detailEvent.Date.IsZero() {
 					event.Date = detailEvent.Date
 				}
@@ -314,9 +276,7 @@ func (s *UFCEventScraper) processPage(ctx context.Context, pageURL string) ([]*m
 			}
 		}
 		
-		// Add event if we have sufficient information
-		if event.UFCURL != "" && (event.Venue != "" || event.City != "" || 
-			event.Country != "" || !event.Date.IsZero()) {
+		if event.UFCURL != "" && (event.Venue != "" || event.City != "" || event.Country != "" || !event.Date.IsZero()) {
 			events = append(events, event)
 		}
 	})
@@ -324,7 +284,6 @@ func (s *UFCEventScraper) processPage(ctx context.Context, pageURL string) ([]*m
 	return events, nil
 }
 
-// scrapePage scrapes a single page of events
 func (s *UFCEventScraper) scrapePage(
 	ctx context.Context, 
 	page int, 
@@ -332,36 +291,29 @@ func (s *UFCEventScraper) scrapePage(
 	detailWg *sync.WaitGroup,
 	eventDetailChan chan<- EventDetail,
 ) int {
-	// Respect rate limiting
 	select {
 	case <-s.rateLimiter:
-		// Continue after rate limit delay
 	case <-ctx.Done():
 		return 0
 	}
 
-	// Construct URL with pagination
 	pageURL := s.baseURL
 	if page > 0 {
 		pageURL = fmt.Sprintf("%s?page=%d", s.baseURL, page)
 	}
 
-	// Get client from pool
 	client := s.getClient()
 	
-	// Create request
 	req, err := http.NewRequestWithContext(ctx, "GET", pageURL, nil)
 	if err != nil {
 		log.Printf("Error creating request for page %d: %v", page, err)
 		return 0
 	}
 	
-	// Set headers
 	req.Header.Set("User-Agent", s.userAgent)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	
-	// Make request
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Error fetching page %d: %v", page, err)
@@ -369,50 +321,39 @@ func (s *UFCEventScraper) scrapePage(
 	}
 	defer resp.Body.Close()
 	
-	// Check response status
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("Bad status code for page %d: %d", page, resp.StatusCode)
 		return 0
 	}
 	
-	// Parse HTML
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		log.Printf("Error parsing HTML for page %d: %v", page, err)
 		return 0
 	}
 
-	// Track events found on this page
 	eventsFound := 0
 	
-	// Process each event card
 	doc.Find(".c-card-event--result").Each(func(i int, card *goquery.Selection) {
-		// Find event link - this is our primary key (UFC URL)
 		linkElem := card.Find(".c-card-event--result__headline a")
 		eventURL, exists := linkElem.Attr("href")
 		if !exists || eventURL == "" {
 			return
 		}
 
-		// Ensure full URL
 		if !strings.HasPrefix(eventURL, "http") {
 			eventURL = "https://www.ufc.com" + eventURL
 		}
 
-		// Extract event name for logging
 		eventName := strings.TrimSpace(linkElem.Text())
 		
-		// Extract basic event info
 		event, basicInfoFound := s.extractBasicEventInfo(card, eventURL)
 		
-		// Need to scrape details?
 		needDetails := !basicInfoFound
 		
-		// Queue up detail scraping in a worker
 		if needDetails {
 			detailWg.Add(1)
 			go func(url, name string, baseEvent *models.Event) {
-				// Use recover to prevent goroutine panics from crashing the app
 				defer func() {
 					if r := recover(); r != nil {
 						log.Printf("Recovered from panic in detail scraper for %s: %v", name, r)
@@ -420,52 +361,38 @@ func (s *UFCEventScraper) scrapePage(
 					detailWg.Done()
 				}()
 				
-				// Use semaphore to limit concurrent detail requests
 				select {
 				case detailSem <- struct{}{}:
-					// Successfully acquired semaphore
 				case <-ctx.Done():
-					// Context cancelled while waiting for semaphore
 					return
 				}
 				
-				// Setup deferred release of semaphore
 				defer func() {
 					select {
 					case <-detailSem:
-						// Successfully released
 					default:
-						// Channel might be full or closed, just continue
 					}
 				}()
 				
-				// Respect rate limiting
 				select {
 				case <-s.rateLimiter:
-					// Continue after rate limit delay
 				case <-ctx.Done():
 					return
 				}
 				
-				// Create timeout context for detail fetching
 				detailCtx, detailCancel := context.WithTimeout(ctx, 30*time.Second)
 				defer detailCancel()
 				
-				// Fetch details
 				detailEvent, err := s.scrapeEventDetails(detailCtx, url)
 				
-				// Check if context is cancelled before sending results
 				select {
 				case <-ctx.Done():
 					return
 				default:
-					// Continue with sending results
 				}
 				
-				// Create the result to send
 				var result EventDetail
 				
-				// Merge with base event if we have one
 				if err == nil && detailEvent != nil && baseEvent != nil {
 					if baseEvent.Date.IsZero() && !detailEvent.Date.IsZero() {
 						baseEvent.Date = detailEvent.Date
@@ -487,7 +414,6 @@ func (s *UFCEventScraper) scrapePage(
 						PageNum: page,
 					}
 				} else if err == nil && detailEvent != nil {
-					// Use the detail event
 					detailEvent.UFCURL = url
 					result = EventDetail{
 						URL:     url,
@@ -496,7 +422,6 @@ func (s *UFCEventScraper) scrapePage(
 						PageNum: page,
 					}
 				} else {
-					// Send error
 					result = EventDetail{
 						URL:     url,
 						Name:    name,
@@ -505,16 +430,12 @@ func (s *UFCEventScraper) scrapePage(
 					}
 				}
 				
-				// Send the result, but don't block indefinitely
 				select {
 				case eventDetailChan <- result:
-					// Successfully sent
 				case <-ctx.Done():
-					// Context cancelled while sending
 				}
 			}(eventURL, eventName, event)
 		} else if event != nil {
-			// Send the event without details, but safely
 			select {
 			case eventDetailChan <- EventDetail{
 				URL:     eventURL,
@@ -522,9 +443,7 @@ func (s *UFCEventScraper) scrapePage(
 				Event:   event,
 				PageNum: page,
 			}:
-				// Successfully sent
 			case <-ctx.Done():
-				// Context cancelled while sending
 				return
 			}
 		}
@@ -535,35 +454,27 @@ func (s *UFCEventScraper) scrapePage(
 	return eventsFound
 }
 
-// extractBasicEventInfo extracts event information from the event card
 func (s *UFCEventScraper) extractBasicEventInfo(card *goquery.Selection, eventURL string) (*models.Event, bool) {
-	// Create event
 	event := &models.Event{
 		UFCURL: eventURL,
 	}
 	
 	completeInfo := false
 	
-	// Extract date information
 	dateElem := card.Find(".c-card-event--result__date")
 	dateText := strings.TrimSpace(dateElem.Text())
 	
-	// Try to get timestamp from data attribute first
 	timestampStr, exists := dateElem.Attr("data-main-card-timestamp")
 	if exists {
-		// Convert Unix timestamp to time.Time
 		timestampInt := 0
 		fmt.Sscanf(timestampStr, "%d", &timestampInt)
 		if timestampInt > 0 {
-			// Use the original timestamp with correct date and time
-			event.Date = time.Unix(int64(timestampInt), 0)
+			event.Date = time.Unix(int64(timestampInt), 0).UTC()
 		}
 	}
 	
-	// If timestamp failed, try to parse the text date
 	if event.Date.IsZero() {
-		// Clean up the date text before parsing
-		dateText = strings.Split(dateText, " / ")[0] // Take only the date part
+		dateText = strings.Split(dateText, " / ")[0]
 		dateFormats := []string{
 			"Mon, Jan 2",
 			"Monday, January 2",
@@ -572,7 +483,6 @@ func (s *UFCEventScraper) extractBasicEventInfo(card *goquery.Selection, eventUR
 		for _, format := range dateFormats {
 			parsed, err := time.Parse(format, dateText)
 			if err == nil {
-				// Use current year for the date since we couldn't get exact year
 				currentYear := time.Now().Year()
 				event.Date = time.Date(
 					currentYear, 
@@ -582,9 +492,7 @@ func (s *UFCEventScraper) extractBasicEventInfo(card *goquery.Selection, eventUR
 					time.UTC,
 				)
 				
-				// If the resulting date is in the past by more than a month, 
-				// assume it's for next year
-				if event.Date.Before(time.Now().AddDate(0, -1, 0)) {
+				if event.Date.Before(time.Now().UTC().AddDate(0, -1, 0)) {
 					event.Date = time.Date(
 						currentYear + 1, 
 						parsed.Month(), 
@@ -598,16 +506,13 @@ func (s *UFCEventScraper) extractBasicEventInfo(card *goquery.Selection, eventUR
 		}
 	}
 	
-	// Extract location information
 	locationElem := card.Find(".c-card-event--result__location")
 	
-	// Extract venue
 	venueElem := locationElem.Find(".field--name-taxonomy-term-title h5")
 	if venueElem.Length() > 0 {
 		event.Venue = strings.TrimSpace(venueElem.Text())
 	}
 	
-	// Extract city and country
 	cityElem := locationElem.Find(".field--name-location .locality")
 	if cityElem.Length() > 0 {
 		event.City = strings.TrimSpace(cityElem.Text())
@@ -618,13 +523,11 @@ func (s *UFCEventScraper) extractBasicEventInfo(card *goquery.Selection, eventUR
 		event.Country = strings.TrimSpace(countryElem.Text())
 	}
 	
-	// Determine if we have complete information
 	if !event.Date.IsZero() && event.Venue != "" && event.City != "" && event.Country != "" {
 		completeInfo = true
 	}
 	
-	// Determine status based on date
-	if !event.Date.IsZero() && event.Date.Before(time.Now()) {
+	if !event.Date.IsZero() && event.Date.Before(time.Now().UTC()) {
 		event.Status = "Completed"
 	} else {
 		event.Status = "Upcoming"
@@ -633,9 +536,7 @@ func (s *UFCEventScraper) extractBasicEventInfo(card *goquery.Selection, eventUR
 	return event, completeInfo
 }
 
-// scrapeEventDetails fetches additional details from an event's page
 func (s *UFCEventScraper) scrapeEventDetails(ctx context.Context, eventURL string) (*models.Event, error) {
-	// Get client from pool
 	client := s.getClient()
 	
 	req, err := http.NewRequestWithContext(ctx, "GET", eventURL, nil)
@@ -664,22 +565,17 @@ func (s *UFCEventScraper) scrapeEventDetails(ctx context.Context, eventURL strin
 	
 	event := &models.Event{}
 	
-	// Extract date using data attributes which are more reliable
 	dateContainer := doc.Find(".hero-event-results__date-container")
 	if dateContainer.Length() > 0 {
-		// Try to get timestamp from data attribute
 		timestampStr, exists := dateContainer.Attr("data-main-card-timestamp")
 		if exists {
-			// Convert Unix timestamp to time.Time
 			timestampInt := 0
 			fmt.Sscanf(timestampStr, "%d", &timestampInt)
 			if timestampInt > 0 {
-				// Use the original timestamp with correct date and time
-				event.Date = time.Unix(int64(timestampInt), 0)
+				event.Date = time.Unix(int64(timestampInt), 0).UTC()
 			}
 		}
 		
-		// If that fails, try to parse the text date
 		if event.Date.IsZero() {
 			dateText := strings.TrimSpace(dateContainer.Text())
 			dateFormats := []string{
@@ -690,7 +586,6 @@ func (s *UFCEventScraper) scrapeEventDetails(ctx context.Context, eventURL strin
 			for _, format := range dateFormats {
 				parsed, err := time.Parse(format, dateText)
 				if err == nil {
-					// Use current year for the date
 					currentYear := time.Now().Year()
 					event.Date = time.Date(
 						currentYear, 
@@ -700,9 +595,7 @@ func (s *UFCEventScraper) scrapeEventDetails(ctx context.Context, eventURL strin
 						time.UTC,
 					)
 					
-					// If the resulting date is in the past by more than a month, 
-					// assume it's for next year
-					if event.Date.Before(time.Now().AddDate(0, -1, 0)) {
+					if event.Date.Before(time.Now().UTC().AddDate(0, -1, 0)) {
 						event.Date = time.Date(
 							currentYear + 1, 
 							parsed.Month(), 
@@ -717,34 +610,135 @@ func (s *UFCEventScraper) scrapeEventDetails(ctx context.Context, eventURL strin
 		}
 	}
 	
-	// Extract venue, city, and country
 	locationContainer := doc.Find(".field--name-venue")
 	if locationContainer.Length() > 0 {
-		// Venue name
 		venueElem := locationContainer.Find(".field--name-taxonomy-term-title")
 		if venueElem.Length() > 0 {
 			event.Venue = strings.TrimSpace(venueElem.Text())
 		}
 		
-		// City
 		cityElem := locationContainer.Find(".field--name-location .locality")
 		if cityElem.Length() > 0 {
 			event.City = strings.TrimSpace(cityElem.Text())
 		}
 		
-		// Country
 		countryElem := locationContainer.Find(".field--name-location .country")
 		if countryElem.Length() > 0 {
 			event.Country = strings.TrimSpace(countryElem.Text())
 		}
 	}
 	
-	// Determine status based on date
-	if !event.Date.IsZero() && event.Date.Before(time.Now()) {
+	if !event.Date.IsZero() && event.Date.Before(time.Now().UTC()) {
 		event.Status = "Completed"
 	} else {
 		event.Status = "Upcoming"
 	}
 	
 	return event, nil
+}
+
+// ScrapeRecentEvents scrapes all future events plus events from the last X months
+func (s *UFCEventScraper) ScrapeRecentEvents(ctx context.Context, cutoffDate time.Time) ([]*models.Event, error) {
+    var recentEvents []*models.Event
+    processedEvents := make(map[string]bool)
+    var mu sync.Mutex
+    
+    page := 0
+    consecutiveEmptyPages := 0
+    maxConsecutiveEmpty := 3
+    stopScraping := false
+    foundPastCutoffEvents := false  // Flag to track if we've found events past cutoff
+    
+    for consecutiveEmptyPages < maxConsecutiveEmpty && !stopScraping {
+        select {
+        case <-ctx.Done():
+            return recentEvents, ctx.Err()
+        default:
+        }
+        
+        pageURL := s.baseURL
+        if page > 0 {
+            pageURL = fmt.Sprintf("%s?page=%d", s.baseURL, page)
+        }
+        
+        log.Printf("Processing page %d", page)
+        events, err := s.processPage(ctx, pageURL)
+        if err != nil {
+            log.Printf("Error processing page %d: %v", page, err)
+            consecutiveEmptyPages++
+            page++
+            continue
+        }
+        
+        if len(events) == 0 {
+            consecutiveEmptyPages++
+            log.Printf("Page %d empty, consecutive empty pages: %d/%d", 
+                page, consecutiveEmptyPages, maxConsecutiveEmpty)
+        } else {
+            consecutiveEmptyPages = 0
+            log.Printf("Page %d found %d events", page, len(events))
+            
+            currentTime := time.Now()
+            pageHasFutureEvents := false
+            allEventsBeforeCutoff := true
+            
+            // First pass: Check if this page has ANY future events or if ALL events are before cutoff
+            for _, event := range events {
+                if event.Date.After(currentTime) {
+                    pageHasFutureEvents = true
+                }
+                if event.Date.After(cutoffDate) || event.Date.Equal(cutoffDate) {
+                    allEventsBeforeCutoff = false
+                }
+            }
+            
+            // If this page has no future events AND we've already found past cutoff events,
+            // we can stop scraping
+            if !pageHasFutureEvents && foundPastCutoffEvents && allEventsBeforeCutoff {
+                log.Printf("Page %d has no future events and all events are before cutoff - stopping scrape", page)
+                stopScraping = true
+                break
+            }
+            
+            // Process events on this page
+            for _, event := range events {
+                // Log the event
+                log.Printf("Found event: %s on %s at %s",
+                    event.Name,
+                    event.Date.Format("2006-01-02"),
+                    event.Venue)
+                
+                // Keep future events and recent past events
+                if event.Date.After(currentTime) || event.Date.After(cutoffDate) || event.Date.Equal(cutoffDate) {
+                    mu.Lock()
+                    if !processedEvents[event.UFCURL] {
+                        recentEvents = append(recentEvents, event)
+                        processedEvents[event.UFCURL] = true
+                    }
+                    mu.Unlock()
+                    
+                    if event.Date.Before(currentTime) {
+                        foundPastCutoffEvents = true
+                    }
+                } else {
+                    // If all events on the page are past events and we've already found
+                    // some past events that are after the cutoff, we can stop
+                    if foundPastCutoffEvents && !pageHasFutureEvents {
+                        log.Printf("Found event older than cutoff date (%s): %s on %s - stopping scrape",
+                            cutoffDate.Format("2006-01-02"),
+                            event.Name,
+                            event.Date.Format("2006-01-02"))
+                        stopScraping = true
+                        break
+                    }
+                }
+            }
+        }
+        
+        page++
+        time.Sleep(250 * time.Millisecond)
+    }
+    
+    log.Printf("Recent event scraping completed. Found %d events", len(recentEvents))
+    return recentEvents, nil
 }

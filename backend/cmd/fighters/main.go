@@ -3,30 +3,76 @@ package main
 import (
 	"context"
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
+	"github.com/robfig/cron/v3"
 	"mma-scheduler/config"
 	"mma-scheduler/pkg/scrapers"
 )
 
+type ScraperApp struct {
+	db            *sql.DB
+	scraperConfig scrapers.ScraperConfig  // Changed from pointer to value
+	logger        *log.Logger
+}
+
 func main() {
+	fullScrapeFlag := flag.Bool("full", false, "Run a full fighter scrape")
+	cronFlag := flag.Bool("cron", false, "Run as a cron job service")
+	flag.Parse()
+
+	logger := log.New(os.Stdout, "FIGHTER-SCRAPER: ", log.LstdFlags)
+	logger.Println("🚀 Starting Fighter Scraper")
+
 	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found: %v", err)
+		logger.Printf("Warning: .env file not found: %v", err)
 	}
 
 	if err := config.LoadConfig("config/config.json"); err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		logger.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	db, err := connectToDatabase()
+	if err != nil {
+		logger.Fatalf("Database connection error: %v", err)
+	}
+	defer db.Close()
+
+	app := &ScraperApp{
+		db:            db,
+		scraperConfig: scrapers.DefaultConfig(),  // Now matches the type
+		logger:        logger,
+	}
+
+	if *fullScrapeFlag {
+		logger.Println("Running full fighter scrape")
+		app.runFighterScrape()
+		return
+	} else if *cronFlag {
+		logger.Println("Starting cron service mode")
+		app.runCronService()
+		return
+	} else {
+		logger.Println("Running standard fighter scrape")
+		app.runFighterScrape()
+		return
+	}
+}
+
+func connectToDatabase() (*sql.DB, error) {
 	dbConfig := config.GetDatabaseConfig()
 
 	connStr := fmt.Sprintf(
@@ -42,29 +88,30 @@ func main() {
 
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	defer db.Close()
 
 	// Optimize connection pool settings
-	db.SetMaxOpenConns(10)  // Increased from 25
-	db.SetMaxIdleConns(5)  // Increased from 10
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(30 * time.Minute)
-	db.SetConnMaxIdleTime(5 * time.Minute) // Add idle timeout
+	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("Connected to database")
+	return db, nil
+}
 
-	config := scrapers.DefaultConfig()
-	scraper := scrapers.NewFighterScraper(config)
+func (app *ScraperApp) runFighterScrape() {
+	startTime := time.Now()
+	app.logger.Println("Starting fighter scrape...")
 
-	log.Println("Scraping fighters from UFC website...")
+	scraper := scrapers.NewFighterScraper(app.scraperConfig)  // Now matches the expected type
 
 	// Use a longer context for the scraping operation
 	scrapeCtx, scrapeCancel := context.WithTimeout(context.Background(), 2*time.Hour)
@@ -72,22 +119,67 @@ func main() {
 
 	fighters, err := scraper.ScrapeAllFighters(scrapeCtx)
 	if err != nil {
-		log.Fatalf("Error scraping fighters: %v", err)
+		app.logger.Fatalf("Error scraping fighters: %v", err)
 	}
 
-	log.Printf("Retrieved %d fighters total, now processing...", len(fighters))
+	app.logger.Printf("Retrieved %d fighters total, now processing...", len(fighters))
 	
+	// Process and save the fighters
+	app.processFighters(scrapeCtx, fighters)
+
+	app.logger.Printf("🏁 Fighter scrape completed in %v!", time.Since(startTime).Round(time.Second))
+}
+
+func (app *ScraperApp) runCronService() {
+	app.logger.Println("Starting cron service for fighter updates")
+
+	c := cron.New(
+		cron.WithLogger(cron.VerbosePrintfLogger(app.logger)),
+		cron.WithLocation(time.UTC),
+	)
+
+	// Run fighter update weekly on Sunday at 03:00 UTC
+	if _, err := c.AddFunc("0 3 * * 0", app.runFighterScrape); err != nil {
+		app.logger.Fatalf("Failed to add weekly fighter update job: %v", err)
+	}
+
+	c.Start()
+	app.logger.Println("Cron scheduler started with the following schedule:")
+	app.logger.Println("- Weekly fighter updates every Sunday at 03:00 UTC")
+
+	// Handle graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	app.logger.Println("Shutting down scraper service...")
+	
+	c.Stop()
+	
+	if err := app.db.Close(); err != nil {
+		app.logger.Printf("Error closing database connection: %v", err)
+	}
+	
+	app.logger.Println("Fighter scraper service stopped gracefully")
+}
+
+func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers.Fighter) {
+    // Check for context cancellation at the start
+    if ctx.Err() != nil {
+        app.logger.Printf("Context canceled before processing fighters: %v", ctx.Err())
+        return
+    }
 	// Track statistics with atomic counters
 	var insertCount, updateCount, errorCount, rankingsInserted int64
 	
 	// Process fighters in parallel using a worker pool with batching
 	numWorkers := runtime.NumCPU() * 2
 	if numWorkers > 5 {
-		numWorkers = 5 // Cap at a reasonable maximum
+		numWorkers = 5
 	}
 	
 	// Create a channel to distribute work - use batches for better efficiency
-	batchSize := 20 // Process multiple fighters per transaction
+	batchSize := 20
 	numBatches := (len(fighters) + batchSize - 1) / batchSize
 	fighterBatchCh := make(chan []*scrapers.Fighter, numBatches)
 	
@@ -101,7 +193,7 @@ func main() {
 			defer wg.Done()
 			
 			// Each worker gets its own database connection context
-			dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Minute) // Reduced timeout
+			dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Minute)
 			defer dbCancel()
 			
 			// Process fighter batches from the channel
@@ -112,18 +204,18 @@ func main() {
 				// Use a retry mechanism for transaction begin
 				var beginErr error
 				for retries := 0; retries < 3; retries++ {
-					tx, beginErr = db.BeginTx(dbCtx, nil)
+					tx, beginErr = app.db.BeginTx(dbCtx, nil)
 					if beginErr == nil {
 						break
 					}
 					
-					log.Printf("Worker %d: Retry %d - Failed to begin transaction: %v", 
+					app.logger.Printf("Worker %d: Retry %d - Failed to begin transaction: %v", 
 						workerID, retries+1, beginErr)
-					time.Sleep(time.Duration(2<<retries) * time.Second) // Exponential backoff
+					time.Sleep(time.Duration(2<<retries) * time.Second)
 				}
 				
 				if beginErr != nil {
-					log.Printf("Worker %d: Failed to begin transaction after retries: %v", 
+					app.logger.Printf("Worker %d: Failed to begin transaction after retries: %v", 
 						workerID, beginErr)
 					atomic.AddInt64(&errorCount, int64(len(fighterBatch)))
 					continue
@@ -147,7 +239,7 @@ func main() {
 						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $19
 					) RETURNING id`)
 				if err != nil {
-					log.Printf("Worker %d: Failed to prepare insert statement: %v", workerID, err)
+					app.logger.Printf("Worker %d: Failed to prepare insert statement: %v", workerID, err)
 					_ = tx.Rollback()
 					tx = nil
 					atomic.AddInt64(&errorCount, int64(len(fighterBatch)))
@@ -177,7 +269,7 @@ func main() {
 						updated_at = $18
 					WHERE id = $19`)
 				if err != nil {
-					log.Printf("Worker %d: Failed to prepare update statement: %v", workerID, err)
+					app.logger.Printf("Worker %d: Failed to prepare update statement: %v", workerID, err)
 					_ = tx.Rollback()
 					tx = nil
 					atomic.AddInt64(&errorCount, int64(len(fighterBatch)))
@@ -193,15 +285,15 @@ func main() {
 				now := time.Now()
 				
 				for _, fighter := range fighterBatch {
-					// Parse record to get wins, losses, draws
-					wins, losses, draws := 0, 0, 0
+					// Use fighter.Draws directly instead of parsing it
+					wins := fighter.KOWins + fighter.SubWins + fighter.DecWins
+					losses := 0
 					
+					// Only parse losses from the record string
 					if fighter.Record != "" {
 						parts := strings.Split(fighter.Record, "-")
-						if len(parts) >= 3 {
-							wins, _ = strconv.Atoi(strings.TrimSpace(parts[0]))
+						if len(parts) >= 2 {
 							losses, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
-							draws, _ = strconv.Atoi(strings.TrimSpace(parts[2]))
 						}
 					}
 					
@@ -212,7 +304,7 @@ func main() {
 						"SELECT id FROM fighters WHERE ufc_id = $1", fighter.UFCID).Scan(&existingID)
 					
 					if err != nil && err != sql.ErrNoRows {
-						log.Printf("Worker %d: Error checking for existing fighter %s: %v", 
+						app.logger.Printf("Worker %d: Error checking for existing fighter %s: %v", 
 							workerID, fighter.Name, err)
 						batchSuccess = false
 						break
@@ -228,7 +320,7 @@ func main() {
 							fighter.Ranking,
 							wins,
 							losses,
-							draws,
+							fighter.Draws,
 							fighter.UFCURL,
 							fighter.Age,
 							fighter.Height,
@@ -243,7 +335,7 @@ func main() {
 						)
 						
 						if err != nil {
-							log.Printf("Worker %d: Failed to update fighter %s: %v", 
+							app.logger.Printf("Worker %d: Failed to update fighter %s: %v", 
 								workerID, fighter.Name, err)
 							batchSuccess = false
 							break
@@ -261,7 +353,7 @@ func main() {
 							fighter.Ranking,
 							wins,
 							losses,
-							draws,
+							fighter.Draws,
 							fighter.UFCURL,
 							fighter.Age,
 							fighter.Height,
@@ -275,7 +367,7 @@ func main() {
 						).Scan(&existingID)
 						
 						if err != nil {
-							log.Printf("Worker %d: Failed to insert fighter %s: %v", 
+							app.logger.Printf("Worker %d: Failed to insert fighter %s: %v", 
 								workerID, fighter.Name, err)
 							batchSuccess = false
 							break
@@ -292,7 +384,7 @@ func main() {
 							existingID)
 						
 						if err != nil {
-							log.Printf("Worker %d: Failed to delete existing rankings for fighter %s: %v", 
+							app.logger.Printf("Worker %d: Failed to delete existing rankings for fighter %s: %v", 
 								workerID, fighter.Name, err)
 							batchSuccess = false
 							break
@@ -328,7 +420,7 @@ func main() {
 							_, err = tx.ExecContext(dbCtx, rankingSQL, rankingArgs...)
 							
 							if err != nil {
-								log.Printf("Worker %d: Failed to insert rankings for fighter %s: %v", 
+								app.logger.Printf("Worker %d: Failed to insert rankings for fighter %s: %v", 
 									workerID, fighter.Name, err)
 								batchSuccess = false
 								break
@@ -339,7 +431,7 @@ func main() {
 				
 				if batchSuccess {
 					if err = tx.Commit(); err != nil {
-						log.Printf("Worker %d: Failed to commit transaction: %v", workerID, err)
+						app.logger.Printf("Worker %d: Failed to commit transaction: %v", workerID, err)
 						_ = tx.Rollback()
 						tx = nil
 						atomic.AddInt64(&errorCount, int64(len(fighterBatch)))
@@ -357,7 +449,7 @@ func main() {
 					
 					totalProcessed := atomic.LoadInt64(&insertCount) + atomic.LoadInt64(&updateCount)
 					if totalProcessed%50 == 0 {
-						log.Printf("Progress: %d/%d fighters processed", totalProcessed, len(fighters))
+						app.logger.Printf("Progress: %d/%d fighters processed", totalProcessed, len(fighters))
 					}
 				} else {
 					_ = tx.Rollback()
@@ -365,10 +457,9 @@ func main() {
 					atomic.AddInt64(&errorCount, int64(len(fighterBatch)))
 					continue
 				}
-				
 			}
 			
-			log.Printf("Worker %d completed", workerID)
+			app.logger.Printf("Worker %d completed", workerID)
 		}(i)
 	}
 	
@@ -388,6 +479,6 @@ func main() {
 	// Wait for all workers to finish
 	wg.Wait()
 	
-	log.Printf("Scraping completed! Saved %d new fighters, updated %d existing fighters with %d total rankings. Errors: %d",
+	app.logger.Printf("Scraping completed! Saved %d new fighters, updated %d existing fighters with %d total rankings. Errors: %d",
 		insertCount, updateCount, rankingsInserted, errorCount)
 }
