@@ -894,3 +894,406 @@ func isVariantOf(r rune, base rune) bool {
     
     return false
 }
+
+func (s *WikiEventScraper) EnhanceRecentEventsWithWikiData(ctx context.Context, cutoffDate time.Time) (int, error) {
+	if err := s.loadRecentEvents(ctx, cutoffDate); err != nil {
+		return 0, fmt.Errorf("failed to load recent events: %w", err)
+	}
+
+	log.Printf("Loaded %d events from database after %s", len(s.existingEvents), cutoffDate.Format("2006-01-02"))
+
+	req, err := http.NewRequestWithContext(ctx, "GET", wikiUFCEventsURL, nil)
+	if err != nil {
+		return 0, fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("error fetching wiki page: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("bad status code: %d", resp.StatusCode)
+	}
+
+	log.Printf("Successfully fetched Wikipedia page with status code: %d", resp.StatusCode)
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return 0, fmt.Errorf("error parsing HTML: %w", err)
+	}
+
+	totalUpdated := 0
+
+	processTableWithDateCutoff := func(table *goquery.Selection, tableType string) (int, error) {
+		updatedCount, err := s.processTableWithDateCutoff(ctx, table, cutoffDate)
+		if err != nil {
+			log.Printf("Error processing %s table: %v", tableType, err)
+			return 0, err
+		}
+		log.Printf("Processed %s table: %d events updated", tableType, updatedCount)
+		return updatedCount, nil
+	}
+
+	upcomingProcessed := false
+	doc.Find("table.wikitable").Each(func(i int, table *goquery.Selection) {
+		caption := strings.TrimSpace(table.Find("caption").Text())
+
+		if strings.Contains(strings.ToLower(caption), "scheduled") ||
+			strings.Contains(strings.ToLower(caption), "upcoming") {
+			count, _ := processTableWithDateCutoff(table, "Scheduled Events")
+			totalUpdated += count
+			upcomingProcessed = true
+		}
+	})
+
+	pastProcessed := false
+	doc.Find("table.wikitable").Each(func(i int, table *goquery.Selection) {
+		caption := strings.TrimSpace(table.Find("caption").Text())
+
+		if strings.Contains(strings.ToLower(caption), "past") {
+			count, _ := processTableWithDateCutoff(table, "Past Events")
+			totalUpdated += count
+			pastProcessed = true
+		}
+	})
+
+	if !upcomingProcessed && !pastProcessed {
+		log.Printf("No tables with obvious captions found, trying direct processing of any wikitable")
+
+		doc.Find("table.wikitable").Each(func(i int, table *goquery.Selection) {
+			log.Printf("Processing wikitable #%d", i+1)
+			count, _ := processTableWithDateCutoff(table, fmt.Sprintf("Table #%d", i+1))
+			totalUpdated += count
+		})
+	}
+
+	nonUpdatedCount, err := s.updateNonMatchedRecentEvents(ctx, cutoffDate)
+	if err != nil {
+		log.Printf("Error updating non-matched events: %v", err)
+	} else {
+		log.Printf("Updated %d non-matched recent events with names from URLs", nonUpdatedCount)
+		totalUpdated += nonUpdatedCount
+	}
+
+	return totalUpdated, nil
+}
+
+func (s *WikiEventScraper) loadRecentEvents(ctx context.Context, cutoffDate time.Time) error {
+	query := `
+		SELECT id, name, event_date, venue, city, country, ufc_url, status, wiki_url, attendance
+		FROM events
+		WHERE event_date >= $1
+		ORDER BY event_date
+	`
+
+	rows, err := s.db.QueryContext(ctx, query, cutoffDate)
+	if err != nil {
+		return fmt.Errorf("failed to query events: %w", err)
+	}
+	defer rows.Close()
+
+	s.existingEvents = []*models.Event{}
+
+	for rows.Next() {
+		event := &models.Event{}
+		var wikiURL, status, attendance sql.NullString
+
+		err := rows.Scan(
+			&event.ID,
+			&event.Name,
+			&event.Date,
+			&event.Venue,
+			&event.City,
+			&event.Country,
+			&event.UFCURL,
+			&status,
+			&wikiURL,
+			&attendance,
+		)
+
+		if err != nil {
+			return fmt.Errorf("failed to scan event row: %w", err)
+		}
+
+		if status.Valid {
+			event.Status = status.String
+		}
+		if wikiURL.Valid {
+			event.WikiURL = wikiURL.String
+		}
+		if attendance.Valid {
+			event.Attendance = attendance.String
+		}
+
+		s.existingEvents = append(s.existingEvents, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("error iterating event rows: %w", err)
+	}
+
+	return nil
+}
+
+func (s *WikiEventScraper) processTableWithDateCutoff(ctx context.Context, tableEl *goquery.Selection, cutoffDate time.Time) (int, error) {
+	if tableEl.Length() == 0 {
+		return 0, fmt.Errorf("table element is empty")
+	}
+
+	// Extract column positions for headers
+	var eventCol, dateCol, venueCol, locationCol, attendanceCol int
+	eventCol = -1
+	dateCol = -1
+	venueCol = -1
+	locationCol = -1
+	attendanceCol = -1
+
+	// Get column positions which can vary between tables
+	tableEl.Find("thead tr th").Each(func(i int, s *goquery.Selection) {
+		text := strings.TrimSpace(s.Text())
+		log.Printf("Column %d: '%s'", i, text)
+		switch strings.ToLower(text) {
+		case "event":
+			eventCol = i
+		case "date":
+			dateCol = i
+		case "venue":
+			venueCol = i
+		case "location":
+			locationCol = i
+		case "attendance":
+			attendanceCol = i
+		}
+	})
+
+	// If we still don't have column positions, try another selector
+	if eventCol == -1 || dateCol == -1 {
+		log.Printf("Couldn't find columns using thead, trying direct th search")
+		tableEl.Find("tr th").Each(func(i int, s *goquery.Selection) {
+			text := strings.TrimSpace(s.Text())
+			log.Printf("Alt column %d: '%s'", i, text)
+			switch strings.ToLower(text) {
+			case "event":
+				eventCol = i
+			case "date":
+				dateCol = i
+			case "venue":
+				venueCol = i
+			case "location":
+				locationCol = i
+			case "attendance":
+				attendanceCol = i
+			}
+		})
+	}
+
+	log.Printf("Column positions - Event: %d, Date: %d, Venue: %d, Location: %d, Attendance: %d",
+		eventCol, dateCol, venueCol, locationCol, attendanceCol)
+
+	// Abort if we can't find the essential columns
+	if eventCol == -1 || dateCol == -1 {
+		return 0, fmt.Errorf("couldn't find essential columns in table")
+	}
+
+	// Create a map to store rowspan data for each column
+	rowspanMap := make(map[int]*RowspanData)
+
+	rowCount := 0
+	updatedCount := 0
+	reachedCutoff := false
+
+	// Now process rows
+	tableEl.Find("tbody tr").Each(func(i int, row *goquery.Selection) {
+		// Skip if we've already reached the cutoff date
+		if reachedCutoff {
+			return
+		}
+
+		rowCount++
+
+		// Skip rows with "Canceled" in text
+		if strings.Contains(strings.ToLower(row.Text()), "canceled") {
+			log.Printf("Skipping canceled event row %d", i)
+			return
+		}
+
+		// Get event details from this row
+		var eventName, eventURL, dateText, venue, location, attendance string
+
+		// Extract event name and URL
+		if eventCol >= 0 && eventCol < row.Find("td").Length() {
+			eventCell := row.Find("td").Eq(eventCol)
+			eventLink := eventCell.Find("a")
+			eventName = strings.TrimSpace(eventLink.Text())
+			eventURL, _ = eventLink.Attr("href")
+			if eventURL != "" {
+				eventURL = "https://en.wikipedia.org" + eventURL
+			}
+		} else {
+			log.Printf("Row %d: Event column out of range", i)
+			return
+		}
+
+		// Extract date
+		if dateCol >= 0 && dateCol < row.Find("td").Length() {
+			dateCell := row.Find("td").Eq(dateCol)
+			dateText = strings.TrimSpace(dateCell.Text())
+
+			// Also try to parse the full date from span
+			dateSpan := dateCell.Find("span")
+			if dateSpan.Length() > 0 {
+				dataSortValue, exists := dateSpan.Attr("data-sort-value")
+				if exists && dataSortValue != "" {
+					log.Printf("Found date sort value: %s", dataSortValue)
+
+					// Extract actual date from format like "000000002021-07-31-0000"
+					re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
+					match := re.FindString(dataSortValue)
+					if match != "" {
+						dateText = match
+					}
+				}
+			}
+		} else {
+			log.Printf("Row %d: Date column out of range", i)
+			return
+		}
+
+		// Process venue - handle rowspan properly
+		venue = s.getColumnValueWithRowspan(row, venueCol, rowspanMap, "venue")
+
+		// Process location - handle rowspan properly
+		location = s.getColumnValueWithRowspan(row, locationCol, rowspanMap, "location")
+
+		// Process attendance - handle rowspan properly
+		attendance = s.getColumnValueWithRowspan(row, attendanceCol, rowspanMap, "attendance")
+
+		// Skip rows with attendance explicitly marked as canceled
+		if strings.Contains(strings.ToLower(attendance), "cancel") {
+			log.Printf("Skipping event with canceled attendance: %s", eventName)
+			return
+		}
+
+		// Skip if we don't have enough data
+		if eventName == "" || dateText == "" || venue == "" {
+			log.Printf("Row %d: Skipping due to missing data - Event: '%s', Date: '%s', Venue: '%s'",
+				i, eventName, dateText, venue)
+			return
+		}
+
+		log.Printf("Row %d: Event: '%s', Date: '%s', Venue: '%s', Location: '%s', Attendance: '%s'",
+			i, eventName, dateText, venue, location, attendance)
+
+		// Parse the date from Wikipedia
+		var wikiDate time.Time
+		var err error
+
+		// Try different date formats
+		dateFormats := []string{
+			"2006-01-02", // ISO format
+			"January 2, 2006",
+			"Jan 2, 2006",
+		}
+
+		for _, format := range dateFormats {
+			wikiDate, err = time.Parse(format, dateText)
+			if err == nil {
+				log.Printf("Successfully parsed date '%s' with format '%s'", dateText, format)
+				break
+			}
+		}
+
+		if wikiDate.IsZero() {
+			log.Printf("Failed to parse date from: %s", dateText)
+			return
+		}
+
+		// Check if event is older than cutoff date (for past events table)
+		if wikiDate.Before(cutoffDate) {
+			log.Printf("Reached event before cutoff date %s, stopping processing: %s on %s",
+				cutoffDate.Format("2006-01-02"), eventName, wikiDate.Format("2006-01-02"))
+			reachedCutoff = true
+			return
+		}
+
+		// Look for a matching event
+		matchedEvent := s.findMatchingEventByDate(eventName, dateText, venue, location)
+		if matchedEvent == nil {
+			log.Printf("No match found for event: %s on %s at %s", eventName, dateText, venue)
+			return
+		}
+
+		// Set the wiki URL
+		matchedEvent.WikiURL = eventURL
+
+		// Handle name update logic
+		if eventName != "" {
+			// If Wikipedia has a name, use it
+			matchedEvent.Name = eventName
+		} else if matchedEvent.Name == "" || strings.TrimSpace(matchedEvent.Name) == "" {
+			// If no name in DB and none from Wikipedia, generate from URL
+			matchedEvent.Name = generateNameFromURL(matchedEvent.UFCURL)
+			log.Printf("Generated name from URL: %s", matchedEvent.Name)
+		}
+
+		// Format the attendance properly
+		formattedAttendance := formatAttendance(attendance)
+
+		// Update the matched event with wiki data
+		matchedEvent.WikiURL = eventURL
+		matchedEvent.Name = eventName // Set name from Wikipedia
+		matchedEvent.Attendance = formattedAttendance
+
+		// Update the event in the database
+		if err := s.updateEventInDB(ctx, matchedEvent); err != nil {
+			log.Printf("Error updating event %s: %v", matchedEvent.ID, err)
+		} else {
+			log.Printf("Updated event: %s with wiki URL: %s, attendance: %s",
+				matchedEvent.Name, matchedEvent.WikiURL, matchedEvent.Attendance)
+			updatedCount++
+		}
+	})
+
+	log.Printf("Processed %d rows from table, updated %d events, reached cutoff: %v", 
+		rowCount, updatedCount, reachedCutoff)
+
+	return updatedCount, nil
+}
+
+func (s *WikiEventScraper) updateNonMatchedRecentEvents(ctx context.Context, cutoffDate time.Time) (int, error) {
+    updateCount := 0
+
+    // Process each existing event
+    for _, event := range s.existingEvents {
+        // Only process events after the cutoff date
+        if event.Date.Before(cutoffDate) {
+            log.Printf("Skipping event ID=%s with date %s before cutoff %s", 
+                event.ID, event.Date.Format("2006-01-02"), cutoffDate.Format("2006-01-02"))
+            continue
+        }
+
+        // If the event has no name or has an empty name but has a UFC URL
+        if (event.Name == "" || strings.TrimSpace(event.Name) == "") && event.UFCURL != "" {
+            // Generate a name from the URL
+            generatedName := generateNameFromURL(event.UFCURL)
+            log.Printf("Generating name for recent event ID=%s from URL: %s -> %s", 
+                event.ID, event.UFCURL, generatedName)
+
+            // Update the event with the generated name
+            event.Name = generatedName
+            if err := s.updateEventInDB(ctx, event); err != nil {
+                log.Printf("Error updating recent event %s with generated name: %v", event.ID, err)
+                continue
+            }
+
+            updateCount++
+            log.Printf("Updated recent event ID=%s with generated name: %s", event.ID, generatedName)
+        }
+    }
+
+    return updateCount, nil
+}

@@ -18,20 +18,35 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
-	"github.com/robfig/cron/v3"
 	"mma-scheduler/config"
 	"mma-scheduler/pkg/scrapers"
 )
 
 type ScraperApp struct {
 	db            *sql.DB
-	scraperConfig scrapers.ScraperConfig  // Changed from pointer to value
+	scraperConfig scrapers.ScraperConfig
 	logger        *log.Logger
+	timers        []*time.Timer
+	timerMutex    sync.Mutex
+}
+
+type Event struct {
+	ID   string
+	Name string
+	Date time.Time
+}
+
+type ActiveFighter struct {
+	ID       string
+	UFCID    string
+	Name     string
+	UFCURL   string
+	Nickname string
 }
 
 func main() {
-	fullScrapeFlag := flag.Bool("full", false, "Run a full fighter scrape")
-	cronFlag := flag.Bool("cron", false, "Run as a cron job service")
+	cronFlag := flag.Bool("cron", false, "Run as a timer service with schedules based on event dates")
+	fullFlag := flag.Bool("full", false, "Run full fighter scrape for all fighters")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "FIGHTER-SCRAPER: ", log.LstdFlags)
@@ -53,21 +68,22 @@ func main() {
 
 	app := &ScraperApp{
 		db:            db,
-		scraperConfig: scrapers.DefaultConfig(),  // Now matches the type
+		scraperConfig: scrapers.DefaultConfig(),
 		logger:        logger,
+		timers:        make([]*time.Timer, 0),
 	}
 
-	if *fullScrapeFlag {
-		logger.Println("Running full fighter scrape")
-		app.runFighterScrape()
+	if *cronFlag {
+		logger.Println("Starting event-based timer service for active fighter updates")
+		app.runEventBasedTimerService()
 		return
-	} else if *cronFlag {
-		logger.Println("Starting cron service mode")
-		app.runCronService()
+	} else if *fullFlag {
+		logger.Println("Running full fighter scrape for all fighters")
+		app.runFullFighterScrape()
 		return
 	} else {
-		logger.Println("Running standard fighter scrape")
-		app.runFighterScrape()
+		logger.Println("Running incremental fighter refresh for active fighters")
+		app.runActiveFighterScrape()
 		return
 	}
 }
@@ -91,7 +107,6 @@ func connectToDatabase() (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Optimize connection pool settings
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(30 * time.Minute)
@@ -107,54 +122,251 @@ func connectToDatabase() (*sql.DB, error) {
 	return db, nil
 }
 
-func (app *ScraperApp) runFighterScrape() {
+// getActiveFighters retrieves all fighters with status "Active" from the database
+func (app *ScraperApp) getActiveFighters() ([]ActiveFighter, error) {
+	query := `
+		SELECT id, ufc_id, name, ufc_url, nickname
+		FROM fighters
+		WHERE status = 'Active' AND ufc_url IS NOT NULL AND ufc_url != ''
+		ORDER BY name
+	`
+	
+	rows, err := app.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query active fighters: %w", err)
+	}
+	defer rows.Close()
+	
+	var activeFighters []ActiveFighter
+	for rows.Next() {
+		var fighter ActiveFighter
+		var nickname sql.NullString
+		
+		if err := rows.Scan(&fighter.ID, &fighter.UFCID, &fighter.Name, &fighter.UFCURL, &nickname); err != nil {
+			return nil, fmt.Errorf("failed to scan fighter row: %w", err)
+		}
+		
+		if nickname.Valid {
+			fighter.Nickname = nickname.String
+		}
+		
+		activeFighters = append(activeFighters, fighter)
+	}
+	
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating fighters: %w", err)
+	}
+	
+	app.logger.Printf("Found %d active fighters to refresh", len(activeFighters))
+	return activeFighters, nil
+}
+
+// runActiveFighterScrape performs an incremental update of all active fighters
+func (app *ScraperApp) runActiveFighterScrape() {
 	startTime := time.Now()
-	app.logger.Println("Starting fighter scrape...")
+	app.logger.Println("Starting incremental refresh of active fighters...")
 
-	scraper := scrapers.NewFighterScraper(app.scraperConfig)  // Now matches the expected type
+	// Get all active fighters from the database
+	activeFighters, err := app.getActiveFighters()
+	if err != nil {
+		app.logger.Fatalf("Error getting active fighters: %v", err)
+	}
 
-	// Use a longer context for the scraping operation
+	if len(activeFighters) == 0 {
+		app.logger.Println("No active fighters found in database")
+		return
+	}
+
+	app.logger.Printf("Found %d active fighters to refresh", len(activeFighters))
+
+	// Create scraper instance
+	scraper := scrapers.NewFighterScraper(app.scraperConfig)
+
+	// Convert to Fighter structs and scrape details
+	fighters := make([]*scrapers.Fighter, len(activeFighters))
+	for i, af := range activeFighters {
+		fighters[i] = &scrapers.Fighter{
+			UFCID:    af.UFCID,
+			Name:     af.Name,
+			UFCURL:   af.UFCURL,
+			Nickname: af.Nickname,
+			Status:   "Active", // We know they're active from the query
+			Rankings: []scrapers.FighterRanking{}, // Initialize empty slice
+		}
+	}
+
+	// Process fighters in parallel to get updated details
 	scrapeCtx, scrapeCancel := context.WithTimeout(context.Background(), 2*time.Hour)
 	defer scrapeCancel()
 
-	fighters, err := scraper.ScrapeAllFighters(scrapeCtx)
+	// Get detailed information for each fighter
+	app.logger.Println("Retrieving updated information for active fighters...")
+	enrichedFighters, err := app.processActiveFighters(scrapeCtx, fighters, scraper)
 	if err != nil {
-		app.logger.Fatalf("Error scraping fighters: %v", err)
+		app.logger.Fatalf("Error processing active fighters: %v", err)
 	}
 
-	app.logger.Printf("Retrieved %d fighters total, now processing...", len(fighters))
-	
-	// Process and save the fighters
-	app.processFighters(scrapeCtx, fighters)
+	// Update database with refreshed data
+	app.processFighters(scrapeCtx, enrichedFighters)
 
-	app.logger.Printf("🏁 Fighter scrape completed in %v!", time.Since(startTime).Round(time.Second))
+	app.logger.Printf("🏁 Active fighter refresh completed in %v!", time.Since(startTime).Round(time.Second))
 }
 
-func (app *ScraperApp) runCronService() {
-	app.logger.Println("Starting cron service for fighter updates")
+// processActiveFighters gets updated details for active fighters in parallel
+func (app *ScraperApp) processActiveFighters(ctx context.Context, fighters []*scrapers.Fighter, scraper *scrapers.FighterScraper) ([]*scrapers.Fighter, error) {
+	totalFighters := len(fighters)
+	app.logger.Printf("Retrieving detailed information for %d active fighters...", totalFighters)
 
-	c := cron.New(
-		cron.WithLogger(cron.VerbosePrintfLogger(app.logger)),
-		cron.WithLocation(time.UTC),
-	)
-
-	// Run fighter update weekly on Sunday at 03:00 UTC
-	if _, err := c.AddFunc("0 3 * * 0", app.runFighterScrape); err != nil {
-		app.logger.Fatalf("Failed to add weekly fighter update job: %v", err)
+	// Create worker pool for parallel processing
+	numWorkers := runtime.NumCPU()
+	if numWorkers > 10 {
+		numWorkers = 10 // Cap at a reasonable maximum
 	}
 
-	c.Start()
-	app.logger.Println("Cron scheduler started with the following schedule:")
-	app.logger.Println("- Weekly fighter updates every Sunday at 03:00 UTC")
+	fighterCh := make(chan *scrapers.Fighter, len(fighters))
+	var wg sync.WaitGroup
 
-	// Handle graceful shutdown
+	// Stats counters
+	var successCount, failureCount int32
+
+	// Start workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+
+			for fighter := range fighterCh {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
+				// Attempt to get fighter details with retries
+				success := false
+				attempts := 0
+				maxAttempts := 3
+
+				for !success && attempts < maxAttempts {
+					err := scraper.GetFighterDetails(fighter)
+					if err == nil {
+						success = true
+						atomic.AddInt32(&successCount, 1)
+					} else {
+						attempts++
+						if attempts < maxAttempts {
+							// Exponential backoff
+							backoffTime := time.Duration(100*(1<<attempts)) * time.Millisecond
+							if backoffTime > 1*time.Second {
+								backoffTime = 1 * time.Second
+							}
+							time.Sleep(backoffTime)
+						} else {
+							atomic.AddInt32(&failureCount, 1)
+							app.logger.Printf("Worker %d: Failed to get details for %s after %d attempts: %v",
+								workerID, fighter.Name, attempts, err)
+						}
+					}
+				}
+
+				// Log progress periodically
+				totalProcessed := atomic.LoadInt32(&successCount) + atomic.LoadInt32(&failureCount)
+				if totalProcessed%20 == 0 || totalProcessed == int32(len(fighters)) {
+					app.logger.Printf("Fighter details: %d/%d processed (%d successful, %d failed)",
+						totalProcessed, len(fighters), successCount, failureCount)
+				}
+			}
+		}(i)
+	}
+
+	// Send fighters to workers
+	for _, fighter := range fighters {
+		fighterCh <- fighter
+	}
+	close(fighterCh)
+
+	// Wait for all workers to finish
+	wg.Wait()
+
+	app.logger.Printf("Completed getting fighter details: %d successful, %d failed",
+		successCount, failureCount)
+
+	// Update rankings for active fighters
+	app.logger.Println("Updating rankings for active fighters...")
+	rankingsByWeightClass, err := scraper.ScrapeRankings()
+	if err != nil {
+		app.logger.Printf("Warning: Error scraping rankings: %v", err)
+	} else {
+		// Apply rankings to fighters
+		app.updateFighterRankings(fighters, rankingsByWeightClass)
+	}
+
+	return fighters, nil
+}
+
+// updateFighterRankings applies current rankings to the fighters
+func (app *ScraperApp) updateFighterRankings(fighters []*scrapers.Fighter, rankingsByWeightClass map[string]map[string]string) {
+	for _, fighter := range fighters {
+		// Skip if fighter is no longer active (might have been updated during scraping)
+		if fighter.Status == "Retired" || fighter.Status == "Not Fighting" {
+			fighter.Ranking = "Unranked"
+			fighter.Rankings = []scrapers.FighterRanking{}
+			continue
+		}
+
+		// Reset rankings
+		fighter.Rankings = []scrapers.FighterRanking{}
+		fighter.Ranking = "Unranked"
+
+		// For each weight class in the rankings
+		for weightClass, rankingsByFighterID := range rankingsByWeightClass {
+			// If this fighter has a ranking in this weight class
+			if ranking, exists := rankingsByFighterID[fighter.UFCID]; exists {
+				// Add this ranking to the fighter's rankings
+				newRanking := scrapers.FighterRanking{
+					WeightClass: weightClass,
+					Rank:        ranking,
+				}
+				fighter.Rankings = append(fighter.Rankings, newRanking)
+
+				// Update the primary ranking field if:
+				// 1. This is the fighter's primary weight class, or
+				// 2. They don't have a ranking yet, or
+				// 3. This is a championship ranking
+				if fighter.WeightClass == weightClass ||
+					fighter.Ranking == "Unranked" ||
+					ranking == "Champion" || ranking == "Interim Champion" {
+					fighter.Ranking = ranking
+				}
+			}
+		}
+	}
+}
+
+func (app *ScraperApp) runEventBasedTimerService() {
+	app.logger.Println("Starting event-based timer service for active fighter updates")
+
+	app.scheduleJobsForEvents()
+
+	app.logger.Println("Timer scheduler started")
+	app.logger.Println("Active fighter updates will run exactly 24 hours after each event")
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	app.logger.Println("Shutting down scraper service...")
+	app.logger.Println("Shutting down fighter scraper service...")
 	
-	c.Stop()
+	app.timerMutex.Lock()
+	for _, timer := range app.timers {
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
+	}
+	app.timerMutex.Unlock()
 	
 	if err := app.db.Close(); err != nil {
 		app.logger.Printf("Error closing database connection: %v", err)
@@ -163,45 +375,123 @@ func (app *ScraperApp) runCronService() {
 	app.logger.Println("Fighter scraper service stopped gracefully")
 }
 
+func (app *ScraperApp) scheduleJobsForEvents() {
+	// Get all upcoming events (status = 'Upcoming')
+	upcomingEvents, err := app.getUpcomingEvents()
+	if err != nil {
+		app.logger.Printf("Error getting upcoming events: %v", err)
+		return
+	}
+
+	scheduledCount := 0
+	
+	now := time.Now().UTC()
+	app.logger.Printf("Current time: %s UTC", now.Format(time.RFC3339))
+
+	for _, event := range upcomingEvents {
+		// Schedule fighter update exactly 24 hours after the event
+		updateTime := event.Date.Add(24 * time.Hour)
+		
+		// Skip events that would be scheduled in the past
+		if updateTime.Before(now) {
+			app.logger.Printf("Skipping past event: %s (event date: %s UTC, update time: %s UTC)", 
+				event.Name, event.Date.Format(time.RFC3339), updateTime.Format(time.RFC3339))
+			continue
+		}
+
+		duration := updateTime.Sub(now)
+		
+		// Capture values for the closure
+		eventName := event.Name
+		eventDate := event.Date
+		
+		timer := time.AfterFunc(duration, func() {
+			app.logger.Printf("Running active fighter update for event: %s (event date: %s UTC)", 
+				eventName, eventDate.Format(time.RFC3339))
+			// Run the active fighter scrape
+			app.runActiveFighterScrape()
+		})
+		
+		app.timerMutex.Lock()
+		app.timers = append(app.timers, timer)
+		app.timerMutex.Unlock()
+
+		scheduledCount++
+		app.logger.Printf("Scheduled active fighter update for %s in %s at %s UTC (24h after event: %s UTC)", 
+			event.Name, 
+			duration.Round(time.Second).String(), 
+			updateTime.Format(time.RFC3339), 
+			event.Date.Format(time.RFC3339))
+	}
+
+	app.logger.Printf("Successfully scheduled %d active fighter updates for upcoming events", scheduledCount)
+}
+
+// getUpcomingEvents retrieves all events with status 'Upcoming' from the database
+func (app *ScraperApp) getUpcomingEvents() ([]Event, error) {
+	query := `
+		SELECT id, name, event_date
+		FROM events
+		WHERE status = 'Upcoming'
+		ORDER BY event_date ASC
+	`
+	
+	rows, err := app.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query upcoming events: %w", err)
+	}
+	defer rows.Close()
+	
+	var events []Event
+	for rows.Next() {
+		var event Event
+		if err := rows.Scan(&event.ID, &event.Name, &event.Date); err != nil {
+			return nil, fmt.Errorf("failed to scan event row: %w", err)
+		}
+		
+		// Ensure the date is in UTC
+		event.Date = event.Date.UTC()
+		events = append(events, event)
+	}
+	
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating events: %w", err)
+	}
+	
+	app.logger.Printf("Found %d upcoming events", len(events))
+	return events, nil
+}
+
 func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers.Fighter) {
-    // Check for context cancellation at the start
     if ctx.Err() != nil {
         app.logger.Printf("Context canceled before processing fighters: %v", ctx.Err())
         return
     }
-	// Track statistics with atomic counters
 	var insertCount, updateCount, errorCount, rankingsInserted int64
 	
-	// Process fighters in parallel using a worker pool with batching
 	numWorkers := runtime.NumCPU() * 2
 	if numWorkers > 5 {
 		numWorkers = 5
 	}
 	
-	// Create a channel to distribute work - use batches for better efficiency
 	batchSize := 20
 	numBatches := (len(fighters) + batchSize - 1) / batchSize
 	fighterBatchCh := make(chan []*scrapers.Fighter, numBatches)
 	
-	// Create a wait group to wait for all workers to finish
 	var wg sync.WaitGroup
 	
-	// Launch worker goroutines
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
 			
-			// Each worker gets its own database connection context
 			dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Minute)
 			defer dbCancel()
 			
-			// Process fighter batches from the channel
 			for fighterBatch := range fighterBatchCh {
 				var tx *sql.Tx
 				var committed bool
 				
-				// Use a retry mechanism for transaction begin
 				var beginErr error
 				for retries := 0; retries < 3; retries++ {
 					tx, beginErr = app.db.BeginTx(dbCtx, nil)
@@ -221,7 +511,6 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 					continue
 				}
 				
-				// Ensure the transaction is either committed or rolled back
 				defer func() {
 					if tx != nil && !committed {
 						_ = tx.Rollback()
@@ -229,7 +518,6 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 					}
 				}()
 				
-				// Prepare statements for better performance
 				insertStmt, err := tx.PrepareContext(dbCtx, `
 					INSERT INTO fighters (
 						ufc_id, name, nickname, weight_class, status, rank, wins, losses, draws, ufc_url,
@@ -277,7 +565,6 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 				}
 				defer updateStmt.Close()
 				
-				// Process each fighter in the batch
 				batchInsertCount := 0
 				batchUpdateCount := 0
 				batchRankingsCount := 0
@@ -285,11 +572,9 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 				now := time.Now()
 				
 				for _, fighter := range fighterBatch {
-					// Use fighter.Draws directly instead of parsing it
 					wins := fighter.KOWins + fighter.SubWins + fighter.DecWins
 					losses := 0
 					
-					// Only parse losses from the record string
 					if fighter.Record != "" {
 						parts := strings.Split(fighter.Record, "-")
 						if len(parts) >= 2 {
@@ -297,7 +582,6 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 						}
 					}
 					
-					// Check if fighter exists
 					var existingID string
 					
 					err = tx.QueryRowContext(dbCtx,
@@ -311,7 +595,6 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 					}
 					
 					if err == nil {
-						// Update existing fighter
 						_, err = updateStmt.ExecContext(dbCtx,
 							fighter.Name,
 							fighter.Nickname,
@@ -343,7 +626,6 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 						
 						batchUpdateCount++
 					} else {
-						// Insert new fighter
 						err = insertStmt.QueryRowContext(dbCtx,
 							fighter.UFCID,
 							fighter.Name,
@@ -376,9 +658,7 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 						batchInsertCount++
 					}
 					
-					// Process rankings if they exist
 					if len(fighter.Rankings) > 0 {
-						// First delete any existing rankings for this fighter
 						_, err = tx.ExecContext(dbCtx,
 							"DELETE FROM fighter_rankings WHERE fighter_id = $1",
 							existingID)
@@ -390,8 +670,6 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 							break
 						}
 						
-						// Use a single bulk insert for all rankings
-						// Build values string for a bulk insert
 						rankingValues := make([]string, 0, len(fighter.Rankings))
 						rankingArgs := make([]interface{}, 0, len(fighter.Rankings)*4)
 						argCount := 1
@@ -438,11 +716,9 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 						continue
 					}
 					
-					// Only set committed = true if the commit succeeded
 					committed = true
 					tx = nil
 					
-					// Update global counters
 					atomic.AddInt64(&insertCount, int64(batchInsertCount))
 					atomic.AddInt64(&updateCount, int64(batchUpdateCount))
 					atomic.AddInt64(&rankingsInserted, int64(batchRankingsCount))
@@ -463,7 +739,6 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 		}(i)
 	}
 	
-	// Group fighters into batches and send to the workers
 	for i := 0; i < len(fighters); i += batchSize {
 		end := i + batchSize
 		if end > len(fighters) {
@@ -476,9 +751,29 @@ func (app *ScraperApp) processFighters(ctx context.Context, fighters []*scrapers
 	
 	close(fighterBatchCh)
 	
-	// Wait for all workers to finish
 	wg.Wait()
 	
 	app.logger.Printf("Scraping completed! Saved %d new fighters, updated %d existing fighters with %d total rankings. Errors: %d",
 		insertCount, updateCount, rankingsInserted, errorCount)
+}
+
+func (app *ScraperApp) runFullFighterScrape() {
+	startTime := time.Now()
+	app.logger.Println("Starting full fighter scrape...")
+
+	scraper := scrapers.NewFighterScraper(app.scraperConfig)
+
+	scrapeCtx, scrapeCancel := context.WithTimeout(context.Background(), 2*time.Hour)
+	defer scrapeCancel()
+
+	fighters, err := scraper.ScrapeAllFighters(scrapeCtx)
+	if err != nil {
+		app.logger.Fatalf("Error scraping fighters: %v", err)
+	}
+
+	app.logger.Printf("Retrieved %d fighters total, now processing...", len(fighters))
+	
+	app.processFighters(scrapeCtx, fighters)
+
+	app.logger.Printf("🏁 Full fighter scrape completed in %v!", time.Since(startTime).Round(time.Second))
 }

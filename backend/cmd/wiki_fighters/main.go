@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -14,7 +18,20 @@ import (
 	"mma-scheduler/pkg/scrapers"
 )
 
-// Fighter represents a fighter record from the database
+type ScraperApp struct {
+	db            *sql.DB
+	scraperConfig *scrapers.ScraperConfig
+	logger        *log.Logger
+	timers        []*time.Timer
+	timerMutex    sync.Mutex
+}
+
+type Event struct {
+	ID   string
+	Name string
+	Date time.Time
+}
+
 type Fighter struct {
 	ID            string
 	Name          string
@@ -32,15 +49,70 @@ type Fighter struct {
 	FightingOutOf string
 }
 
+type ActiveFighter struct {
+	ID       string
+	Name     string
+	WikiURL  string
+	Wins     int
+	Losses   int
+	KOWins   int
+	SubWins  int
+	DecWins  int
+	LossByKO int
+	LossBySub int
+	LossByDec int
+	LossByDQ int
+	NoContests int
+	FightingOutOf string
+}
+
 func main() {
+	cronFlag := flag.Bool("cron", false, "Run as a timer service with schedules based on event dates")
+	fullFlag := flag.Bool("full", false, "Run full wiki fighter scrape for all fighters")
+	flag.Parse()
+
+	logger := log.New(os.Stdout, "WIKI-FIGHTER-SCRAPER: ", log.LstdFlags)
+	logger.Println("🚀 Starting Wiki Fighter Scraper")
+
 	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found: %v", err)
+		logger.Printf("Warning: .env file not found: %v", err)
 	}
 
 	if err := config.LoadConfig("config/config.json"); err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		logger.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	db, err := connectToDatabase()
+	if err != nil {
+		logger.Fatalf("Database connection error: %v", err)
+	}
+	defer db.Close()
+
+	app := &ScraperApp{
+		db: db,
+		scraperConfig: &scrapers.ScraperConfig{
+			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+		},
+		logger: logger,
+		timers: make([]*time.Timer, 0),
+	}
+
+	if *cronFlag {
+		logger.Println("Starting event-based timer service for active fighter wiki updates")
+		app.runEventBasedTimerService()
+		return
+	} else if *fullFlag {
+		logger.Println("Running full wiki fighter scrape for all fighters")
+		app.runFullWikiFighterScrape()
+		return
+	} else {
+		logger.Println("Running incremental wiki fighter scrape for active fighters")
+		app.runActiveWikiFighterScrape()
+		return
+	}
+}
+
+func connectToDatabase() (*sql.DB, error) {
 	dbConfig := config.GetDatabaseConfig()
 
 	connStr := fmt.Sprintf(
@@ -56,48 +128,48 @@ func main() {
 
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	defer db.Close()
+
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(30 * time.Minute)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
-	}
-	log.Println("Connected to database")
-
-	// Create the scraper config
-	scraperConfig := &scrapers.ScraperConfig{
-		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// Get all fighters from the database
-	fighters, err := getAllFighters(db)
+	return db, nil
+}
+
+func (app *ScraperApp) runWikiFighterScrape() {
+	startTime := time.Now()
+	app.logger.Println("Starting wiki fighter data scrape...")
+
+	fighters, err := getAllFighters(app.db)
 	if err != nil {
-		log.Fatalf("Error getting fighters: %v", err)
+		app.logger.Fatalf("Error getting fighters: %v", err)
 	}
 
-	log.Printf("Found %d fighters to process", len(fighters))
+	app.logger.Printf("Found %d fighters to process", len(fighters))
 
-	// Create a worker pool with a limited number of concurrent workers
-	maxConcurrency := 8 // Adjust based on your system's capabilities
+	maxConcurrency := 8
 	sem := make(chan struct{}, maxConcurrency)
 	var wg sync.WaitGroup
 
-	// Create database context with longer timeout for the entire operation
 	dbCtx, dbCancel := context.WithTimeout(context.Background(), 120*time.Minute)
 	defer dbCancel()
 
-	// Create a channel for results
 	results := make(chan struct {
 		fighter Fighter
 		info    *scrapers.FighterExtraInfo
 		err     error
 	}, maxConcurrency)
 
-	// Start result processor
 	go func() {
 		processedCount := 0
 		startTime := time.Now()
@@ -105,53 +177,45 @@ func main() {
 		for result := range results {
 			processedCount++
 			
-			// If there was an error, log it and continue
 			if result.err != nil {
-				log.Printf("%s: ❌ Failed - %v", result.fighter.Name, result.err)
+				app.logger.Printf("%s: ❌ Failed - %v", result.fighter.Name, result.err)
 				continue
 			}
 
 			if result.info == nil {
-				log.Printf("%s: ❌ No data found", result.fighter.Name)
+				app.logger.Printf("%s: ❌ No data found", result.fighter.Name)
 				continue
 			}
 
-			// Update fighter in database
-			if err := updateFighterInDatabase(dbCtx, db, result.fighter, result.info); err != nil {
-				log.Printf("Failed to update fighter %s: %v", result.fighter.Name, err)
+			if err := updateFighterInDatabase(dbCtx, app.db, result.fighter, result.info); err != nil {
+				app.logger.Printf("Failed to update fighter %s: %v", result.fighter.Name, err)
 			} else {
-				log.Printf("%s: ✅ Updated successfully", result.fighter.Name)
+				app.logger.Printf("%s: ✅ Updated successfully", result.fighter.Name)
 			}
 			
-			// Log progress
 			elapsedTime := time.Since(startTime)
 			timePerFighter := elapsedTime / time.Duration(processedCount)
-			log.Printf("Progress: %d/%d fighters processed (~%v per fighter)", 
+			app.logger.Printf("Progress: %d/%d fighters processed (~%v per fighter)", 
 				processedCount, len(fighters), timePerFighter.Round(time.Second))
 		}
 		
-		log.Printf("🏁 Processing completed for %d fighters in %v", 
+		app.logger.Printf("🏁 Processing completed for %d fighters in %v", 
 			processedCount, time.Since(startTime).Round(time.Second))
 	}()
 
-	// Create the fighter scraper
-	fighterScraper := scrapers.NewWikiFighterScraper(scraperConfig)
+	fighterScraper := scrapers.NewWikiFighterScraper(app.scraperConfig)
 
-	// Process fighters concurrently
 	for _, fighter := range fighters {
 		wg.Add(1)
-		sem <- struct{}{} // Acquire semaphore slot
+		sem <- struct{}{}
 		
-		// Launch a goroutine for each fighter
 		go func(f Fighter) {
 			defer wg.Done()
-			defer func() { <-sem }() // Release semaphore slot when done
+			defer func() { <-sem }()
 			
-			// Create timeout context for this fighter
 			fighterCtx, fighterCancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer fighterCancel()
 			
-			// Run the scraping in another goroutine so we can handle timeout
 			done := make(chan bool)
 			var info *scrapers.FighterExtraInfo
 			var scrapeErr error
@@ -160,23 +224,19 @@ func main() {
 				info, scrapeErr = fighterScraper.ScrapeExtraInfo(f.Name, f.WikiURL, "", f.Wins, f.Losses)
 				select {
 				case <-fighterCtx.Done():
-					// Context was cancelled, do nothing
 				case done <- true:
-					// Succeeded in sending result
 				}
 			}()
 			
-			// Wait for either completion or timeout
 			select {
 			case <-done:
-				// Processing completed normally
 				results <- struct {
 					fighter Fighter
 					info    *scrapers.FighterExtraInfo
 					err     error
 				}{fighter: f, info: info, err: scrapeErr}
 			case <-fighterCtx.Done():
-				log.Printf("%s: ⚠️ Processing timed out after 30 seconds", f.Name)
+				app.logger.Printf("%s: ⚠️ Processing timed out after 30 seconds", f.Name)
 				results <- struct {
 					fighter Fighter
 					info    *scrapers.FighterExtraInfo
@@ -186,49 +246,161 @@ func main() {
 		}(fighter)
 	}
 
-	// Wait for all workers to complete
 	wg.Wait()
-	close(results) // Close results channel to signal completion
+	close(results)
 	
-	log.Println("All workers have completed")
+	app.logger.Printf("🏁 Wiki fighter scrape completed in %v!", time.Since(startTime).Round(time.Second))
+}
+
+func (app *ScraperApp) runEventBasedTimerService() {
+	app.logger.Println("Starting event-based timer service for active fighter wiki updates")
+
+	app.scheduleJobsForEvents()
+
+	app.logger.Println("Timer scheduler started")
+	app.logger.Println("Active fighter wiki updates will run exactly 24 hours after each event")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	app.logger.Println("Shutting down wiki fighter scraper service...")
+	
+	app.timerMutex.Lock()
+	for _, timer := range app.timers {
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
+	}
+	app.timerMutex.Unlock()
+	
+	if err := app.db.Close(); err != nil {
+		app.logger.Printf("Error closing database connection: %v", err)
+	}
+	
+	app.logger.Println("Wiki fighter scraper service stopped gracefully")
+}
+
+func (app *ScraperApp) scheduleJobsForEvents() {
+	// Get all upcoming events (status = 'Upcoming')
+	upcomingEvents, err := app.getUpcomingEvents()
+	if err != nil {
+		app.logger.Printf("Error getting upcoming events: %v", err)
+		return
+	}
+
+	scheduledCount := 0
+	
+	now := time.Now().UTC()
+	app.logger.Printf("Current time: %s UTC", now.Format(time.RFC3339))
+
+	for _, event := range upcomingEvents {
+		// Schedule wiki fighter update exactly 24 hours after the event
+		updateTime := event.Date.Add(24 * time.Hour)
+		
+		// Skip events that would be scheduled in the past
+		if updateTime.Before(now) {
+			app.logger.Printf("Skipping past event: %s (event date: %s UTC, update time: %s UTC)", 
+				event.Name, event.Date.Format(time.RFC3339), updateTime.Format(time.RFC3339))
+			continue
+		}
+
+		duration := updateTime.Sub(now)
+		
+		// Capture values for the closure
+		eventName := event.Name
+		eventDate := event.Date
+		
+		timer := time.AfterFunc(duration, func() {
+			app.logger.Printf("Running active fighter wiki update for event: %s (event date: %s UTC)", 
+				eventName, eventDate.Format(time.RFC3339))
+			// Run the active fighter wiki scrape
+			app.runActiveWikiFighterScrape()
+		})
+		
+		app.timerMutex.Lock()
+		app.timers = append(app.timers, timer)
+		app.timerMutex.Unlock()
+
+		scheduledCount++
+		app.logger.Printf("Scheduled active fighter wiki update for %s in %s at %s UTC (24h after event: %s UTC)", 
+			event.Name, 
+			duration.Round(time.Second).String(), 
+			updateTime.Format(time.RFC3339), 
+			event.Date.Format(time.RFC3339))
+	}
+
+	app.logger.Printf("Successfully scheduled %d active fighter wiki updates for upcoming events", scheduledCount)
+}
+
+func (app *ScraperApp) getUpcomingAndRecentEvents() ([]Event, error) {
+	oneMonthAgo := time.Now().UTC().AddDate(0, -1, 0)
+	oneYearFromNow := time.Now().UTC().AddDate(1, 0, 0)
+	
+	query := `
+		SELECT id, name, event_date
+		FROM events
+		WHERE event_date BETWEEN $1 AND $2
+		ORDER BY event_date ASC
+	`
+	
+	rows, err := app.db.Query(query, oneMonthAgo, oneYearFromNow)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query events: %w", err)
+	}
+	defer rows.Close()
+	
+	var events []Event
+	for rows.Next() {
+		var event Event
+		if err := rows.Scan(&event.ID, &event.Name, &event.Date); err != nil {
+			return nil, fmt.Errorf("failed to scan event row: %w", err)
+		}
+		
+		event.Date = event.Date.UTC()
+		events = append(events, event)
+	}
+	
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating events: %w", err)
+	}
+	
+	app.logger.Printf("Found %d upcoming and recent events", len(events))
+	return events, nil
 }
 
 func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, info *scrapers.FighterExtraInfo) error {
-	// Update win methods if appropriate
 	shouldUpdateWinMethods := false
 	scrapedWinMethods := info.KOWins + info.SubWins + info.DecWins
 
 	log.Printf("  - Win methods: KO:%d, Sub:%d, Dec:%d (total: %d)",
 		info.KOWins, info.SubWins, info.DecWins, scrapedWinMethods)
 
-	// Case: Fighter has wins, and scraped methods match the total
 	if fighter.Wins > 0 && scrapedWinMethods == fighter.Wins {
 		shouldUpdateWinMethods = true
 	}
 
-	// Update loss methods if appropriate
 	shouldUpdateLossMethods := false
 	scrapedLossMethods := info.KOLosses + info.SubLosses + info.DecLosses + info.DQLosses
 
 	log.Printf("  - Loss methods: KO:%d, Sub:%d, Dec:%d, DQ:%d (total: %d)",
 		info.KOLosses, info.SubLosses, info.DecLosses, info.DQLosses, scrapedLossMethods)
 
-	// Case: Fighter has losses, and scraped methods match the total
 	if fighter.Losses > 0 && scrapedLossMethods == fighter.Losses {
 		shouldUpdateLossMethods = true
 	}
 
-	// Log No Contests information
 	log.Printf("  - No Contests: %d", info.NoContests)
 
-	// Begin transaction
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %v", err)
 	}
-	defer tx.Rollback() // Will be ignored if transaction is committed
+	defer tx.Rollback()
 
-	// Update win methods if appropriate
 	if shouldUpdateWinMethods {
 		_, err = tx.ExecContext(ctx, `
 			UPDATE fighters SET 
@@ -247,7 +419,6 @@ func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, i
 		log.Printf("  - SKIPPING win method update")
 	}
 
-	// Update loss methods if appropriate
 	if shouldUpdateLossMethods {
 		_, err = tx.ExecContext(ctx, `
 			UPDATE fighters SET 
@@ -267,7 +438,6 @@ func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, i
 		log.Printf("  - SKIPPING loss method update")
 	}
 
-	// Update No Contests if available
 	if info.NoContests > 0 {
 		_, err = tx.ExecContext(ctx, `
 			UPDATE fighters SET 
@@ -282,7 +452,6 @@ func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, i
 		log.Printf("%s: No Contests updated", fighter.Name)
 	}
 
-	// Update wiki_url if we found it and it's currently NULL or empty
 	if info.WikiURL != "" && (fighter.WikiURL == "" || fighter.WikiURL == "NULL") {
 		_, err = tx.ExecContext(ctx, `
 			UPDATE fighters SET 
@@ -297,7 +466,6 @@ func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, i
 		log.Printf("%s: Wiki URL updated to %s", fighter.Name, info.WikiURL)
 	}
 
-	// Update fighting location if available
 	if info.FightingOutOf != "" {
 		_, err = tx.ExecContext(ctx, `
 			UPDATE fighters SET 
@@ -312,7 +480,6 @@ func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, i
 		log.Printf("%s: Fighting location updated", fighter.Name)
 	}
 
-	// Commit transaction
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
@@ -320,12 +487,10 @@ func updateFighterInDatabase(ctx context.Context, db *sql.DB, fighter Fighter, i
 	return nil
 }
 
-// getAllFighters retrieves all fighters from the database
 func getAllFighters(db *sql.DB) ([]Fighter, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Query all fighters, prioritizing ones without win/loss methods
 	rows, err := db.QueryContext(ctx, `
 		SELECT 
 			id, name, COALESCE(wiki_url, ''), wins, losses, 
@@ -334,12 +499,9 @@ func getAllFighters(db *sql.DB) ([]Fighter, error) {
 			COALESCE(no_contests, 0), COALESCE(fighting_out_of, '')
 		FROM fighters
 		ORDER BY 
-			-- Prioritize fighters missing win/loss methods
 			CASE WHEN (wins > 0 AND (ko_wins + sub_wins + dec_wins) = 0) THEN 0 ELSE 1 END,
 			CASE WHEN (losses > 0 AND (loss_by_ko + loss_by_sub + loss_by_dec + loss_by_dq) = 0) THEN 0 ELSE 1 END,
-			-- Then prioritize fighters missing location info
 			CASE WHEN (fighting_out_of IS NULL OR fighting_out_of = '') THEN 0 ELSE 1 END,
-			-- Add some randomness for variety
 			RANDOM()
 	`)
 	if err != nil {
@@ -366,4 +528,301 @@ func getAllFighters(db *sql.DB) ([]Fighter, error) {
 	}
 
 	return fighters, nil
+}
+
+func (app *ScraperApp) getActiveFightersForWiki() ([]Fighter, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Query only active fighters
+	rows, err := app.db.QueryContext(ctx, `
+		SELECT 
+			id, name, COALESCE(wiki_url, ''), wins, losses, 
+			COALESCE(ko_wins, 0), COALESCE(sub_wins, 0), COALESCE(dec_wins, 0),
+			COALESCE(loss_by_ko, 0), COALESCE(loss_by_sub, 0), COALESCE(loss_by_dec, 0), COALESCE(loss_by_dq, 0),
+			COALESCE(no_contests, 0), COALESCE(fighting_out_of, '')
+		FROM fighters
+		WHERE status = 'Active'
+		ORDER BY 
+			CASE WHEN (wins > 0 AND (ko_wins + sub_wins + dec_wins) = 0) THEN 0 ELSE 1 END,
+			CASE WHEN (losses > 0 AND (loss_by_ko + loss_by_sub + loss_by_dec + loss_by_dq) = 0) THEN 0 ELSE 1 END,
+			CASE WHEN (fighting_out_of IS NULL OR fighting_out_of = '') THEN 0 ELSE 1 END,
+			RANDOM()
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("error querying active fighters: %v", err)
+	}
+	defer rows.Close()
+
+	var fighters []Fighter
+
+	for rows.Next() {
+		var f Fighter
+		if err := rows.Scan(
+			&f.ID, &f.Name, &f.WikiURL, &f.Wins, &f.Losses,
+			&f.KOWins, &f.SubWins, &f.DecWins,
+			&f.LossByKO, &f.LossBySub, &f.LossByDec, &f.LossByDQ,
+			&f.NoContests, &f.FightingOutOf); err != nil {
+			return nil, fmt.Errorf("error scanning fighter: %v", err)
+		}
+		fighters = append(fighters, f)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating fighters: %v", err)
+	}
+
+	app.logger.Printf("Found %d active fighters to process", len(fighters))
+	return fighters, nil
+}
+
+func (app *ScraperApp) runActiveWikiFighterScrape() {
+	startTime := time.Now()
+	app.logger.Println("Starting incremental wiki fighter data scrape for active fighters...")
+
+	fighters, err := app.getActiveFightersForWiki()
+	if err != nil {
+		app.logger.Fatalf("Error getting active fighters: %v", err)
+	}
+
+	if len(fighters) == 0 {
+		app.logger.Println("No active fighters found in database")
+		return
+	}
+
+	app.logger.Printf("Found %d active fighters to process", len(fighters))
+
+	maxConcurrency := 8
+	sem := make(chan struct{}, maxConcurrency)
+	var wg sync.WaitGroup
+
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 120*time.Minute)
+	defer dbCancel()
+
+	results := make(chan struct {
+		fighter Fighter
+		info    *scrapers.FighterExtraInfo
+		err     error
+	}, maxConcurrency)
+
+	go func() {
+		processedCount := 0
+		startTime := time.Now()
+		
+		for result := range results {
+			processedCount++
+			
+			if result.err != nil {
+				app.logger.Printf("%s: ❌ Failed - %v", result.fighter.Name, result.err)
+				continue
+			}
+
+			if result.info == nil {
+				app.logger.Printf("%s: ❌ No data found", result.fighter.Name)
+				continue
+			}
+
+			if err := updateFighterInDatabase(dbCtx, app.db, result.fighter, result.info); err != nil {
+				app.logger.Printf("Failed to update fighter %s: %v", result.fighter.Name, err)
+			} else {
+				app.logger.Printf("%s: ✅ Updated successfully", result.fighter.Name)
+			}
+			
+			elapsedTime := time.Since(startTime)
+			timePerFighter := elapsedTime / time.Duration(processedCount)
+			app.logger.Printf("Progress: %d/%d active fighters processed (~%v per fighter)", 
+				processedCount, len(fighters), timePerFighter.Round(time.Second))
+		}
+		
+		app.logger.Printf("🏁 Active fighter processing completed for %d fighters in %v", 
+			processedCount, time.Since(startTime).Round(time.Second))
+	}()
+
+	fighterScraper := scrapers.NewWikiFighterScraper(app.scraperConfig)
+
+	for _, fighter := range fighters {
+		wg.Add(1)
+		sem <- struct{}{}
+		
+		go func(f Fighter) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			
+			fighterCtx, fighterCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer fighterCancel()
+			
+			done := make(chan bool)
+			var info *scrapers.FighterExtraInfo
+			var scrapeErr error
+			
+			go func() {
+				info, scrapeErr = fighterScraper.ScrapeExtraInfo(f.Name, f.WikiURL, "", f.Wins, f.Losses)
+				select {
+				case <-fighterCtx.Done():
+				case done <- true:
+				}
+			}()
+			
+			select {
+			case <-done:
+				results <- struct {
+					fighter Fighter
+					info    *scrapers.FighterExtraInfo
+					err     error
+				}{fighter: f, info: info, err: scrapeErr}
+			case <-fighterCtx.Done():
+				app.logger.Printf("%s: ⚠️ Processing timed out after 30 seconds", f.Name)
+				results <- struct {
+					fighter Fighter
+					info    *scrapers.FighterExtraInfo
+					err     error
+				}{fighter: f, info: nil, err: fmt.Errorf("timeout")}
+			}
+		}(fighter)
+	}
+
+	wg.Wait()
+	close(results)
+	
+	app.logger.Printf("🏁 Active fighter wiki scrape completed in %v!", time.Since(startTime).Round(time.Second))
+}
+
+func (app *ScraperApp) getUpcomingEvents() ([]Event, error) {
+	query := `
+		SELECT id, name, event_date
+		FROM events
+		WHERE status = 'Upcoming'
+		ORDER BY event_date ASC
+	`
+	
+	rows, err := app.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query upcoming events: %w", err)
+	}
+	defer rows.Close()
+	
+	var events []Event
+	for rows.Next() {
+		var event Event
+		if err := rows.Scan(&event.ID, &event.Name, &event.Date); err != nil {
+			return nil, fmt.Errorf("failed to scan event row: %w", err)
+		}
+		
+		// Ensure the date is in UTC
+		event.Date = event.Date.UTC()
+		events = append(events, event)
+	}
+	
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating events: %w", err)
+	}
+	
+	app.logger.Printf("Found %d upcoming events", len(events))
+	return events, nil
+}
+
+func (app *ScraperApp) runFullWikiFighterScrape() {
+	startTime := time.Now()
+	app.logger.Println("Starting full wiki fighter data scrape...")
+
+	fighters, err := getAllFighters(app.db)
+	if err != nil {
+		app.logger.Fatalf("Error getting fighters: %v", err)
+	}
+
+	app.logger.Printf("Found %d fighters to process", len(fighters))
+
+	maxConcurrency := 8
+	sem := make(chan struct{}, maxConcurrency)
+	var wg sync.WaitGroup
+
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 120*time.Minute)
+	defer dbCancel()
+
+	results := make(chan struct {
+		fighter Fighter
+		info    *scrapers.FighterExtraInfo
+		err     error
+	}, maxConcurrency)
+
+	go func() {
+		processedCount := 0
+		startTime := time.Now()
+		
+		for result := range results {
+			processedCount++
+			
+			if result.err != nil {
+				app.logger.Printf("%s: ❌ Failed - %v", result.fighter.Name, result.err)
+				continue
+			}
+
+			if result.info == nil {
+				app.logger.Printf("%s: ❌ No data found", result.fighter.Name)
+				continue
+			}
+
+			if err := updateFighterInDatabase(dbCtx, app.db, result.fighter, result.info); err != nil {
+				app.logger.Printf("Failed to update fighter %s: %v", result.fighter.Name, err)
+			} else {
+				app.logger.Printf("%s: ✅ Updated successfully", result.fighter.Name)
+			}
+			
+			elapsedTime := time.Since(startTime)
+			timePerFighter := elapsedTime / time.Duration(processedCount)
+			app.logger.Printf("Progress: %d/%d fighters processed (~%v per fighter)", 
+				processedCount, len(fighters), timePerFighter.Round(time.Second))
+		}
+		
+		app.logger.Printf("🏁 Full processing completed for %d fighters in %v", 
+			processedCount, time.Since(startTime).Round(time.Second))
+	}()
+
+	fighterScraper := scrapers.NewWikiFighterScraper(app.scraperConfig)
+
+	for _, fighter := range fighters {
+		wg.Add(1)
+		sem <- struct{}{}
+		
+		go func(f Fighter) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			
+			fighterCtx, fighterCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer fighterCancel()
+			
+			done := make(chan bool)
+			var info *scrapers.FighterExtraInfo
+			var scrapeErr error
+			
+			go func() {
+				info, scrapeErr = fighterScraper.ScrapeExtraInfo(f.Name, f.WikiURL, "", f.Wins, f.Losses)
+				select {
+				case <-fighterCtx.Done():
+				case done <- true:
+				}
+			}()
+			
+			select {
+			case <-done:
+				results <- struct {
+					fighter Fighter
+					info    *scrapers.FighterExtraInfo
+					err     error
+				}{fighter: f, info: info, err: scrapeErr}
+			case <-fighterCtx.Done():
+				app.logger.Printf("%s: ⚠️ Processing timed out after 30 seconds", f.Name)
+				results <- struct {
+					fighter Fighter
+					info    *scrapers.FighterExtraInfo
+					err     error
+				}{fighter: f, info: nil, err: fmt.Errorf("timeout")}
+			}
+		}(fighter)
+	}
+
+	wg.Wait()
+	close(results)
+	
+	app.logger.Printf("🏁 Full wiki fighter scrape completed in %v!", time.Since(startTime).Round(time.Second))
 }

@@ -103,6 +103,8 @@ func (rl *RateLimiter) RateLimit(next http.Handler) http.Handler {
 }
 
 func RateLimitMiddleware(requestsPerMinute int) func(http.Handler) http.Handler {
-	limiter := NewRateLimiter(requestsPerMinute, time.Minute)
-	return limiter.RateLimit
+    limiter := NewRateLimiter(requestsPerMinute, time.Minute)
+    return func(next http.Handler) http.Handler {
+        return limiter.RateLimit(next)
+    }
 }

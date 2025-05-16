@@ -22,16 +22,22 @@ interface FilterOption {
   label: string;
 }
 
-// Get all fighters (unchanged)
+// Single query to get count and first 10 fighters
 const {
   data: allFighters,
   error,
   count,
 } = await supabase
   .from('fighters')
-  .select('*', { count: 'exact' })
-  .order('name', { ascending: true });
+  .select(
+    'id, name, weight_class, nationality, wins, losses, draws, rank, status, no_contests',
+    { count: 'exact' }
+  )
+  .order('name', { ascending: true })
+  .range(0, 9); // Get first 10 (0-9)
 
+// Get weight classes and nationalities from the first 10 fighters
+// We'll load more complete filter data later if needed
 const fightersList = (allFighters as Fighter[]) || [];
 const totalFighters = count || 0;
 
@@ -54,12 +60,13 @@ const weightClassOrderMap: Record<string, number> = {
   "Women's Featherweight": 12,
 };
 
-// Get unique weight classes (unchanged)
+// For now, just get unique values from the loaded fighters
+// This will be expanded as more fighters are loaded via API
 const weightClasses = Array.from(
   new Set(
     fightersList
-      .filter((fighter: Fighter) => fighter.weight_class)
-      .map((fighter: Fighter) => fighter.weight_class),
+      .filter((fighter) => fighter.weight_class)
+      .map((fighter) => fighter.weight_class),
   ),
 )
   .filter((wc): wc is string => Boolean(wc))
@@ -81,7 +88,6 @@ const weightClasses = Array.from(
     return a.localeCompare(b);
   });
 
-// Get unique nationalities (unchanged)
 const nationalities = [
   ...new Set(
     fightersList
@@ -326,13 +332,15 @@ const nationalityOptions: FilterOption[] = [
       document.getElementById('fighters-data').textContent,
     );
 
+    // Get the total count from the server-side rendered value
+    const totalFightersFromServer = parseInt(totalCountSpan.textContent);
+
     // Standardize status - treat "Not Fighting" as "Retired"
     allFighters.forEach(fighter => {
       if (fighter.status === 'Not Fighting') {
         fighter.status = 'Retired';
       }
     });
-
 
     let filteredFighters = [...allFighters];
     let visibleCount = parseInt(
@@ -411,7 +419,7 @@ const nationalityOptions: FilterOption[] = [
       });
     }
 
-    function applyFilters() {
+    function applyFilters(resetVisibleCount = true) {
       const status = statusFilter.value;
       const isChampion = championFilter.value === 'champion';
 
@@ -452,8 +460,11 @@ const nationalityOptions: FilterOption[] = [
         return true;
       });
 
-      // Reset visible count when filters change
-      visibleCount = 10;
+      // Only reset visible count when filters change, not when loading more
+      if (resetVisibleCount) {
+        visibleCount = 10;
+      }
+      
       loadMoreButton.setAttribute(
         'data-current-count',
         visibleCount.toString(),
@@ -612,16 +623,23 @@ const nationalityOptions: FilterOption[] = [
     }
 
     // Update the fighters display based on filters and current count
-    // Update the fighters display based on filters and current count
     function updateFightersDisplay() {
+      // Debug logs
+      console.log('updateFightersDisplay called');
+      console.log('allFighters.length:', allFighters.length);
+      console.log('filteredFighters.length:', filteredFighters.length);
+      console.log('visibleCount:', visibleCount);
+      
       // Clear current display
       fightersGrid.innerHTML = '';
 
       // Get fighters to display (respecting current visibility count)
       const displayFighters = filteredFighters.slice(0, visibleCount);
+      console.log('displayFighters.length:', displayFighters.length);
 
       // Add fighters to the grid
-      displayFighters.forEach(fighter => {
+      displayFighters.forEach((fighter, index) => {
+        console.log(`Adding fighter ${index + 1}: ${fighter.name}`);
         const fighterCard = document.createElement('a');
         fighterCard.href = `/fighters/${fighter.id}`;
         fighterCard.className = 'fighter-card';
@@ -684,13 +702,14 @@ const nationalityOptions: FilterOption[] = [
         fightersGrid.appendChild(fighterCard);
       });
 
-      // Rest of function remains the same...
       // Update counts and visibility of elements
       shownCountSpan.textContent = displayFighters.length.toString();
-      totalCountSpan.textContent = filteredFighters.length.toString();
-
-      // Show/hide filtered text
-      if (filteredFighters.length < allFighters.length) {
+      
+      // Show the actual total count from the server (don't overwrite it)
+      // Only show filtered text if we have filters applied
+      if (filteredFighters.length < allFighters.length || 
+          searchTerm || statusFilter.value || championFilter.value || 
+          selectedWeightClasses.size > 0 || selectedNationalities.size > 0) {
         filteredTextSpan.style.display = 'inline';
       } else {
         filteredTextSpan.style.display = 'none';
@@ -703,8 +722,10 @@ const nationalityOptions: FilterOption[] = [
       } else {
         noResultsDiv.style.display = 'none';
 
-        // Show/hide load more button
-        if (displayFighters.length < filteredFighters.length) {
+        // Show load more button if:
+        // 1. We have less than all loaded fighters visible
+        // 2. OR we haven't loaded all fighters from the server yet
+        if (displayFighters.length < filteredFighters.length || allFighters.length < totalFightersFromServer) {
           loadMoreButton.style.display = 'block';
           loadMoreButton.disabled = false;
           loadMoreButton.innerText = 'Load More Fighters';
@@ -712,21 +733,64 @@ const nationalityOptions: FilterOption[] = [
           loadMoreButton.style.display = 'none';
         }
       }
+      
+      console.log('Final UI state:', {
+        shownCount: shownCountSpan.textContent,
+        loadMoreVisible: loadMoreButton.style.display !== 'none'
+      });
     }
 
     if (loadMoreButton) {
-      loadMoreButton.addEventListener('click', () => {
+      loadMoreButton.addEventListener('click', async () => {
         loadMoreButton.innerText = 'Loading...';
         loadMoreButton.disabled = true;
 
-        visibleCount += 10;
-        loadMoreButton.setAttribute(
-          'data-current-count',
-          visibleCount.toString(),
-        );
-
-        // Update display
-        updateFightersDisplay();
+        try {
+          // Debug log
+          console.log('Loading more fighters, current count:', allFighters.length);
+          
+          // Fetch more fighters from the API
+          const response = await fetch(`/api/fighters?offset=${allFighters.length}&limit=10`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch fighters');
+          }
+          
+          const data = await response.json();
+          console.log('Received fighters:', data.fighters ? data.fighters.length : 0);
+          
+          if (data.fighters && data.fighters.length > 0) {
+            // Add new fighters to the existing list
+            allFighters.push(...data.fighters);
+            console.log('Total fighters now:', allFighters.length);
+            
+            // Standardize status for new fighters too
+            data.fighters.forEach(fighter => {
+              if (fighter.status === 'Not Fighting') {
+                fighter.status = 'Retired';
+              }
+            });
+            
+            // Increase visible count to show the new fighters
+            visibleCount += data.fighters.length;
+            console.log('New visibleCount:', visibleCount);
+            
+            // Reapply filters to include new fighters (don't reset visible count)
+            applyFilters(false);
+          } else {
+            // No more fighters to load
+            console.log('No more fighters to load');
+            loadMoreButton.style.display = 'none';
+          }
+        } catch (error) {
+          console.error('Error loading more fighters:', error);
+          loadMoreButton.innerText = 'Error - Try Again';
+          setTimeout(() => {
+            loadMoreButton.innerText = 'Load More Fighters';
+          }, 2000);
+        } finally {
+          loadMoreButton.disabled = false;
+        }
       });
     }
 
