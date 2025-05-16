@@ -30,7 +30,7 @@ type ScraperApp struct {
 }
 
 func main() {
-	fullScrapeFlag := flag.Bool("full", false, "Run a full scrape and reset the database")
+	fullScrapeFlag := flag.Bool("full", false, "Run a full scrape of all events without time limitation")
 	cronFlag := flag.Bool("cron", false, "Run as a cron job service")
 	flag.Parse()
 
@@ -115,11 +115,6 @@ func (app *ScraperApp) runFullScrape() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	app.logger.Println("Resetting database tables...")
-	if err := app.resetDatabase(ctx); err != nil {
-		app.logger.Fatalf("Failed to reset database: %v", err)
-	}
-
 	scraper := scrapers.NewUFCEventScraper(app.scraperConfig)
 	
 	app.logger.Println("Scraping all events from UFC.com...")
@@ -200,23 +195,6 @@ func (app *ScraperApp) runCronService() {
 	}
 	
 	app.logger.Println("Scraper service stopped gracefully")
-}
-
-func (app *ScraperApp) resetDatabase(ctx context.Context) error {
-	queries := []string{
-		"TRUNCATE TABLE fights CASCADE",
-		"TRUNCATE TABLE events CASCADE",
-		"TRUNCATE TABLE fighters CASCADE",
-		"TRUNCATE TABLE fighter_rankings CASCADE",
-	}
-	
-	for _, query := range queries {
-		if _, err := app.db.ExecContext(ctx, query); err != nil {
-			return fmt.Errorf("failed to execute query %s: %w", query, err)
-		}
-	}
-	
-	return nil
 }
 
 func (app *ScraperApp) saveEvents(ctx context.Context, events []*models.Event) {

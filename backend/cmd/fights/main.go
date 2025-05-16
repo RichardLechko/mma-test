@@ -15,6 +15,12 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
+
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"flag"
 )
 
 // EventInfo holds event information from the database
@@ -231,99 +237,42 @@ var manualFightersData = map[string]ManualFighterData{
 }
 
 func main() {
-    // Set up logging
-    log.Println("🚀 Starting Fight Scraper")
-    startTime := time.Now()
+	cronFlag := flag.Bool("cron", false, "Run as a timer service with schedules based on event dates")
+	fullFlag := flag.Bool("full", false, "Run full fight scrape for all events with UFC URLs")
+	flag.Parse()
 
-    // Load environment variables
-    if err := godotenv.Load(); err != nil {
-        // Silently continue if .env not found
-    }
+	log.Println("🚀 Starting Fight Scraper")
+	startTime := time.Now()
 
-    // Load configuration
-    if err := config.LoadConfig("config/config.json"); err != nil {
-        log.Fatalf("Failed to load configuration: %v", err)
-    }
+	if err := godotenv.Load(); err != nil {
+		// Silently continue if .env not found
+	}
 
-    // Connect to database
-    db, err := connectToDatabase()
-    if err != nil {
-        log.Fatalf("Database connection error: %v", err)
-    }
-    defer db.Close()
+	if err := config.LoadConfig("config/config.json"); err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
-    // Get events with UFC URLs from the database
-    events, err := getEventsWithUFCURLs(db)
-    if err != nil {
-        log.Fatalf("Error fetching events: %v", err)
-    }
+	db, err := connectToDatabase()
+	if err != nil {
+		log.Fatalf("Database connection error: %v", err)
+	}
+	defer db.Close()
 
-    log.Printf("Found %d events with UFC URLs to process", len(events))
-
-    // Create scraper with configuration
-    scraperConfig := &scrapers.ScraperConfig{
-        UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    }
-
-    // Create database context with longer timeout for the entire operation
-    dbCtx, dbCancel := context.WithTimeout(context.Background(), 3*time.Hour)
-    defer dbCancel()
-
-    // Create a results channel for sequential processing
-    resultChan := make(chan FightResult, 10)
-
-    // Start result processor
-    go processResults(resultChan)
-
-    // Create a reusable scraper
-    ufcScraper := createAndManageScraper(scraperConfig)
-    defer ufcScraper.Close()
-
-    // Stats tracking
-    totalFightsSaved := 0
-    totalEventsProcessed := 0
-    failedEvents := 0
-
-    // Process events sequentially
-    for i, event := range events {
-        log.Printf("Processing event %d/%d: %s", i+1, len(events), event.Name)
-
-        // Restart the scraper every 50 events
-        if i > 0 && i%50 == 0 {
-            log.Printf("🔄 Restarting ChromeDriver after %d events", i)
-            ufcScraper.Close()
-            time.Sleep(5 * time.Second)
-            ufcScraper = createAndManageScraper(scraperConfig)
-        }
-
-        // Create context with timeout for this event
-        eventCtx, eventCancel := context.WithTimeout(dbCtx, 5*time.Minute)
-
-        // Process a single event with retry mechanism
-        fightsSaved, err := processEventWithRetry(eventCtx, db, ufcScraper, event, resultChan, 3)
-        eventCancel()
-
-        if err != nil {
-            log.Printf("❌ Failed to process event '%s' after retries: %v", event.Name, err)
-            failedEvents++
-        }
-
-        // Update stats
-        totalEventsProcessed++
-        totalFightsSaved += fightsSaved
-
-        // Add a delay between events
-        time.Sleep(3 * time.Second)
-    }
-
-    // Close the result channel after all events are processed
-    close(resultChan)
-
-    // Wait a moment for the result processor to finish
-    time.Sleep(100 * time.Millisecond)
-
-    log.Printf("🏁 Scraping completed in %v! Processed %d/%d events, saved %d fights total. Failed events: %d",
-        time.Since(startTime).Round(time.Second), totalEventsProcessed, len(events), totalFightsSaved, failedEvents)
+	if *cronFlag {
+		log.Println("Starting event-based timer service for fight updates")
+		runEventBasedTimerService(db)
+		return
+	} else if *fullFlag {
+		log.Println("Running full fight scrape for all events")
+		runFullFightScrape(db)
+		log.Printf("🏁 Full fight scraping completed in %v!", time.Since(startTime).Round(time.Second))
+		return
+	} else {
+		log.Println("Running incremental fight scrape for future and recent events")
+		runIncrementalFightScrape(db)
+		log.Printf("🏁 Fight scraping completed in %v!", time.Since(startTime).Round(time.Second))
+		return
+	}
 }
 
 // connectToDatabase establishes a connection to the database
@@ -973,4 +922,305 @@ func processEventWithRetry(ctx context.Context, db *sql.DB, scraper *scrapers.UF
 	}
 
 	return fightsSaved, lastErr
+}
+
+func runIncrementalFightScrape(db *sql.DB) {
+	// Get events from 1 month ago and into the future
+	events, err := getFutureAndRecentEventsWithUFCURLs(db)
+	if err != nil {
+		log.Fatalf("Error fetching events: %v", err)
+	}
+
+	log.Printf("Found %d future and recent events with UFC URLs to process", len(events))
+
+	// Create scraper with configuration
+	scraperConfig := &scrapers.ScraperConfig{
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+	}
+
+	// Create database context with longer timeout for the entire operation
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 3*time.Hour)
+	defer dbCancel()
+
+	// Create a results channel for sequential processing
+	resultChan := make(chan FightResult, 10)
+
+	// Start result processor
+	go processResults(resultChan)
+
+	// Create a reusable scraper
+	ufcScraper := createAndManageScraper(scraperConfig)
+	defer ufcScraper.Close()
+
+	// Stats tracking
+	totalFightsSaved := 0
+	totalEventsProcessed := 0
+	failedEvents := 0
+
+	// Process events sequentially
+	for i, event := range events {
+		log.Printf("Processing event %d/%d: %s", i+1, len(events), event.Name)
+
+		// Restart the scraper every 50 events
+		if i > 0 && i%50 == 0 {
+			log.Printf("🔄 Restarting ChromeDriver after %d events", i)
+			ufcScraper.Close()
+			time.Sleep(5 * time.Second)
+			ufcScraper = createAndManageScraper(scraperConfig)
+		}
+
+		// Create context with timeout for this event
+		eventCtx, eventCancel := context.WithTimeout(dbCtx, 5*time.Minute)
+
+		// Process a single event with retry mechanism
+		fightsSaved, err := processEventWithRetry(eventCtx, db, ufcScraper, event, resultChan, 3)
+		eventCancel()
+
+		if err != nil {
+			log.Printf("❌ Failed to process event '%s' after retries: %v", event.Name, err)
+			failedEvents++
+		}
+
+		// Update stats
+		totalEventsProcessed++
+		totalFightsSaved += fightsSaved
+
+		// Add a delay between events
+		time.Sleep(3 * time.Second)
+	}
+
+	// Close the result channel after all events are processed
+	close(resultChan)
+
+	// Wait a moment for the result processor to finish
+	time.Sleep(100 * time.Millisecond)
+
+	log.Printf("🏁 Incremental fight scraping completed! Processed %d/%d events, saved %d fights total. Failed events: %d",
+		totalEventsProcessed, len(events), totalFightsSaved, failedEvents)
+}
+
+func getFutureAndRecentEventsWithUFCURLs(db *sql.DB) ([]EventInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Get events from 1 month ago and into the future
+	oneMonthAgo := time.Now().UTC().AddDate(0, -1, 0)
+	
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, name, event_date, ufc_url 
+		FROM events 
+		WHERE ufc_url IS NOT NULL AND ufc_url != '' 
+		AND event_date >= $1
+		ORDER BY event_date DESC`, oneMonthAgo)
+	if err != nil {
+		return nil, fmt.Errorf("error querying future and recent events: %w", err)
+	}
+	defer rows.Close()
+
+	var events []EventInfo
+
+	for rows.Next() {
+		var event EventInfo
+		if err := rows.Scan(&event.ID, &event.Name, &event.EventDate, &event.UFCURL); err != nil {
+			continue
+		}
+		events = append(events, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating event rows: %w", err)
+	}
+
+	log.Printf("Found %d events from 1 month ago to future", len(events))
+	return events, nil
+}
+
+func runEventBasedTimerService(db *sql.DB) {
+	var timers []*time.Timer
+	var timerMutex sync.Mutex
+
+	log.Println("Starting event-based timer service for fight updates")
+
+	// Get all upcoming events
+	upcomingEvents, err := getUpcomingEventsWithUFCURLs(db)
+	if err != nil {
+		log.Printf("Error getting upcoming events: %v", err)
+		return
+	}
+
+	scheduledCount := 0
+	now := time.Now().UTC()
+	log.Printf("Current time: %s UTC", now.Format(time.RFC3339))
+
+	for _, event := range upcomingEvents {
+		// Schedule fight update exactly 24 hours after the event
+		updateTime := event.EventDate.Add(24 * time.Hour)
+		
+		// Skip events that would be scheduled in the past
+		if updateTime.Before(now) {
+			log.Printf("Skipping past event: %s (event date: %s UTC, update time: %s UTC)", 
+				event.Name, event.EventDate.Format(time.RFC3339), updateTime.Format(time.RFC3339))
+			continue
+		}
+
+		duration := updateTime.Sub(now)
+		
+		// Capture values for the closure
+		eventName := event.Name
+		eventDate := event.EventDate
+		
+		timer := time.AfterFunc(duration, func() {
+			log.Printf("Running fight update for event: %s (event date: %s UTC)", 
+				eventName, eventDate.Format(time.RFC3339))
+			// Run the incremental fight scrape
+			runIncrementalFightScrape(db)
+		})
+		
+		timerMutex.Lock()
+		timers = append(timers, timer)
+		timerMutex.Unlock()
+
+		scheduledCount++
+		log.Printf("Scheduled fight update for %s in %s at %s UTC (24h after event: %s UTC)", 
+			event.Name, 
+			duration.Round(time.Second).String(), 
+			updateTime.Format(time.RFC3339), 
+			event.EventDate.Format(time.RFC3339))
+	}
+
+	log.Printf("Successfully scheduled %d fight updates for upcoming events", scheduledCount)
+	log.Println("Timer scheduler started")
+	log.Println("Fight updates will run exactly 24 hours after each event")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down fight scraper service...")
+	
+	timerMutex.Lock()
+	for _, timer := range timers {
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
+	}
+	timerMutex.Unlock()
+	
+	if err := db.Close(); err != nil {
+		log.Printf("Error closing database connection: %v", err)
+	}
+	
+	log.Println("Fight scraper service stopped gracefully")
+}
+
+// Add this new function to get upcoming events
+func getUpcomingEventsWithUFCURLs(db *sql.DB) ([]EventInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, name, event_date, ufc_url 
+		FROM events 
+		WHERE ufc_url IS NOT NULL AND ufc_url != '' 
+		AND status = 'Upcoming'
+		ORDER BY event_date ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("error querying upcoming events: %w", err)
+	}
+	defer rows.Close()
+
+	var events []EventInfo
+
+	for rows.Next() {
+		var event EventInfo
+		if err := rows.Scan(&event.ID, &event.Name, &event.EventDate, &event.UFCURL); err != nil {
+			continue
+		}
+		events = append(events, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating upcoming event rows: %w", err)
+	}
+
+	log.Printf("Found %d upcoming events with UFC URLs", len(events))
+	return events, nil
+}
+
+func runFullFightScrape(db *sql.DB) {
+	// Get ALL events with UFC URLs from the database (original functionality)
+	events, err := getEventsWithUFCURLs(db)
+	if err != nil {
+		log.Fatalf("Error fetching events: %v", err)
+	}
+
+	log.Printf("Found %d events with UFC URLs to process", len(events))
+
+	// Create scraper with configuration
+	scraperConfig := &scrapers.ScraperConfig{
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+	}
+
+	// Create database context with longer timeout for the entire operation
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 3*time.Hour)
+	defer dbCancel()
+
+	// Create a results channel for sequential processing
+	resultChan := make(chan FightResult, 10)
+
+	// Start result processor
+	go processResults(resultChan)
+
+	// Create a reusable scraper
+	ufcScraper := createAndManageScraper(scraperConfig)
+	defer ufcScraper.Close()
+
+	// Stats tracking
+	totalFightsSaved := 0
+	totalEventsProcessed := 0
+	failedEvents := 0
+
+	// Process events sequentially
+	for i, event := range events {
+		log.Printf("Processing event %d/%d: %s", i+1, len(events), event.Name)
+
+		// Restart the scraper every 50 events
+		if i > 0 && i%50 == 0 {
+			log.Printf("🔄 Restarting ChromeDriver after %d events", i)
+			ufcScraper.Close()
+			time.Sleep(5 * time.Second)
+			ufcScraper = createAndManageScraper(scraperConfig)
+		}
+
+		// Create context with timeout for this event
+		eventCtx, eventCancel := context.WithTimeout(dbCtx, 5*time.Minute)
+
+		// Process a single event with retry mechanism
+		fightsSaved, err := processEventWithRetry(eventCtx, db, ufcScraper, event, resultChan, 3)
+		eventCancel()
+
+		if err != nil {
+			log.Printf("❌ Failed to process event '%s' after retries: %v", event.Name, err)
+			failedEvents++
+		}
+
+		// Update stats
+		totalEventsProcessed++
+		totalFightsSaved += fightsSaved
+
+		// Add a delay between events
+		time.Sleep(3 * time.Second)
+	}
+
+	// Close the result channel after all events are processed
+	close(resultChan)
+
+	// Wait a moment for the result processor to finish
+	time.Sleep(100 * time.Millisecond)
+
+	log.Printf("🏁 Full fight scraping completed! Processed %d/%d events, saved %d fights total. Failed events: %d",
+		totalEventsProcessed, len(events), totalFightsSaved, failedEvents)
 }

@@ -51,7 +51,7 @@ func main() {
     // Create the event handler with the event service
     eventHandler := handlers.NewEventHandler(eventService)
 
-    router := setupRouter(cfg, eventHandler)
+    router := setupRouter(eventHandler)
 
     server := &http.Server{
         Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
@@ -68,30 +68,39 @@ func main() {
     }
 }
 
-func setupRouter(config *config.Config, eventHandler *handlers.EventHandler) *mux.Router {
+func setupRouter(eventHandler *handlers.EventHandler) *mux.Router {
     r := mux.NewRouter()
-
+   
+    // Add the new security middleware first
+    r.Use(middleware.SecurityHeaders)
+    r.Use(middleware.RateLimitMiddleware(60)) // 60 requests per minute
+   
+    // Your existing middleware
     r.Use(middleware.PanicRecovery)
     r.Use(middleware.RequestLogger)
     r.Use(middleware.CORS(middleware.CORSConfig{
         AllowedOrigins: []string{"http://localhost:3000"},
         MaxAge:         300,
     }))
-
+    
     r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusOK)
         fmt.Fprintln(w, "OK")
     }).Methods("GET")
-
-    api := r.PathPrefix("/api/v1").Subrouter()
-
     
+    api := r.PathPrefix("/api/v1").Subrouter()
+   
+    // Your existing event routes
     api.HandleFunc("/events", eventHandler.GetEvents).Methods("GET")
     api.HandleFunc("/events/{id}", eventHandler.GetEvent).Methods("GET")
     api.HandleFunc("/events", eventHandler.CreateEvent).Methods("POST")
     api.HandleFunc("/events/{id}", eventHandler.UpdateEvent).Methods("PUT")
     api.HandleFunc("/events/{id}", eventHandler.DeleteEvent).Methods("DELETE")
-
+   
+    // Add the new fighter search endpoint with validation
+    api.Handle("/fighters/search", middleware.ValidateFighterSearch(
+        http.HandlerFunc(handlers.SearchFighters))).Methods("GET")
+   
     return r
 }
 
