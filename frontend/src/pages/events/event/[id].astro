@@ -186,33 +186,32 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                     {eventData.city}, {eventData.country}
                   </span>
                 )}
-                {/* Add attendance information if available */}
-                {eventData.attendance && isEventCompleted && (
-                  <span class="attendance">
-                    <span class="attendance-icon">👥</span>
-                    <span class="attendance-count">
-                      {(() => {
-                        // First convert to string to handle any unexpected types
-                        const attendanceStr = String(eventData.attendance);
-
-                        // Extract all numeric digits from the string
-                        const numericValue = attendanceStr.replace(
-                          /[^\d]/g,
-                          '',
-                        );
-
-                        // Parse as integer and format with commas
-                        const formattedAttendance = numericValue
-                          ? new Intl.NumberFormat().format(
-                              parseInt(numericValue),
-                            )
-                          : attendanceStr;
-
-                        return `${formattedAttendance} fans`;
-                      })()}
+                {eventData.attendance &&
+                  isEventCompleted &&
+                  parseInt(String(eventData.attendance).replace(/[^\d]/g, '')) >
+                    0 && (
+                    <span class="attendance">
+                      <span class="attendance-icon">👥</span>
+                      <span class="attendance-count">
+                        {(() => {
+                          // First convert to string to handle any unexpected types
+                          const attendanceStr = String(eventData.attendance);
+                          // Extract all numeric digits from the string
+                          const numericValue = attendanceStr.replace(
+                            /[^\d]/g,
+                            '',
+                          );
+                          // Parse as integer and format with commas
+                          const formattedAttendance = numericValue
+                            ? new Intl.NumberFormat().format(
+                                parseInt(numericValue),
+                              )
+                            : attendanceStr;
+                          return `${formattedAttendance} fans`;
+                        })()}
+                      </span>
                     </span>
-                  </span>
-                )}
+                  )}
               </div>
             </div>
 

@@ -129,6 +129,11 @@
         transform: scale(1.1);
         box-shadow: 0 0 10px rgba($primary-color, 0.3);
       }
+      
+      .rankings-fighter-flag {
+        transform: scale(1.2);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
     }
 
     &.rankings-champion {
@@ -180,6 +185,12 @@
       flex-direction: column;
       gap: $spacing-xs;
       transition: transform 0.3s ease;
+      
+      .rankings-fighter-header {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+      }
 
       .rankings-fighter-name {
         font-size: $font-size-md;
@@ -217,7 +228,111 @@
       font-size: $font-size-sm;
       transition: all 0.3s ease;
     }
+    
+    .rankings-fighter-flag {
+      width: 24px;
+      height: 16px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      
+      .rankings-flag-code {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    }
   }
+}
+
+.rankings-fighter-flag {
+  &[data-country="indonesia"] { background-image: url("https://flagcdn.com/w80/id.png"); }
+  &[data-country="italy"] { background-image: url("https://flagcdn.com/w80/it.png"); }
+  &[data-country="venezuela"] { background-image: url("https://flagcdn.com/w80/ve.png"); }
+  &[data-country="uruguay"] { background-image: url("https://flagcdn.com/w80/uy.png"); }
+  &[data-country="cameroon"] { background-image: url("https://flagcdn.com/w80/cm.png"); }
+  &[data-country="sweden"] { background-image: url("https://flagcdn.com/w80/se.png"); }
+  &[data-country="united-kingdom"] { background-image: url("https://flagcdn.com/w80/gb.png"); }
+  &[data-country="jordan"] { background-image: url("https://flagcdn.com/w80/jo.png"); }
+  &[data-country="germany"] { background-image: url("https://flagcdn.com/w80/de.png"); }
+  &[data-country="ireland"] { background-image: url("https://flagcdn.com/w80/ie.png"); }
+  &[data-country="singapore"] { background-image: url("https://flagcdn.com/w80/sg.png"); }
+  &[data-country="canada"] { background-image: url("https://flagcdn.com/w80/ca.png"); }
+  &[data-country="uzbekistan"] { background-image: url("https://flagcdn.com/w80/uz.png"); }
+  &[data-country="portugal"] { background-image: url("https://flagcdn.com/w80/pt.png"); }
+  &[data-country="south-korea"] { background-image: url("https://flagcdn.com/w80/kr.png"); }
+  &[data-country="finland"] { background-image: url("https://flagcdn.com/w80/fi.png"); }
+  &[data-country="colombia"] { background-image: url("https://flagcdn.com/w80/co.png"); }
+  &[data-country="albania"] { background-image: url("https://flagcdn.com/w80/al.png"); }
+  &[data-country="wales"] { background-image: url("https://flagcdn.com/w80/gb-wls.png"); }
+  &[data-country="ukraine"] { background-image: url("https://flagcdn.com/w80/ua.png"); }
+  &[data-country="argentina"] { background-image: url("https://flagcdn.com/w80/ar.png"); }
+  &[data-country="england"] { background-image: url("https://flagcdn.com/w80/gb-eng.png"); }
+  &[data-country="azerbaijan"] { background-image: url("https://flagcdn.com/w80/az.png"); }
+  &[data-country="greece"] { background-image: url("https://flagcdn.com/w80/gr.png"); }
+  &[data-country="kyrgyzstan"] { background-image: url("https://flagcdn.com/w80/kg.png"); }
+  &[data-country="india"] { background-image: url("https://flagcdn.com/w80/in.png"); }
+  &[data-country="chile"] { background-image: url("https://flagcdn.com/w80/cl.png"); }
+  &[data-country="france"] { background-image: url("https://flagcdn.com/w80/fr.png"); }
+  &[data-country="slovakia"] { background-image: url("https://flagcdn.com/w80/sk.png"); }
+  &[data-country="suriname"] { background-image: url("https://flagcdn.com/w80/sr.png"); }
+  &[data-country="south-africa"] { background-image: url("https://flagcdn.com/w80/za.png"); }
+  &[data-country="peru"] { background-image: url("https://flagcdn.com/w80/pe.png"); }
+  &[data-country="kazakhstan"] { background-image: url("https://flagcdn.com/w80/kz.png"); }
+  &[data-country="iceland"] { background-image: url("https://flagcdn.com/w80/is.png"); }
+  &[data-country="hong-kong"] { background-image: url("https://flagcdn.com/w80/hk.png"); }
+  &[data-country="japan"] { background-image: url("https://flagcdn.com/w80/jp.png"); }
+  &[data-country="denmark"] { background-image: url("https://flagcdn.com/w80/dk.png"); }
+  &[data-country="philippines"] { background-image: url("https://flagcdn.com/w80/ph.png"); }
+  &[data-country="mongolia"] { background-image: url("https://flagcdn.com/w80/mn.png"); }
+  &[data-country="united-states"] { background-image: url("https://flagcdn.com/w80/us.png"); }
+  &[data-country="switzerland"] { background-image: url("https://flagcdn.com/w80/ch.png"); }
+  &[data-country="ecuador"] { background-image: url("https://flagcdn.com/w80/ec.png"); }
+  &[data-country="new-zealand"] { background-image: url("https://flagcdn.com/w80/nz.png"); }
+  &[data-country="tajikistan"] { background-image: url("https://flagcdn.com/w80/tj.png"); }
+  &[data-country="hungary"] { background-image: url("https://flagcdn.com/w80/hu.png"); }
+  &[data-country="guam"] { background-image: url("https://flagcdn.com/w80/gu.png"); }
+  &[data-country="russia"] { background-image: url("https://flagcdn.com/w80/ru.png"); }
+  &[data-country="china"] { background-image: url("https://flagcdn.com/w80/cn.png"); }
+  &[data-country="norway"] { background-image: url("https://flagcdn.com/w80/no.png"); }
+  &[data-country="armenia"] { background-image: url("https://flagcdn.com/w80/am.png"); }
+  &[data-country="scotland"] { background-image: url("https://flagcdn.com/w80/gb-sct.png"); }
+  &[data-country="netherlands"] { background-image: url("https://flagcdn.com/w80/nl.png"); }
+  &[data-country="romania"] { background-image: url("https://flagcdn.com/w80/ro.png"); }
+  &[data-country="paraguay"] { background-image: url("https://flagcdn.com/w80/py.png"); }
+  &[data-country="brazil"] { background-image: url("https://flagcdn.com/w80/br.png"); }
+  &[data-country="austria"] { background-image: url("https://flagcdn.com/w80/at.png"); }
+  &[data-country="australia"] { background-image: url("https://flagcdn.com/w80/au.png"); }
+  &[data-country="serbia"] { background-image: url("https://flagcdn.com/w80/rs.png"); }
+  &[data-country="bolivia"] { background-image: url("https://flagcdn.com/w80/bo.png"); }
+  &[data-country="bahrain"] { background-image: url("https://flagcdn.com/w80/bh.png"); }
+  &[data-country="panama"] { background-image: url("https://flagcdn.com/w80/pa.png"); }
+  &[data-country="lithuania"] { background-image: url("https://flagcdn.com/w80/lt.png"); }
+  &[data-country="spain"] { background-image: url("https://flagcdn.com/w80/es.png"); }
+  &[data-country="bulgaria"] { background-image: url("https://flagcdn.com/w80/bg.png"); }
+  &[data-country="croatia"] { background-image: url("https://flagcdn.com/w80/hr.png"); }
+  &[data-country="united-arab-emirates"] { background-image: url("https://flagcdn.com/w80/ae.png"); }
+  &[data-country="georgia"] { background-image: url("https://flagcdn.com/w80/ge.png"); }
+  &[data-country="morocco"] { background-image: url("https://flagcdn.com/w80/ma.png"); }
+  &[data-country="belgium"] { background-image: url("https://flagcdn.com/w80/be.png"); }
+  &[data-country="moldova"] { background-image: url("https://flagcdn.com/w80/md.png"); }
+  &[data-country="türkiye"] { background-image: url("https://flagcdn.com/w80/tr.png"); }
+  &[data-country="mexico"] { background-image: url("https://flagcdn.com/w80/mx.png"); }
+  &[data-country="taiwan"] { background-image: url("https://flagcdn.com/w80/tw.png"); }
+  &[data-country="poland"] { background-image: url("https://flagcdn.com/w80/pl.png"); }
+  &[data-country="democratic-republic-of-the-congo"] { background-image: url("https://flagcdn.com/w80/cd.png"); }
+  &[data-country="costa-rica"] { background-image: url("https://flagcdn.com/w80/cr.png"); }
+  &[data-country="thailand"] { background-image: url("https://flagcdn.com/w80/th.png"); }
+  &[data-country="czechia"] { background-image: url("https://flagcdn.com/w80/cz.png"); }
 }
 
 /* Media Queries for Rankings Page - With Dropdown for Mobile */
@@ -262,6 +377,11 @@
       .rankings-fighter-rank {
         padding: $spacing-xs * 0.7 $spacing-xs;
         font-size: $font-size-xs;
+      }
+      
+      .rankings-fighter-flag {
+        width: 20px;
+        height: 14px;
       }
     }
     
@@ -323,23 +443,6 @@
         letter-spacing: 0.5px;
         background-color: rgba($background-dark, 0.9);
         
-        /* Gradient border effect */
-        position: relative;
-        z-index: 1;
-        
-        &::before {
-          content: '';
-          position: absolute;
-          top: -2px;
-          left: -2px;
-          right: -2px;
-          bottom: -2px;
-          background: linear-gradient(135deg, $primary-color, $secondary-color);
-          z-index: -1;
-          border-radius: $border-radius-sm;
-          opacity: 0.5;
-        }
-        
         &:focus {
           outline: none;
           border-color: $primary-color;
@@ -379,6 +482,11 @@
           transform: translateX($spacing-xs * 0.7);
         }
       }
+      
+      .rankings-fighter-flag {
+        width: 18px;
+        height: 12px;
+      }
     }
   }
 }
@@ -391,10 +499,6 @@
       background-size: 16px;
       background-position: right 10px center;
       letter-spacing: 0.3px;
-      
-      &::before {
-        opacity: 0.4;
-      }
     }
     
     .rankings-fighter-card {
@@ -433,6 +537,11 @@
         padding: 3px 6px;
         font-size: 10px;
       }
+      
+      .rankings-fighter-flag {
+        width: 16px;
+        height: 11px;
+      }
     }
   }
 }
@@ -465,6 +574,11 @@
           @include truncate;
           max-width: 100%;
         }
+      }
+      
+      .rankings-fighter-flag {
+        width: 14px;
+        height: 10px;
       }
     }
   }
