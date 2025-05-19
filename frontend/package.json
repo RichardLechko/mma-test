@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "": "file:",
+    "@astrojs/vercel": "^8.1.4",
     "@supabase/supabase-js": "^2.49.1",
     "astro": "^5.5.4"
   },

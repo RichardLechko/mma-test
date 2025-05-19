@@ -1,5 +1,5 @@
-@import '../base/variables';
-@import '../base/mixins';
+@use '../base/variables' as *;
+@use '../base/mixins' as *;
 
 .fighter-page {
   max-width: 900px;
@@ -38,6 +38,9 @@
         font-size: $font-size-md;
         margin: 0 0 $spacing-sm 0;
         opacity: 0.9;
+        color: $text-primary;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        font-weight: 500;
       }
 
       .fighter-weight-class {
@@ -99,7 +102,7 @@
           padding: $spacing-sm;
           border-radius: $border-radius-sm;
 
-          /* Make height consistent with content */
+      
           height: fit-content;
 
           .stat-label {
@@ -223,7 +226,7 @@
             grid-template-columns: repeat(3, 1fr);
             gap: $spacing-sm;
 
-            /* When DQ is present (4 items), use 2x2 grid */
+      
             &.has-four-methods,
             &:has(.method-item:nth-child(4)) {
               grid-template-columns: repeat(2, 1fr);
@@ -297,6 +300,27 @@
         height: 100%;
         background: #ffc107;
       }
+
+      &.title-fight::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: #dc143c;
+      }
+      
+      
+      &.main-event.title-fight::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(to bottom, #ffc107, #dc143c);
+      }
   
       &.result-win::after {
         content: '';
@@ -337,6 +361,47 @@
         height: 100%;
         background: #64748b;
       }
+      
+      
+      &.result-canceled {
+        &::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 4px;
+          height: 100%;
+          background: #ff6b6b;
+        }
+        
+        opacity: 0.75;
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(
+          to right, 
+          rgba(255, 107, 107, 0.05), 
+          rgba(20, 24, 32, 0.9)
+        );
+        
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: repeating-linear-gradient(
+            45deg,
+            rgba(255, 0, 0, 0.05),
+            rgba(255, 0, 0, 0.05) 10px,
+            rgba(0, 0, 0, 0) 10px,
+            rgba(0, 0, 0, 0) 20px
+          );
+          z-index: 0;
+          pointer-events: none;
+        }
+      }
     }
   
     .fight-date {
@@ -368,6 +433,26 @@
     .main-event-badge {
       background-color: rgba(251, 191, 36, 0.2);
       color: #fbbf24;
+      font-size: 0.85rem;
+      padding: 2px $spacing-xs;
+      border-radius: $border-radius-sm;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .title-fight-badge {
+      background-color: rgba(220, 20, 60, 0.2);
+      color: #dc143c;
+      font-size: 0.85rem;
+      padding: 2px $spacing-xs;
+      border-radius: $border-radius-sm;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .canceled-badge {
+      background-color: rgba(255, 107, 107, 0.2);
+      color: #ff6b6b;
       font-size: 0.85rem;
       padding: 2px $spacing-xs;
       border-radius: $border-radius-sm;
@@ -425,6 +510,18 @@
           &:hover {
             color: #38bdf8;
           }
+        }
+        
+ 
+        &.canceled .fighter-link {
+          text-decoration: line-through;
+          text-decoration-color: rgba(255, 107, 107, 0.6);
+          text-decoration-thickness: 2px;
+          opacity: 0.8;
+        }
+        
+        &.canceled:hover .fighter-link {
+          text-decoration: none;
         }
       }
   
@@ -504,6 +601,11 @@
       background-color: rgba(100, 116, 139, 0.2);
       color: #64748b;
     }
+    
+    .result-badge.canceled {
+      background-color: rgba(255, 107, 107, 0.2);
+      color: #ff6b6b;
+    }
   
     .result-method {
       text-align: center;
@@ -511,6 +613,12 @@
       color: #cbd5e1;
       padding: $spacing-sm 0;
       margin-top: $spacing-sm;
+      
+      &.canceled {
+        color: #ff6b6b;
+        font-weight: bold;
+        font-style: italic;
+      }
     }
   
     .no-fights {
@@ -618,4 +726,15 @@
   border-radius: var(--border-radius-sm);
   text-transform: uppercase;
   margin-right: 5px;
+}
+
+@media (max-width: 640px) {
+  .fighter-header {
+    .fighter-info {
+      .fighter-nickname {
+        font-size: $font-size-sm;
+        margin-bottom: $spacing-xs;
+      }
+    }
+  }
 }

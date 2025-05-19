@@ -1,11 +1,49 @@
 <nav class="navbar">
   <div class="navbar-container">
     <a href="/" class="navbar-logo">MMA Scheduler</a>
-    <div class="navbar-links">
-      <a href="/" class="navbar-link">Home</a>
-      <a href="/events" class="navbar-link">Events</a>
-      <a href="/fighters" class="navbar-link">Fighters</a>
-      <a href="/rankings" class="navbar-link">Rankings</a>
+   
+    <div class="navbar-toggle" id="navbar-toggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+   
+    <div class="navbar-links" id="navbar-links" style="z-index: 200;">
+      <!-- Make links have higher z-index than overlay -->
+      <a href="/" class="navbar-link" style="position: relative; z-index: 200;">Home</a>
+      <a href="/events" class="navbar-link" style="position: relative; z-index: 200;">Events</a>
+      <a href="/fighters" class="navbar-link" style="position: relative; z-index: 200;">Fighters</a>
+      <a href="/rankings" class="navbar-link" style="position: relative; z-index: 200;">Rankings</a>
     </div>
   </div>
+ 
+  <div class="navbar-overlay" id="navbar-overlay" style="z-index: 150;"></div>
 </nav>
+
+<script>
+  // Toggle functionality
+  const toggle = document.getElementById('navbar-toggle');
+  const menu = document.getElementById('navbar-links');
+  const overlay = document.getElementById('navbar-overlay');
+ 
+  if (toggle && menu && overlay) {
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('active');
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+      document.body.classList.toggle('sidebar-open');
+    });
+   
+    overlay.addEventListener('click', () => {
+      toggle.classList.toggle('active');
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+      document.body.classList.toggle('sidebar-open');
+    });
+  }
+  
+  // Log clicks for debugging
+  document.addEventListener('click', (e) => {
+    console.log('Document click:', e.target);
+  });
+</script>

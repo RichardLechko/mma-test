@@ -1,4 +1,5 @@
-// UFC Colors
+@use 'sass:color';
+
 $primary-color: #ae0001;
 $secondary-color: #740001;
 $background-dark: #1a1a1a;
@@ -7,24 +8,20 @@ $text-primary: white;
 $text-secondary: #ccc;
 $text-tertiary: #aaa;
 
-// Breakpoints
-$breakpoint-mobile: 600px;
-$breakpoint-tablet: 900px;
+$breakpoint-mobile: 480px;
+$breakpoint-tablet: 768px; 
 $breakpoint-desktop: 1200px;
 
-// Spacing
 $spacing-xs: 0.5rem;
 $spacing-sm: 1rem;
 $spacing-md: 1.5rem;
 $spacing-lg: 2rem;
 $spacing-xl: 3rem;
 
-// Border radius
 $border-radius-sm: 4px;
 $border-radius-md: 8px;
 $border-radius-lg: 12px;
 
-// Font sizes
 $font-size-xs: 0.8rem;
 $font-size-sm: 0.9rem;
 $font-size-md: 1rem;

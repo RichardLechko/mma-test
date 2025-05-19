@@ -1,241 +1,421 @@
-@import '../base/variables';
-@import '../base/mixins';
+@use '../base/variables' as *;
+@use '../base/mixins' as *;
+@use 'sass:color';
+
+$breakpoint-xs: 425px;
+$breakpoint-xxs: 375px;
+$breakpoint-xxxs: 320px;
+$breakpoint-xl: 1280px;
+$breakpoint-xxl: 1536px;
+
+@mixin xl {
+  @media (max-width: $breakpoint-xl) {
+    @content;
+  }
+}
+
+@mixin xxl {
+  @media (max-width: $breakpoint-xxl) {
+    @content;
+  }
+}
+
+@mixin xs {
+  @media (max-width: $breakpoint-xs) {
+    @content;
+  }
+}
+
+@mixin xxs {
+  @media (max-width: $breakpoint-xxs) {
+    @content;
+  }
+}
+
+@mixin xxxs {
+  @media (max-width: $breakpoint-xxxs) {
+    @content;
+  }
+}
 
 .home {
   width: 100%;
   color: $text-primary;
-  
-  // Hero section
+
   .hero {
     background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), #222;
     padding: $spacing-xl $spacing-md;
     text-align: center;
-    
+
+    @include tablet {
+      padding: $spacing-lg $spacing-sm;
+    }
+
+    @include mobile {
+      padding: $spacing-md $spacing-sm;
+    }
+
+    @include xs {
+      padding: $spacing-sm;
+    }
+
     &-content {
       max-width: 800px;
       margin: 0 auto;
+
+      @include tablet {
+        max-width: 700px;
+      }
+
+      @include mobile {
+        max-width: 100%;
+      }
     }
-    
+
     h1 {
       font-size: $font-size-huge;
       margin: 0 0 $spacing-sm;
+
+      @include tablet {
+        font-size: calc(#{$font-size-huge} - 0.5rem);
+      }
+
+      @include mobile {
+        font-size: $font-size-xxl;
+      }
+
+      @include xs {
+        font-size: calc(#{$font-size-xxl} - 0.2rem);
+      }
     }
-    
+
     .tagline {
       font-size: $font-size-lg;
       margin-bottom: $spacing-lg;
       opacity: 0.9;
+
+      @include tablet {
+        margin-bottom: $spacing-md;
+      }
+
+      @include mobile {
+        font-size: $font-size-md;
+        margin-bottom: $spacing-sm;
+      }
     }
-    
+
     &-buttons {
       display: flex;
       gap: $spacing-md;
       justify-content: center;
       flex-wrap: wrap;
-      
+
+      @include tablet {
+        gap: $spacing-sm;
+      }
+
+      @include mobile {
+        gap: $spacing-xs;
+      }
+
+      @include xxs {
+        flex-direction: column;
+        align-items: center;
+        gap: $spacing-xs;
+      }
+
+      // Specific styling for the hero buttons
       .btn {
         margin: 0;
+        font-size: $font-size-md;
+
+        @include tablet {
+          font-size: $font-size-sm;
+          padding: $spacing-xs $spacing-md;
+        }
+
+        @include mobile {
+          font-size: $font-size-xs;
+          padding: $spacing-xs $spacing-sm;
+        }
+
+        @include xxs {
+          width: 80%;
+          max-width: 200px;
+          margin-bottom: $spacing-xs;
+          font-size: $font-size-sm;
+          padding: $spacing-xs $spacing-sm;
+        }
+
+        @include xxxs {
+          width: 100%;
+          max-width: 180px;
+          font-size: $font-size-xs;
+          padding: calc($spacing-xs - 0.1rem) $spacing-sm;
+        }
       }
     }
   }
-  
-  // Main content
+
   .content {
     max-width: $breakpoint-desktop;
     margin: 0 auto;
     padding: $spacing-xl $spacing-md;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: $spacing-lg;
-    
+
+    @include xl {
+      max-width: 90%;
+    }
+
     @include tablet {
-      grid-template-columns: 1fr;
+      padding: $spacing-lg $spacing-md;
+      gap: $spacing-md;
+    }
+
+    @include mobile {
+      padding: $spacing-md $spacing-sm;
+    }
+
+    @include xs {
+      padding: $spacing-sm;
+      gap: $spacing-sm;
     }
   }
-  
-  // Cards
+
   .card {
     background: $background-dark;
     border-radius: $border-radius-md;
     padding: $spacing-md;
     margin-bottom: $spacing-md;
-    
+
+    @include mobile {
+      padding: $spacing-sm;
+    }
+
     h2 {
       margin: 0 0 $spacing-md;
       padding-bottom: $spacing-xs;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+      @include mobile {
+        margin: 0 0 $spacing-sm;
+      }
+
+      @include xs {
+        font-size: $font-size-xl;
+      }
     }
   }
-  
-  // Event preview
+
   .event-preview {
+    .events-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: $spacing-md;
+
+      @include tablet {
+        grid-template-columns: 1fr;
+      }
+
+      @include mobile {
+        gap: $spacing-sm;
+      }
+    }
+
     .event-details {
       background: $background-card;
       padding: $spacing-md;
-      margin: 1em 0em 1em 0em;
+      margin: 0;
       border-radius: $border-radius-md;
-      
+      display: flex;
+      flex-direction: column;
+      position: relative; // For positioning the countdown
+      height: 100%; // Make all cards the same height
+      min-height: 280px; // Set a minimum height
+
+      @include mobile {
+        padding: $spacing-sm;
+        min-height: 240px;
+      }
+
       h3 {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
         font-size: $font-size-xl;
         margin-bottom: $spacing-sm;
+
+        @include tablet {
+          margin-right: 80px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+        }
+
+        
       }
-      
-      .event-date, .event-location {
+
+      .event-date,
+      .event-location {
         margin-bottom: $spacing-xs;
         color: $text-secondary;
+
+        @include xxs {
+          font-size: $font-size-sm;
+        }
       }
-      
+
       .countdown {
         margin: $spacing-md 0;
-        font-weight: bold;
+        font-weight: normal;
         font-size: $font-size-lg;
-        color: $primary-color;
+        color: #ffffff;
+
+        span {
+          display: inline-block;
+          position: relative;
+          padding: $spacing-xs $spacing-sm;
+          background-color: #383838;
+          border-left: 3px solid $primary-color;
+          border-radius: $border-radius-sm;
+
+          // Simple clean design, no unnecessary indicators
+        }
+
+        @include tablet {
+          font-size: $font-size-md;
+          position: absolute;
+          top: $spacing-sm;
+          right: $spacing-sm;
+          margin: 0;
+
+          span {
+            border-radius: $border-radius-sm;
+            padding: $spacing-xs;
+          }
+        }
+
+        
+
+        @include xs {
+          font-size: calc(#{$font-size-md} - 0.1rem);
+
+          span {
+            padding: calc(#{$spacing-xs} - 0.1rem);
+          }
+        }
       }
-      
+
       .btn {
         display: block;
         text-align: center;
-        margin-top: $spacing-md;
-      }
-    }
-  }
-  
-  // Top fighters
-  .top-fighters {
-    .fighters-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: $spacing-md;
-      margin-bottom: $spacing-md;
-    }
-    
-    .fighter-card {
-      background: $background-card;
-      padding: $spacing-md;
-      border-radius: $border-radius-md;
-      color: $text-primary;
-      text-decoration: none;
-      position: relative;
-      transition: transform 0.2s, box-shadow 0.3s;
-      overflow: hidden;
-      
-      // Add padding at the top to make room for rank tag
-      padding-top: $spacing-lg + $spacing-xs;
-      
-      // Create a spotlight effect with a radial gradient that follows cursor
-      &:hover {
-        transform: translateY(-3px);
-        
-        .spotlight {
-          opacity: 1;
+        margin-top: auto;
+        margin-bottom: $spacing-sm;
+        width: 80%;
+        align-self: center;
+
+        @include mobile {
+          width: 90%;
+          font-size: $font-size-sm;
+          padding: $spacing-xs $spacing-sm;
         }
-        
-        .rank {
-          animation: pulse 1.5s infinite;
+
+        @include xs {
+          width: 100%;
+          font-size: $font-size-xs;
         }
       }
-      
-      // Spotlight overlay that will track the mouse
-      .spotlight {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        opacity: 0;
-        background: radial-gradient(
-          circle 80px at var(--x, 50%) var(--y, 50%),
-          rgba(255, 255, 255, 0.06) 0%,
-          rgba(255, 255, 255, 0) 60%
-        );
-        transition: opacity 0.4s;
-      }
-      
-      h3 {
-        font-size: $font-size-md;
-        margin: 0 0 $spacing-xs;
-        // Ensure long names wrap instead of overflowing
-        word-wrap: break-word;
-      }
-      
-      .nickname {
-        color: $text-secondary;
-        font-style: italic;
-        margin-bottom: $spacing-xs;
-        font-size: $font-size-sm;
-      }
-      
-      .weight-class, .record {
-        font-size: $font-size-sm;
-        margin-bottom: $spacing-xs;
-        color: $text-secondary;
-      }
-      
-      .rank {
-        position: absolute;
-        bottom: $spacing-xs;
-        right: $spacing-xs;
-        background: $primary-color;
-        padding: $spacing-xs $spacing-sm;
-        border-radius: $border-radius-sm;
-        font-size: $font-size-xs;
-        font-weight: bold;
-        z-index: 2;
-      }
-    }
-    
-    .btn {
-      display: block;
-      width: 100%;
-      text-align: center;
     }
   }
-  
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba($primary-color, 0.7);
-    }
-    70% {
-      box-shadow: 0 0 0 5px rgba($primary-color, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba($primary-color, 0);
-    }
-  }
-  
-  // Features section
+
   .features {
-    grid-column: 1 / -1;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: $spacing-md;
-    
+
+    @include tablet {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
     @include mobile {
       grid-template-columns: 1fr;
     }
-    
+
+    @include xs {
+      gap: $spacing-sm;
+    }
+
     .feature {
       text-align: center;
       padding: $spacing-lg $spacing-md;
-      
+
+      @include tablet {
+        padding: $spacing-md;
+      }
+
+      @include mobile {
+        padding: $spacing-sm;
+      }
+
       .icon {
         font-size: 2.5rem;
         margin-bottom: $spacing-md;
+
+        @include tablet {
+          font-size: 2.2rem;
+        }
+
+        @include mobile {
+          font-size: 2rem;
+          margin-bottom: $spacing-sm;
+        }
       }
-      
+
       h3 {
         margin-bottom: $spacing-sm;
+
+        @include mobile {
+          margin-bottom: $spacing-xs;
+        }
+
+        @include xs {
+          font-size: $font-size-md;
+        }
       }
-      
+
       p {
         color: $text-tertiary;
+
+        @include xxs {
+          font-size: $font-size-sm;
+        }
       }
     }
   }
 }
 
-// Button styles
+@include xxl {
+  .home {
+    .content {
+      max-width: 1400px;
+    }
+
+    .features {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+}
+
+@media (min-width: $breakpoint-xxl) {
+  .home {
+    .content {
+      max-width: 1500px;
+    }
+  }
+}
+
 .btn {
   display: inline-block;
   padding: $spacing-sm $spacing-lg;
@@ -245,20 +425,314 @@
   text-decoration: none;
   font-weight: 500;
   margin-top: $spacing-md;
-  transition: background 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s;
   border: none;
   cursor: pointer;
-  
+
+  @include mobile {
+    padding: $spacing-xs $spacing-md;
+    margin-top: $spacing-sm;
+  }
+
   &:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
+
+    @include mobile {
+      transform: translateY(-1px);
+    }
   }
-  
+
   &-primary {
     background: $primary-color;
-    
+
     &:hover {
-      background: lighten($primary-color, 5%);
+      background: color.adjust($primary-color, $lightness: 5%);
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .home {
+    .features {
+      grid-template-columns: repeat(1, 1fr);
+      gap: 0px;
+      .feature {
+        padding: $spacing-sm $spacing-xs;
+      }
+    }
+
+    .event-preview {
+      .event-details {
+        h3 {
+          font-size: calc(#{$font-size-lg} - 0.1rem);
+        }
+
+        .event-date,
+        .event-location {
+          font-size: calc(#{$font-size-sm} + 0.1rem);
+        }
+
+        .countdown {
+          font-size: calc(#{$font-size-md} + 0.1rem);
+        }
+
+        .btn {
+          font-size: $font-size-sm;
+        }
+      }
+    }
+
+    .hero h1 {
+      font-size: calc(#{$font-size-huge} - 0.3rem);
+    }
+
+    .hero-buttons .btn {
+      font-size: calc(#{$font-size-md} - 0.1rem);
+      padding: $spacing-xs $spacing-md;
+    }
+  }
+}
+
+// Add these refinements to your existing code
+
+@media (max-width: 640px) {
+  .home {
+    .hero-content {
+      h1 {
+        font-size: calc(#{$font-size-xxl} + 0.3rem);
+      }
+    }
+
+    .card h2 {
+      font-size: $font-size-xl;
+    }
+
+    .hero-buttons .btn {
+      font-size: $font-size-xs;
+      padding: $spacing-xs calc(#{$spacing-sm} + 0.2rem);
+    }
+
+    // Enhanced event card responsiveness
+    .event-preview {
+      .event-details {
+        min-height: 260px; // Slightly reduce minimum height
+        padding: $spacing-sm;
+
+        h3 {
+          font-size: $font-size-md;
+          padding-right: 75px; // Adjusted for countdown
+        }
+
+        .event-date,
+        .event-location {
+          font-size: $font-size-sm;
+          margin-bottom: calc(#{$spacing-xs} - 0.1rem);
+        }
+
+        .countdown {
+          font-size: $font-size-sm;
+
+          span {
+            padding: $spacing-xs calc(#{$spacing-xs} + 0.1rem);
+          }
+        }
+
+        .btn {
+          font-size: $font-size-xs;
+          padding: $spacing-xs $spacing-sm;
+          margin-bottom: $spacing-xs;
+        }
+      }
+    }
+  }
+}
+
+// Add specific optimizations for 425px (xs)
+@media (max-width: 425px) {
+  .home {
+    .content {
+      padding: $spacing-sm calc(#{$spacing-sm} - 0.1rem);
+    }
+
+    .event-preview {
+      .event-details {
+        min-height: 240px;
+        padding: $spacing-xs $spacing-sm;
+
+        h3 {
+          font-size: calc(#{$font-size-md} - 0.1rem);
+          margin-bottom: $spacing-xs;
+          padding-right: 70px; // Adjusted for countdown
+        }
+
+        .event-date,
+        .event-location {
+          font-size: calc(#{$font-size-sm} - 0.05rem);
+          line-height: 1.4;
+        }
+
+        .countdown {
+          font-size: $font-size-sm;
+          top: $spacing-xs;
+          right: $spacing-xs;
+
+          span {
+            padding: calc(#{$spacing-xs} - 0.1rem);
+          }
+        }
+
+        .btn {
+          width: 95%;
+          padding: calc(#{$spacing-xs} - 0.05rem) $spacing-sm;
+          margin-bottom: $spacing-xs;
+        }
+      }
+    }
+
+    .features {
+      .feature {
+        padding: $spacing-sm $spacing-xs;
+
+        .icon {
+          font-size: 1.8rem;
+          margin-bottom: $spacing-sm;
+        }
+
+        h3 {
+          font-size: $font-size-md;
+        }
+
+        p {
+          font-size: $font-size-sm;
+        }
+      }
+    }
+  }
+}
+
+// Add specific optimizations for 375px (xxs)
+@media (max-width: 375px) {
+  .home {
+    .event-preview {
+      .event-details {
+        min-height: 230px;
+
+        h3 {
+          font-size: $font-size-sm;
+          padding-right: 65px; // Adjusted for countdown
+        }
+
+        .event-date,
+        .event-location {
+          font-size: calc(#{$font-size-xs} + 0.1rem);
+          line-height: 1.3;
+        }
+
+        .countdown {
+          font-size: calc(#{$font-size-sm} - 0.1rem);
+
+          span {
+            padding: calc(#{$spacing-xs} - 0.15rem);
+            border-left-width: 2px;
+          }
+        }
+
+        .btn {
+          font-size: calc(#{$font-size-xs} - 0.05rem);
+          padding: calc(#{$spacing-xs} - 0.1rem) $spacing-xs;
+        }
+      }
+    }
+
+    .features {
+      .feature {
+        padding: $spacing-xs;
+
+        .icon {
+          font-size: 1.6rem;
+          margin-bottom: $spacing-xs;
+        }
+
+        h3 {
+          font-size: calc(#{$font-size-md} - 0.1rem);
+          margin-bottom: calc(#{$spacing-xs} + 0.1rem);
+        }
+
+        p {
+          font-size: calc(#{$font-size-sm} - 0.05rem);
+        }
+      }
+    }
+  }
+}
+
+// Add specific optimizations for 320px (xxxs)
+@media (max-width: 320px) {
+  .home {
+    .content {
+      padding: calc(#{$spacing-sm} - 0.2rem);
+      gap: $spacing-xs;
+    }
+
+    .event-preview {
+      .events-grid {
+        gap: $spacing-xs;
+      }
+
+      .event-details {
+        min-height: 220px;
+        padding: calc(#{$spacing-xs} + 0.1rem);
+
+        h3 {
+          font-size: calc(#{$font-size-sm} - 0.05rem);
+          padding-right: 60px; // Adjusted for countdown
+          margin-bottom: calc(#{$spacing-xs} - 0.05rem);
+        }
+
+        .event-date,
+        .event-location {
+          font-size: $font-size-xs;
+          line-height: 1.2;
+          margin-bottom: calc(#{$spacing-xs} - 0.2rem);
+        }
+
+        .countdown {
+          font-size: $font-size-xs;
+
+          span {
+            padding: calc(#{$spacing-xs} - 0.2rem);
+          }
+        }
+
+        .btn {
+          width: 100%;
+          font-size: calc(#{$font-size-xs} - 0.1rem);
+          padding: calc(#{$spacing-xs} - 0.15rem) $spacing-xs;
+        }
+      }
+    }
+
+    .features {
+      .feature {
+        padding: calc(#{$spacing-xs} - 0.05rem);
+
+        .icon {
+          font-size: 1.5rem;
+          margin-bottom: calc(#{$spacing-xs} + 0.1rem);
+        }
+
+        h3 {
+          font-size: $font-size-sm;
+          margin-bottom: $spacing-xs;
+        }
+
+        p {
+          font-size: $font-size-xs;
+        }
+      }
     }
   }
 }
