@@ -1,4 +1,3 @@
-// src/pages/api/fighters.ts
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabase';
 
@@ -9,7 +8,6 @@ export const GET: APIRoute = async ({ url }) => {
   const status = url.searchParams.get('status') || '';
   const isChampion = url.searchParams.get('champion') === 'true';
 
-  // Handle multiple values for these filters
   const weightClasses = url.searchParams.getAll('weightClass');
   const nationalities = url.searchParams.getAll('nationality');
 
@@ -23,14 +21,12 @@ export const GET: APIRoute = async ({ url }) => {
         },
       );
 
-    // Apply filters if provided
     if (searchTerm) {
       query = query.ilike('name', `%${searchTerm}%`);
     }
 
     if (status) {
       if (status === 'Retired') {
-        // Handle both "Retired" and "Not Fighting" statuses
         query = query.or('status.eq.Retired,status.eq.Not Fighting');
       } else {
         query = query.eq('status', status);
@@ -41,23 +37,18 @@ export const GET: APIRoute = async ({ url }) => {
       query = query.eq('rank', 'Champion');
     }
 
-    // Handle multiple weight classes (OR condition)
     if (weightClasses.length > 0) {
       query = query.in('weight_class', weightClasses);
     }
 
-    // Handle nationality filter - THIS IS THE CRITICAL CHANGE
     if (nationalities.length > 0) {
-      // FIX: Instead of using the .in() method, create a manual OR filter for exact equality
       const filters = nationalities.map((nat, index) => {
         return `nationality.eq.${nat}`;
       });
       
-      // Apply the OR filter
       query = query.or(filters.join(','));
     }
 
-    // Get the paginated fighters with the filters and count
     const {
       data: fighters,
       error,

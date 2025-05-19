@@ -1,17 +1,14 @@
-// src/pages/api/filter-options.ts
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabase';
 
 export const GET: APIRoute = async () => {
   try {
-    // Get all unique nationalities
     const { data: nationalities, error: natError } = await supabase
       .from('fighters')
       .select('nationality')
       .not('nationality', 'is', null)
       .order('nationality');
 
-    // Get all unique weight classes
     const { data: weightClasses, error: wcError } = await supabase
       .from('fighters')
       .select('weight_class')
@@ -25,7 +22,6 @@ export const GET: APIRoute = async () => {
       });
     }
 
-    // Extract unique values
     const uniqueNationalities = Array.from(
       new Set(
         (nationalities || [])
