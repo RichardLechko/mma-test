@@ -1,3 +1,4 @@
+// src/pages/api/fighters.ts
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabase';
 
@@ -45,9 +46,15 @@ export const GET: APIRoute = async ({ url }) => {
       query = query.in('weight_class', weightClasses);
     }
 
-    // Handle multiple nationalities (OR condition)
+    // Handle nationality filter - THIS IS THE CRITICAL CHANGE
     if (nationalities.length > 0) {
-      query = query.in('nationality', nationalities);
+      // FIX: Instead of using the .in() method, create a manual OR filter for exact equality
+      const filters = nationalities.map((nat, index) => {
+        return `nationality.eq.${nat}`;
+      });
+      
+      // Apply the OR filter
+      query = query.or(filters.join(','));
     }
 
     // Get the paginated fighters with the filters and count
