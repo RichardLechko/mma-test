@@ -6,6 +6,10 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: $spacing-lg $spacing-sm;
+  
+  @include mobile {
+    padding: $spacing-md $spacing-xs;
+  }
 
   .fighters-container {
     h1 {
@@ -14,20 +18,36 @@
       text-align: center;
       color: $text-primary;
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      
+      @include mobile {
+        font-size: $font-size-xxl;
+        margin-bottom: $spacing-md;
+      }
     }
 
     .filters-section {
-      position: relative; // Ensure this is applied for all screen sizes
+      position: relative;
       background: $background-card;
       padding: $spacing-md;
       border-radius: $border-radius-md;
       margin-bottom: $spacing-lg;
+      
+      @include mobile {
+        padding: $spacing-sm;
+        margin-bottom: $spacing-md;
+        border-radius: $border-radius-sm;
+      }
 
       h3 {
         margin-top: 0;
         margin-bottom: $spacing-sm;
         font-size: $font-size-lg;
         color: $text-primary;
+        
+        @include mobile {
+          font-size: $font-size-md;
+          margin-bottom: $spacing-xs;
+        }
       }
 
       .search-container {
@@ -35,6 +55,11 @@
         margin-bottom: $spacing-md;
         width: 100%;
         max-width: 400px;
+        
+        @include mobile {
+          margin-bottom: $spacing-sm;
+          max-width: 100%;
+        }
       }
 
       .search-input {
@@ -51,12 +76,25 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         font-family: 'Space Grotesk', sans-serif;
 
+        @include mobile {
+          padding: 10px 40px 10px 35px;
+          font-size: $font-size-sm;
+          border-width: 2px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
         &:focus {
           outline: none;
           border-color: color.adjust($primary-color, $lightness: 10%);
           box-shadow:
             0 6px 12px rgba(0, 0, 0, 0.4),
             0 0 0 2px rgba($primary-color, 0.3);
+            
+          @include mobile {
+            box-shadow:
+              0 3px 8px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba($primary-color, 0.3);
+          }
         }
 
         &::-moz-placeholder {
@@ -85,6 +123,12 @@
         background-size: contain;
         background-repeat: no-repeat;
         opacity: 0.8;
+        
+        @include mobile {
+          width: 18px;
+          height: 18px;
+          left: 10px;
+        }
       }
 
       .clear-search-button {
@@ -105,6 +149,13 @@
         font-weight: bold;
         cursor: pointer;
         transition: all 0.2s ease;
+        
+        @include mobile {
+          width: 24px;
+          height: 24px;
+          right: 8px;
+          font-size: 16px;
+        }
 
         &:hover {
           background-color: color.adjust($primary-color, $lightness: 10%);
@@ -116,16 +167,29 @@
         flex-wrap: wrap;
         gap: $spacing-sm;
         align-items: flex-end;
+        
+        @include mobile {
+          gap: $spacing-xs;
+        }
 
         .filter-group {
           display: flex;
           flex-direction: column;
           min-width: 200px;
+          
+          @include mobile {
+            min-width: 100%;
+          }
 
           label {
             margin-bottom: $spacing-xs * 0.6;
             font-size: $font-size-sm;
             color: $text-secondary;
+            
+            @include mobile {
+              font-size: $font-size-xs;
+              margin-bottom: $spacing-xs * 0.4;
+            }
           }
 
           .filter-select {
@@ -135,6 +199,11 @@
             color: $text-primary;
             border: 1px solid color.adjust($background-dark, $lightness: 10%);
             font-size: $font-size-sm;
+            
+            @include mobile {
+              padding: $spacing-xs * 0.7;
+              font-size: $font-size-xs;
+            }
 
             &:focus {
               outline: none;
@@ -158,6 +227,11 @@
           font-size: $font-size-sm;
           font-weight: 500;
           transition: background-color 0.2s ease;
+          
+          @include mobile {
+            padding: $spacing-xs * 0.7 $spacing-sm;
+            font-size: $font-size-xs;
+          }
 
           &:hover {
             background-color: color.adjust($primary-color, $lightness: -5%);
@@ -172,6 +246,12 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: $spacing-md;
     margin-bottom: $spacing-lg;
+    
+    @include mobile {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: $spacing-sm;
+      margin-bottom: $spacing-md;
+    }
   }
 
   .fighter-card {
@@ -184,10 +264,20 @@
       box-shadow 0.3s ease;
     text-decoration: none;
     color: $text-primary;
+    
+    @include mobile {
+      border-radius: $border-radius-sm;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
 
     &:hover {
       transform: translateY(-5px);
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      
+      @include mobile {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      }
     }
 
     .fighter-header {
@@ -200,11 +290,20 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      
+      @include mobile {
+        padding: $spacing-xs;
+      }
 
       h2 {
         font-size: $font-size-lg;
         margin: 0;
         line-height: 1.3;
+        
+        @include mobile {
+          font-size: $font-size-md;
+          line-height: 1.2;
+        }
       }
 
       .champion-badge,
@@ -218,6 +317,12 @@
         position: relative;
         clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%);
         border-left: 3px solid rgba(0, 0, 0, 0.3);
+        
+        @include mobile {
+          font-size: $font-size-xs;
+          padding: 1px $spacing-xs * 0.7;
+          border-left-width: 2px;
+        }
       }
 
       .champion-badge {
@@ -238,12 +343,21 @@
 
     .fighter-details {
       padding: $spacing-sm;
+      
+      @include mobile {
+        padding: $spacing-xs;
+      }
 
       .fighter-weight-class {
         font-size: $font-size-sm;
         color: $text-secondary;
         margin-bottom: $spacing-xs;
         text-transform: uppercase;
+        
+        @include mobile {
+          font-size: $font-size-xs;
+          margin-bottom: $spacing-xs * 0.7;
+        }
       }
 
       .fighter-record {
@@ -254,10 +368,19 @@
         padding: $spacing-xs;
         background-color: $background-card;
         border-radius: $border-radius-sm;
+        
+        @include mobile {
+          margin: $spacing-xs * 0.7 0;
+          padding: $spacing-xs * 0.7;
+        }
 
         .record-value {
           font-size: $font-size-lg;
           font-weight: bold;
+          
+          @include mobile {
+            font-size: $font-size-md;
+          }
         }
 
         .record-label {
@@ -269,6 +392,10 @@
           font-size: $font-size-xs;
           color: $text-tertiary;
           margin-top: $spacing-xs * 0.5;
+          
+          @include mobile {
+            margin-top: $spacing-xs * 0.3;
+          }
         }
       }
 
@@ -278,6 +405,11 @@
         color: $primary-color;
         margin-top: $spacing-xs;
         text-align: center;
+        
+        @include mobile {
+          font-size: $font-size-xs;
+          margin-top: $spacing-xs * 0.7;
+        }
       }
 
       .fighter-nationality {
@@ -285,6 +417,11 @@
         color: $text-tertiary;
         margin-top: $spacing-xs;
         text-align: center;
+        
+        @include mobile {
+          font-size: $font-size-xs;
+          margin-top: $spacing-xs * 0.7;
+        }
       }
 
       .fighter-status {
@@ -292,6 +429,11 @@
         color: $text-tertiary;
         margin-top: $spacing-xs;
         text-align: center;
+        
+        @include mobile {
+          font-size: $font-size-xs;
+          margin-top: $spacing-xs * 0.7;
+        }
       }
     }
   }
@@ -302,10 +444,20 @@
     border-radius: $border-radius-md;
     text-align: center;
     margin-bottom: $spacing-md;
+    
+    @include mobile {
+      padding: $spacing-md;
+      border-radius: $border-radius-sm;
+      margin-bottom: $spacing-sm;
+    }
 
     p {
       color: $text-secondary;
       font-size: $font-size-md;
+      
+      @include mobile {
+        font-size: $font-size-sm;
+      }
     }
   }
 
@@ -314,6 +466,10 @@
     flex-direction: column;
     align-items: center;
     margin-top: $spacing-lg;
+    
+    @include mobile {
+      margin-top: $spacing-md;
+    }
 
     .load-more-button {
       background-color: $primary-color;
@@ -325,6 +481,11 @@
       font-weight: bold;
       cursor: pointer;
       transition: background-color 0.2s ease;
+      
+      @include mobile {
+        padding: $spacing-xs $spacing-md;
+        font-size: $font-size-sm;
+      }
 
       &:hover {
         background-color: $secondary-color;
@@ -340,6 +501,11 @@
       margin-top: $spacing-sm;
       font-size: $font-size-sm;
       color: $text-tertiary;
+      
+      @include mobile {
+        margin-top: $spacing-xs;
+        font-size: $font-size-xs;
+      }
     }
   }
 
@@ -375,6 +541,10 @@
   gap: $spacing-md;
   align-items: end; // Align items to bottom instead of top
   width: 100%;
+  
+  @include mobile {
+    gap: $spacing-xs;
+  }
 
   // Reset button styling - fixed alignment
   .reset-button {
@@ -383,6 +553,10 @@
     align-items: center;
     justify-content: center;
     margin-top: 0; // Remove margin-top to align with filters
+    
+    @include mobile {
+      height: 34px;
+    }
   }
   
   // Breakpoint for desktop (≤1200px)
@@ -394,6 +568,11 @@
       top: $spacing-md;
       right: $spacing-md;
       margin-top: 0;
+      
+      @include mobile {
+        top: $spacing-sm;
+        right: $spacing-sm;
+      }
     }
   }
   
@@ -415,21 +594,38 @@
       top: $spacing-md;
       right: $spacing-md;
       margin-top: 0;
+      
+      @include mobile {
+        top: $spacing-sm;
+        right: $spacing-sm;
+      }
     }
   }
   
-  // Changed breakpoint from 640px to 475px for single-column layout
-  @media (max-width: 475px) {
+  // Breakpoint for mobile layout - FIXED HERE
+  @media (max-width: 640px) {
     grid-template-columns: 1fr; // 1 item per row
-    gap: $spacing-sm;
+    gap: $spacing-xs;
     
+    // Fix for reset button - critical change to resolve the merging issue
     .reset-button {
-      position: relative;
+      position: static; // Changed from relative to static
+      margin: $spacing-sm 0 0 0;
+      width: 100%;
+      order: 5; // Ensure it's at the bottom
       top: auto;
       right: auto;
-      width: 100%;
-      margin-top: $spacing-sm;
-      order: 5; // Ensure it's at the bottom
+    }
+  }
+  
+  // Added an even smaller breakpoint for very small devices
+  @media (max-width: 400px) {
+    gap: $spacing-xs * 0.7;
+    
+    .reset-button {
+      margin-top: $spacing-xs;
+      height: 30px;
+      font-size: $font-size-xs;
     }
   }
 }
@@ -440,6 +636,11 @@
   gap: 0.5rem;
   margin-bottom: 1.5rem;
   min-height: 0;
+  
+  @include mobile {
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+  }
 }
 
 .selected-filters-pool:not(:empty) {
@@ -448,6 +649,11 @@
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 0.25rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  @include mobile {
+    min-height: 2rem;
+    padding: 0.3rem;
+  }
 }
 
 .filter-tag {
@@ -458,7 +664,13 @@
   color: white;
   font-size: 0.875rem;
   font-weight: 500;
+  
+  @include mobile {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+  }
 }
+
 .filter-tag.search {
   background-color: $primary-color;
   padding: 10px 15px;
@@ -466,12 +678,23 @@
   font-size: $font-size-md;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   border-radius: $border-radius-sm;
+  
+  @include mobile {
+    padding: 6px 10px;
+    font-size: $font-size-sm;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
 
   .filter-tag-remove {
     background: rgba(0, 0, 0, 0.3);
     width: 22px;
     height: 22px;
     font-weight: bold;
+    
+    @include mobile {
+      width: 18px;
+      height: 18px;
+    }
   }
 }
 
@@ -501,6 +724,12 @@
   border-radius: $border-radius-sm;
   background-color: rgba(255, 255, 255, 0.3);
   cursor: pointer;
+  
+  @include mobile {
+    margin-left: 0.3rem;
+    width: 1rem;
+    height: 1rem;
+  }
 }
 
 .filter-tag-remove:hover {
@@ -529,6 +758,59 @@
       .filter-selected {
         flex: 1;
       }
+    }
+    
+    .filter-label {
+      font-size: 0.75rem;
+    }
+    
+    .filter-selected {
+      padding: 0.4rem 0.8rem;
+      
+      span {
+        font-size: 0.8rem;
+      }
+      
+      svg {
+        transform: scale(0.8);
+      }
+    }
+    
+    .filter-menu {
+      max-height: 250px;
+    }
+    
+    .filter-item {
+      padding: 0.5rem 0.7rem;
+      font-size: 0.8rem;
+    }
+  }
+  
+  @media (max-width: 400px) {
+    .filter-label {
+      font-size: 0.7rem;
+    }
+    
+    .filter-selected {
+      padding: 0.3rem 0.6rem;
+      min-height: 30px;
+      
+      span {
+        font-size: 0.75rem;
+      }
+      
+      svg {
+        transform: scale(0.7);
+      }
+    }
+    
+    .filter-menu {
+      max-height: 200px;
+    }
+    
+    .filter-item {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.75rem;
     }
   }
 }

@@ -131,96 +131,17 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
       eventData ? (
         <div class="event-details-container">
           <div class="event-header">
-            {/* Move the countdown to the top for proper positioning in the DOM */}
-            <div class="event-countdown">
-              {(() => {
-                const eventDate = new Date(eventData.event_date);
-
-                if (isNaN(eventDate.getTime())) {
-                  return <div>Date not available</div>;
-                }
-
-                const utcYear = eventDate.getUTCFullYear();
-                const utcMonth = eventDate.getUTCMonth();
-                const utcDay = eventDate.getUTCDate();
-
-                const displayDate = new Date(utcYear, utcMonth, utcDay);
-
-                const today = new Date();
-                const todayAtMidnight = new Date(
-                  today.getFullYear(),
-                  today.getMonth(),
-                  today.getDate(),
-                );
-
-                const isPastEvent = displayDate < todayAtMidnight;
-
-                const calculateDaysDifference = (
-                  date1: Date,
-                  date2: Date,
-                ): number => {
-                  const d1 = new Date(
-                    date1.getFullYear(),
-                    date1.getMonth(),
-                    date1.getDate(),
-                  );
-                  const d2 = new Date(
-                    date2.getFullYear(),
-                    date2.getMonth(),
-                    date2.getDate(),
-                  );
-
-                  const timeDiff = Math.abs(d2.getTime() - d1.getTime());
-                  return Math.round(timeDiff / (1000 * 60 * 60 * 24));
-                };
-
-                const diffDays = calculateDaysDifference(
-                  displayDate,
-                  todayAtMidnight,
-                );
-
-                let timeDisplay: string;
-                if (!isPastEvent) {
-                  if (diffDays === 0) {
-                    timeDisplay = 'Today';
-                  } else if (diffDays === 1) {
-                    timeDisplay = 'Tomorrow';
-                  } else {
-                    timeDisplay = `${diffDays} days until event`;
-                  }
-                } else {
-                  if (diffDays === 0) {
-                    timeDisplay = 'Today';
-                  } else if (diffDays === 1) {
-                    timeDisplay = 'Yesterday';
-                  } else {
-                    timeDisplay = `${diffDays} days ago`;
-                  }
-                }
-
-                return (
-                  <>
-                    <span class="countdown-value">{timeDisplay}</span>
-                    <span class="countdown-label">{eventData.status}</span>
-                  </>
-                );
-              })()}
-            </div>
-
             <h1>{eventData.name}</h1>
 
-            {/* Add UFC link pill if ufc_url exists */}
-            {eventData.ufc_url && (
-              <a
-                href={eventData.ufc_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="ufc-link"
-              >
-                <span class="ufc-icon">UFC</span>
-                <span class="link-text">Official Page</span>
-              </a>
-            )}
+            <a
+              href={eventData.ufc_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="ufc-link"
+            >
+              <span class="ufc-icon">UFC</span>
+              <span class="link-text">Official Page</span>
+            </a>
 
             <div class="event-meta">
               <div class="event-date-time">
@@ -475,13 +396,10 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                                 wins by{' '}
                                 <span class="method">
                                   {fight.result_method}
+                                  {fight.result_method_details &&
+                                    ` (${fight.result_method_details})`}
                                 </span>
                               </div>
-                              {fight.result_method_details && (
-                                <div class="result-details">
-                                  {fight.result_method_details}
-                                </div>
-                              )}
                               {(fight.result_round || fight.result_time) && (
                                 <div class="result-timing">
                                   {fight.result_round &&
@@ -500,7 +418,6 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                                       );
                                       const secondHalf =
                                         timeStr.substring(halfLength);
-
                                       return firstHalf === secondHalf
                                         ? firstHalf
                                         : timeStr;

@@ -162,6 +162,7 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
       <a href="/rankings" class="rankings-nav-link active">Rankings</a>
     </div>
     
+    <!-- Keep original tabs -->
     <div class="rankings-weight-class-tabs">
       {activeWeightClasses.map(weightClass => (
         <button 
@@ -171,6 +172,20 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
           {weightClass}
         </button>
       ))}
+    </div>
+    
+    <!-- Add mobile dropdown that will only show on mobile -->
+    <div class="rankings-weight-dropdown">
+      <select id="weight-class-dropdown">
+        {activeWeightClasses.map(weightClass => (
+          <option 
+            value={weightClass} 
+            selected={weightClass === selectedWeightClass}
+          >
+            {weightClass}
+          </option>
+        ))}
+      </select>
     </div>
     
     {activeWeightClasses.map(weightClass => (
@@ -204,6 +219,7 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
   const tabButtons = document.querySelectorAll('.rankings-weight-tab');
   const fighterTabs = document.querySelectorAll('.rankings-weight-class-section');
   
+  // Tab button click handlers
   tabButtons.forEach(button => {
     button.addEventListener('click', () => {
       const weightClass = button.getAttribute('data-weight-class');
@@ -220,4 +236,29 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
       }
     });
   });
+  
+  // Handle mobile dropdown for weight classes
+  const weightClassDropdown = document.getElementById('weight-class-dropdown') as HTMLSelectElement;
+  if (weightClassDropdown) {
+    weightClassDropdown.addEventListener('change', () => {
+      const selectedValue = weightClassDropdown.value;
+      
+      // Hide all weight class sections
+      fighterTabs.forEach(tab => tab.classList.remove('active'));
+      
+      // Show the selected section
+      const tabElement = document.getElementById(`weight-class-${selectedValue.replace(/\s+/g, '-').replace(/'/g, '').toLowerCase()}`);
+      if (tabElement) {
+        tabElement.classList.add('active');
+      }
+      
+      // Update active tab button (even though it's hidden on mobile)
+      tabButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-weight-class') === selectedValue) {
+          btn.classList.add('active');
+        }
+      });
+    });
+  }
 </script>

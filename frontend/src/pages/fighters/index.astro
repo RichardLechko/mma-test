@@ -262,11 +262,14 @@ const nationalityOptions: FilterOption[] = [
                 )}
                 <div class="fighter-record">
                   <span class="record-value">
-                    {fighter.wins || 0}-{fighter.losses || 0}-
-                    {fighter.draws || 0}
+                    {fighter.wins || 0}-{fighter.losses || 0}-{fighter.draws || 0}
                   </span>
                   <span class="record-label">W-L-D</span>
-                  <span class="record-nc">{fighter.no_contests || 0} NC</span>
+                  <span class="record-nc">
+                    {(fighter.no_contests ?? 0) > 0
+                      ? `${fighter.no_contests} NC`
+                      : ''}
+                  </span>
                 </div>
                 {fighter.rank &&
                   fighter.rank !== 'NR' &&
