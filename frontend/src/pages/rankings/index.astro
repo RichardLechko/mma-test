@@ -12,6 +12,7 @@ interface Fighter {
   losses: number;
   draws: number;
   status?: string;
+  nationality?: string;
 }
 
 interface FighterRanking {
@@ -52,7 +53,8 @@ const { data: rankings, error: rankingsError } = await supabase
       wins,
       losses,
       draws,
-      status
+      status,
+      nationality
     )
   `);
 
@@ -107,6 +109,7 @@ if (rankings) {
           losses: fighter.losses || 0,
           draws: fighter.draws || 0,
           status: fighter.status,
+          nationality: fighter.nationality || "",
           currentRank: rank,
           currentWeightClass: weightClass
         });
@@ -132,6 +135,7 @@ if (rankedFighters) {
           losses: fighter.losses || 0, 
           draws: fighter.draws || 0,
           status: fighter.status,
+          nationality: fighter.nationality || "",
           currentRank: fighter.rank,
           currentWeightClass: weightClass
         });
@@ -197,7 +201,14 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
           {fightersByWeightClass[weightClass].map((fighter: any) => (
             <a href={`/fighters/${fighter.id}`} class={`rankings-fighter-card ${fighter.currentRank === "Champion" ? 'rankings-champion' : fighter.currentRank === "Interim Champion" ? 'rankings-interim-champion' : ''}`}>
               <div class="rankings-fighter-info">
-                <h3 class="rankings-fighter-name">{fighter.name}</h3>
+                <div class="rankings-fighter-header">
+                  {fighter.nationality && (
+                    <div class="rankings-fighter-flag" data-country={fighter.nationality.toLowerCase().replace(/\s+/g, '-')}>
+                      <span class="rankings-flag-code">{fighter.nationality}</span>
+                    </div>
+                  )}
+                  <h3 class="rankings-fighter-name">{fighter.name}</h3>
+                </div>
                 {fighter.nickname && <p class="rankings-fighter-nickname">{fighter.nickname}</p>}
                 
                 <div class="rankings-fighter-record">
