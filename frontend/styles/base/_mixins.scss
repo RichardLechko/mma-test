@@ -1,4 +1,6 @@
-// Responsive breakpoints
+@use 'sass:color';
+@use 'variables' as *;
+
 @mixin mobile {
   @media (max-width: $breakpoint-mobile) {
     @content;
@@ -17,7 +19,6 @@
   }
 }
 
-// Common UI elements
 @mixin card {
   background: $background-card;
   border-radius: $border-radius-md;
@@ -32,10 +33,12 @@
   border-radius: $border-radius-sm;
   text-decoration: none;
   font-weight: 500;
-  transition: background 0.2s, transform 0.2s;
-  
+  transition:
+    background 0.2s,
+    transform 0.2s;
+
   &:hover {
-    background: lighten($primary-color, 5%);
+    background: color.adjust($primary-color, $lightness: 5%);
     transform: translateY(-2px);
   }
 }
@@ -52,7 +55,6 @@
   justify-content: space-between;
 }
 
-// Typography
 @mixin heading-1 {
   font-size: $font-size-huge;
   font-weight: 700;
@@ -74,7 +76,6 @@
   margin: 0 0 $spacing-sm;
 }
 
-// Other
 @mixin truncate {
   white-space: nowrap;
   overflow: hidden;

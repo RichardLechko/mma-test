@@ -86,3 +86,76 @@ export async function getFightsByEventId(eventId) {
   if (error) throw error;
   return data;
 }
+
+// src/lib/database.js - add this function
+
+/**
+ * Get events for a specific year with efficient loading
+ * @param {number} year - The year to get events for
+ * @param {number} limit - Max events to return
+ * @param {number} offset - Offset for pagination
+ * @returns {Promise<Array>} - Events for the year
+ */
+export async function getEventsByYear(year, limit = 10, offset = 0) {
+  // Create date range for the year
+  const startDate = new Date(year, 0, 1).toISOString();
+  const endDate = new Date(year, 11, 31, 23, 59, 59).toISOString();
+  
+  // Get only necessary data
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, name, event_date, venue, city, country, status')
+    .gte('event_date', startDate)
+    .lte('event_date', endDate)
+    .order('event_date', { ascending: true })
+    .range(offset, offset + limit - 1);
+  
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get count of events for a specific year
+ * @param {number} year - The year to get count for
+ * @returns {Promise<number>} - Count of events
+ */
+export async function getEventCountForYear(year) {
+  // Create date range for the year
+  const startDate = new Date(year, 0, 1).toISOString();
+  const endDate = new Date(year, 11, 31, 23, 59, 59).toISOString();
+  
+  // Get count only using head query
+  const { count, error } = await supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .gte('event_date', startDate)
+    .lte('event_date', endDate);
+  
+  if (error) throw error;
+  return count || 0;
+}
+
+/**
+ * Get all available years that have events
+ * @returns {Promise<Array>} - Array of years
+ */
+export async function getAvailableYears() {
+  // Execute RPC or use a more efficient query
+  // This query is expensive, should be cached
+  const { data, error } = await supabase
+    .from('events')
+    .select('event_date');
+  
+  if (error) throw error;
+  
+  // Extract years client-side
+  const years = data
+    .map(event => {
+      const date = new Date(event.event_date);
+      return !isNaN(date.getTime()) ? date.getFullYear() : null;
+    })
+    .filter(Boolean);
+  
+  // Get unique years and sort
+  return [...new Set(years)].sort((a, b) => b - a);
+}

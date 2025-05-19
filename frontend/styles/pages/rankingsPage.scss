@@ -1,11 +1,12 @@
-@import '../base/variables';
-@import '../base/mixins';
+@use '../base/variables' as *;
+@use '../base/mixins' as *;
+@use 'sass:color';
 
 .rankings-page {
   max-width: 1200px;
   margin: 0 auto;
   padding: $spacing-lg $spacing-sm;
-  
+
   .rankings-title {
     font-size: $font-size-huge;
     color: $text-primary;
@@ -17,7 +18,7 @@
     display: flex;
     gap: $spacing-md;
     margin-bottom: $spacing-lg;
-    
+
     .rankings-nav-link {
       text-decoration: none;
       color: $text-secondary;
@@ -25,12 +26,12 @@
       padding: $spacing-xs $spacing-sm;
       border-radius: $border-radius-sm;
       transition: all 0.2s ease;
-      
+
       &:hover {
         color: $text-primary;
         background-color: rgba(255, 255, 255, 0.05);
       }
-      
+
       &.active {
         color: $primary-color;
         border-bottom: 2px solid $primary-color;
@@ -43,7 +44,7 @@
     flex-wrap: wrap;
     gap: $spacing-sm;
     margin-bottom: $spacing-lg;
-    
+
     .rankings-weight-tab {
       background-color: $background-dark;
       color: $text-secondary;
@@ -55,13 +56,13 @@
       transition: all 0.2s ease;
       border: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      
+
       &:hover {
-        background-color: lighten($background-dark, 5%);
+        background-color: color.adjust($background-dark, $lightness: 5%);
         color: $text-primary;
         border-color: rgba(255, 255, 255, 0.2);
       }
-      
+
       &.active {
         background-color: $primary-color;
         color: $text-primary;
@@ -73,11 +74,11 @@
 
   .rankings-weight-class-section {
     display: none;
-    
+
     &.active {
       display: block;
     }
-    
+
     .rankings-fighters-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -98,7 +99,7 @@
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     position: relative;
     overflow: hidden;
-    
+
     &::before {
       content: '';
       position: absolute;
@@ -111,87 +112,95 @@
       transform-origin: bottom;
       transition: transform 0.3s ease;
     }
-    
+
     &:hover {
       background-color: rgba($background-dark, 0.8);
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-      
+
       &::before {
         transform: scaleY(1);
       }
-      
+
       .rankings-fighter-info {
         transform: translateX($spacing-xs);
       }
-      
+
       .rankings-fighter-rank {
         transform: scale(1.1);
         box-shadow: 0 0 10px rgba($primary-color, 0.3);
       }
     }
-    
+
     &.rankings-champion {
-      background: linear-gradient(135deg, rgba(218, 165, 32, 0.2) 0%, $background-dark 60%);
+      background: linear-gradient(
+        135deg,
+        rgba(218, 165, 32, 0.2) 0%,
+        $background-dark 60%
+      );
       border: 1px solid rgba(218, 165, 32, 0.3);
-      
+
       &::before {
         background: rgba(218, 165, 32, 0.8);
       }
-      
+
       .rankings-fighter-rank {
         background-color: rgba(218, 165, 32, 0.8);
         color: #000;
       }
-      
+
       &:hover .rankings-fighter-rank {
         box-shadow: 0 0 15px rgba(218, 165, 32, 0.4);
       }
     }
-    
+
     &.rankings-interim-champion {
-      background: linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, $background-dark 60%);
+      background: linear-gradient(
+        135deg,
+        rgba(192, 192, 192, 0.2) 0%,
+        $background-dark 60%
+      );
       border: 1px solid rgba(192, 192, 192, 0.3);
-      
+
       &::before {
         background: rgba(192, 192, 192, 0.8);
       }
-      
+
       .rankings-fighter-rank {
         background-color: rgba(192, 192, 192, 0.8);
         color: #000;
       }
-      
+
       &:hover .rankings-fighter-rank {
         box-shadow: 0 0 15px rgba(192, 192, 192, 0.4);
       }
     }
-    
+
     .rankings-fighter-info {
       display: flex;
       flex-direction: column;
       gap: $spacing-xs;
       transition: transform 0.3s ease;
-      
+
       .rankings-fighter-name {
         font-size: $font-size-md;
         margin: 0;
       }
-      
+
       .rankings-fighter-nickname {
         font-size: $font-size-sm;
         color: $text-tertiary;
         font-style: italic;
         margin: 0;
       }
-      
+
       .rankings-fighter-record {
         margin-top: $spacing-xs;
-        
+
         .rankings-record-numbers {
           font-weight: bold;
           color: $text-secondary;
         }
-        
+
         .rankings-record-label {
           font-size: $font-size-xs;
           color: $text-tertiary;
@@ -199,7 +208,7 @@
         }
       }
     }
-    
+
     .rankings-fighter-rank {
       background-color: rgba(255, 255, 255, 0.1);
       padding: $spacing-xs $spacing-sm;

@@ -1,9 +1,10 @@
 import { defineConfig } from 'astro/config';
+import vercel from "@astrojs/vercel";
 
 // https://astro.build/config
 export default defineConfig({
-  output: 'server', // Enable SSR
-  // other settings
+  output: 'server',
+  adapter: vercel(),
   devToolbar: {
     enabled: false
   }

@@ -1,17 +1,18 @@
-@import '../base/variables';
-@import '../base/mixins';
+@use '../base/variables' as *;
+@use '../base/mixins' as *;
 
 .footer {
   background-color: $background-dark;
   padding: $spacing-lg 0;
-  margin-top: $spacing-xl;
-  
+  margin-top: auto;
+  width: 100%;
+ 
   &-container {
     max-width: $breakpoint-desktop;
     margin: 0 auto;
     padding: 0 $spacing-md;
   }
-  
+ 
   &-content {
     display: flex;
     justify-content: space-between;
@@ -19,41 +20,41 @@
     padding-bottom: $spacing-md;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     margin-bottom: $spacing-md;
-    
+   
     @include mobile {
       flex-direction: column;
       gap: $spacing-md;
       text-align: center;
     }
   }
-  
+ 
   &-logo {
     font-size: $font-size-lg;
     font-weight: 700;
     color: $text-primary;
   }
-  
+ 
   &-links {
     display: flex;
     gap: $spacing-md;
-    
+   
     @include mobile {
       flex-wrap: wrap;
       justify-content: center;
       gap: $spacing-sm;
     }
   }
-  
+ 
   &-link {
     color: $text-tertiary;
     text-decoration: none;
     transition: color 0.2s;
-    
+   
     &:hover {
       color: $text-primary;
     }
   }
-  
+ 
   &-bottom {
     color: $text-tertiary;
     font-size: $font-size-sm;

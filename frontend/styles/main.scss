@@ -1,21 +1,25 @@
-@import './base/_variables';
-@import './base/_mixins';
-@import './components/navbar';
-@import './components/footer';
-@import './pages/home';
-@import './pages/event.scss';
-@import './pages/eventsPage.scss';
-@import './pages/fighter.scss';
-@import './pages/fighterPage.scss';
-@import './pages/rankingsPage.scss';
+@use './base/_variables' as *;
+@use './base/_mixins' as *;
+@use './components/navbar';
+@use './components/footer';
+@use './pages/home';
+@use './pages/event';
+@use './pages/eventsPage';
+@use './pages/fighter';
+@use './pages/fighterPage';
+@use './pages/rankingsPage';
+
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap');
 
-// Reset & Base Styles
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   font-family: "Space Grotesk", sans-serif !important;
+}
+
+html, body {
+  height: 100%;
 }
 
 html {
@@ -26,7 +30,18 @@ html {
 
 body {
   max-width: 100vw;
+  padding-top: 60px;
   overflow-x: hidden;
+}
+
+.site-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-content {
+  flex: 1;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -45,7 +60,6 @@ img {
   height: auto;
 }
 
-// Layout
 .container {
   width: 100%;
   max-width: $breakpoint-desktop;
@@ -53,7 +67,6 @@ img {
   padding: 0 $spacing-md;
 }
 
-// Common components
 .button {
   @include button;
 }
@@ -62,7 +75,6 @@ img {
   @include card;
 }
 
-// Utility classes
 .text-center {
   text-align: center;
 }

@@ -2,9 +2,7 @@
 interface Props {
   title: string;
 }
-
 const { title } = Astro.props;
-
 import Navbar from "../components/Navbar.astro";
 import Footer from "../components/Footer.astro";
 ---
@@ -19,13 +17,21 @@ import Footer from "../components/Footer.astro";
     <title>{title}</title>
     <style is:global>
       @import '../../styles/main.scss';
+      
+      .loading-container {
+        min-height: 65vh; 
+      }
     </style>
   </head>
   <body>
-    <header>
-      <Navbar />
-    </header>
-    <slot />
-    <Footer />
+    <div class="site-wrapper">
+      <header>
+        <Navbar />
+      </header>
+      <main class="site-content">
+        <slot />
+      </main>
+      <Footer />
+    </div>
   </body>
 </html>

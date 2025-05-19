@@ -234,6 +234,7 @@ type Fighter struct {
 	Weight string
 	Reach  string
 
+	Wins    int
 	KOWins  int
 	SubWins int
 	DecWins int
@@ -524,7 +525,6 @@ func (s *FighterScraper) ScrapeFightersDirectly() ([]*Fighter, error) {
 	return allFighters, nil
 }
 
-// GetFighterDetails fills in additional details for a fighter
 func (s *FighterScraper) GetFighterDetails(fighter *Fighter) error {
 	if fighter.UFCURL == "" {
 		return fmt.Errorf("no URL provided for fighter %s", fighter.Name)
@@ -577,25 +577,26 @@ func (s *FighterScraper) GetFighterDetails(fighter *Fighter) error {
 	// Parse W-L-D from record
 	var totalWins int
 	recordText := strings.TrimSpace(doc.Find("p.hero-profile__division-body").First().Text())
-	
+
 	if recordText != "" {
 		// Update fighter record if it's empty
 		if fighter.Record == "" {
 			fighter.Record = recordText
 		}
-		
+
 		// Log the record text for debugging
 		log.Printf("Fighter %s record: %s", fighter.Name, recordText)
-		
+
 		// Parse wins, losses, and draws from the record
-		// Example format: "23-5-0 (W-L-D)" or "21-1-1" 
+		// Example format: "23-5-0 (W-L-D)" or "21-1-1"
 		recordRegex := regexp.MustCompile(`^(\d+)-(\d+)-(\d+)`)
 		matches := recordRegex.FindStringSubmatch(recordText)
 		if len(matches) >= 4 {
 			totalWins, _ = strconv.Atoi(matches[1])
-			_, _ = strconv.Atoi(matches[2])  // Ignore losses with blank identifier
+			fighter.Wins = totalWins        // Store the total wins in the Wins field
+			_, _ = strconv.Atoi(matches[2]) // Ignore losses with blank identifier
 			draws, _ := strconv.Atoi(matches[3])
-			
+
 			// Set the draws in the fighter struct
 			fighter.Draws = draws
 			log.Printf("Parsed record for %s: wins=%d, draws=%d", fighter.Name, totalWins, draws)
@@ -604,14 +605,20 @@ func (s *FighterScraper) GetFighterDetails(fighter *Fighter) error {
 		}
 	}
 
+	// Default status to "Active" if status is Unknown
+	if fighter.Status == "Unknown" {
+		fighter.Status = "Active"
+	}
+
 	// Extract bio info from the tabs section
+	statusFound := false
 	doc.Find(".c-bio__field").Each(func(i int, field *goquery.Selection) {
 		label := strings.TrimSpace(field.Find(".c-bio__label").Text())
 		text := strings.TrimSpace(field.Find(".c-bio__text").Text())
 
 		switch label {
 		case "Status":
-			// Use the dedicated Status field from the bio section
+			statusFound = true
 			fighter.Status = text
 
 			// Set ranking based on status
@@ -658,6 +665,11 @@ func (s *FighterScraper) GetFighterDetails(fighter *Fighter) error {
 			fighter.Reach = text
 		}
 	})
+
+	// If we didn't find the status field, confirm that we set it to Active
+	if !statusFound && fighter.Status == "Unknown" {
+		fighter.Status = "Active"
+	}
 
 	// Reset win methods
 	fighter.KOWins = 0
@@ -1009,32 +1021,32 @@ func countFightersWithNationality(fighters []*Fighter) int {
 
 func InsertFighter(db *sql.DB, fighter *Fighter) error {
 	// Parse the wins, losses, draws from the struct fields
-	wins := fighter.KOWins + fighter.SubWins + fighter.DecWins
+	wins := fighter.Wins
 
 	// Now that we're using ufc_id as the unique constraint, we can use a simple UPSERT pattern
 	_, err := db.Exec(`
-        INSERT INTO fighters
-        (name, nickname, weight_class, status, rank, ufc_id, ufc_url, nationality,
-         wins, ko_wins, sub_wins, dec_wins, draws, age, height, weight, reach)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-        ON CONFLICT (ufc_id) DO UPDATE SET
-            name = EXCLUDED.name,
-            nickname = EXCLUDED.nickname,
-            weight_class = EXCLUDED.weight_class,
-            status = EXCLUDED.status,
-            rank = EXCLUDED.rank,
-            ufc_url = EXCLUDED.ufc_url,
-            nationality = EXCLUDED.nationality,
-            wins = EXCLUDED.wins,
-            ko_wins = EXCLUDED.ko_wins,
-            sub_wins = EXCLUDED.sub_wins,
-            dec_wins = EXCLUDED.dec_wins,
-            draws = EXCLUDED.draws,
-            age = EXCLUDED.age,
-            height = EXCLUDED.height,
-            weight = EXCLUDED.weight,
-            reach = EXCLUDED.reach
-    `, fighter.Name, fighter.Nickname, fighter.WeightClass,
+		INSERT INTO fighters
+		(name, nickname, weight_class, status, rank, ufc_id, ufc_url, nationality,
+		 wins, ko_wins, sub_wins, dec_wins, draws, age, height, weight, reach)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+		ON CONFLICT (ufc_id) DO UPDATE SET
+			name = EXCLUDED.name,
+			nickname = EXCLUDED.nickname,
+			weight_class = EXCLUDED.weight_class,
+			status = EXCLUDED.status,
+			rank = EXCLUDED.rank,
+			ufc_url = EXCLUDED.ufc_url,
+			nationality = EXCLUDED.nationality,
+			wins = EXCLUDED.wins,
+			ko_wins = EXCLUDED.ko_wins,
+			sub_wins = EXCLUDED.sub_wins,
+			dec_wins = EXCLUDED.dec_wins,
+			draws = EXCLUDED.draws,
+			age = EXCLUDED.age,
+			height = EXCLUDED.height,
+			weight = EXCLUDED.weight,
+			reach = EXCLUDED.reach
+	`, fighter.Name, fighter.Nickname, fighter.WeightClass,
 		fighter.Status, fighter.Ranking, fighter.UFCID, fighter.UFCURL, fighter.Nationality,
 		wins, fighter.KOWins, fighter.SubWins, fighter.DecWins, fighter.Draws,
 		fighter.Age, fighter.Height, fighter.Weight, fighter.Reach)

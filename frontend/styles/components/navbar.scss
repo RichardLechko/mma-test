@@ -1,13 +1,27 @@
-@import '../base/variables';
-@import '../base/mixins';
+@use 'sass:color';
+@use '../base/variables' as *;
+@use '../base/mixins' as *;
+
+$hamburger-transition: 0.3s ease;
 
 .navbar {
-  background-color: $background-dark;
-  position: sticky;
+  background-color: color.adjust($background-dark, $lightness: 3%);
+  position: fixed;
   top: 0;
+  left: 0;
+  width: 100%;
   z-index: 100;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3); 
   
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  
+  background-image: linear-gradient(
+    to bottom,
+    color.adjust($background-dark, $lightness: 5%),
+    $background-dark
+  );
+  
+ 
   &-container {
     max-width: $breakpoint-desktop;
     margin: 0 auto;
@@ -15,24 +29,110 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+   
+    @include tablet {
+      padding: $spacing-sm;
+      .navbar-link {
+        display: block;
+        width: 100%;
+        position: relative;
+        z-index: 200; 
+      }
+    }
   }
-  
+
+  &-overlay {
+    z-index: 150;
+  }
+ 
   &-logo {
     font-size: $font-size-xl;
     font-weight: 700;
     color: $text-primary;
     text-decoration: none;
-    
+    z-index: 101; // Keep logo above the sidebar
+   
     &:hover {
       color: $primary-color;
     }
+   
+    @include mobile {
+      font-size: $font-size-lg;
+    }
   }
-  
+ 
+  // Hamburger menu
+  &-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 21px;
+    cursor: pointer;
+    z-index: 101; // Keep toggle above the sidebar
+   
+    @include tablet {
+      display: flex;
+    }
+   
+    span {
+      display: block;
+      width: 100%;
+      height: 3px;
+      background-color: $text-primary;
+      border-radius: 3px;
+      transition: transform $hamburger-transition, opacity $hamburger-transition;
+     
+      &:nth-child(1) {
+        transform-origin: top left;
+      }
+     
+      &:nth-child(3) {
+        transform-origin: bottom left;
+      }
+    }
+   
+    &.active {
+      span {
+        &:nth-child(1) {
+          transform: rotate(45deg) translate(1px, -1px);
+        }
+       
+        &:nth-child(2) {
+          opacity: 0;
+        }
+       
+        &:nth-child(3) {
+          transform: rotate(-45deg) translate(1px, 0);
+        }
+      }
+    }
+  }
+ 
   &-links {
     display: flex;
     gap: $spacing-md;
+   
+    @include tablet {
+      position: fixed;
+      top: 0;
+      right: -280px;
+      width: 280px;
+      height: 100vh;
+      background-color: $background-dark;
+      flex-direction: column;
+      gap: 0;
+      padding-top: 80px;
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+      transition: right 0.3s ease;
+      z-index: 200; /* Higher than overlay */
+      
+      &.active {
+        right: 0;
+      }
+    }
   }
-  
+ 
   &-link {
     color: $text-secondary;
     text-decoration: none;
@@ -40,25 +140,70 @@
     padding: $spacing-xs $spacing-sm;
     border-radius: $border-radius-sm;
     transition: color 0.2s, background-color 0.2s;
-    
+   
     &:hover, &.active {
       color: $text-primary;
       background-color: rgba(255, 255, 255, 0.1);
     }
-    
+   
     &.active {
       font-weight: 600;
     }
+   
+    @include tablet {
+      position: relative;
+      z-index: 201;
+      padding: $spacing-md;
+      width: 100%;
+      text-align: left;
+      border-radius: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+     
+      &:hover, &.active {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding-left: calc(#{$spacing-md} + 5px); // Indent on hover for visual effect
+      }
+    }
   }
-  
+ 
   @include mobile {
     &-links {
       gap: $spacing-sm;
     }
-    
+   
     &-link {
       font-size: $font-size-sm;
-      padding: $spacing-xs;
+     
+      @include tablet {
+        font-size: $font-size-md; // Larger text in sidebar
+        padding: $spacing-sm $spacing-md;
+      }
     }
   }
+}
+
+// Overlay when sidebar is active
+.navbar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  z-index: 99;
+  transition: opacity 0.3s ease;
+ 
+  @include tablet {
+    &.active {
+      display: block;
+      opacity: 1;
+    }
+  }
+}
+
+// Prevent scrolling when sidebar is open
+body.sidebar-open {
+  overflow: hidden;
 }
