@@ -311,6 +311,149 @@ const nationalityOptions: FilterOption[] = [
   </main>
 </Layout>
 
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    import('../../utils/analytics.ts').then(({ trackEvent }) => {
+      // Track page view
+      trackEvent('view_fighters_list', {
+        event_category: 'Page View',
+        event_label: 'UFC Fighters Listing'
+      });
+
+      // Track searches - with proper TypeScript types
+      const searchInput = document.getElementById('fighter-search') as HTMLInputElement | null;
+      let previousSearch = '';
+      
+      if (searchInput) {
+        searchInput.addEventListener('blur', () => {
+          const currentSearch = searchInput.value.trim().toLowerCase();
+          // Only track if search term is different and not empty
+          if (currentSearch && currentSearch !== previousSearch) {
+            trackEvent('search_fighters', {
+              event_category: 'Search',
+              event_label: currentSearch,
+              search_term: currentSearch
+            });
+            previousSearch = currentSearch;
+          }
+        });
+      }
+
+      // Track filter usage - with proper TypeScript types
+      const statusFilter = document.getElementById('status-filter') as HTMLSelectElement | null;
+      const championFilter = document.getElementById('champion-filter') as HTMLSelectElement | null;
+      
+      if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+          if (this.value) {
+            trackEvent('filter_fighters', {
+              event_category: 'Filter',
+              event_label: `Status: ${this.value}`,
+              filter_type: 'status',
+              filter_value: this.value
+            });
+          }
+        });
+      }
+      
+      if (championFilter) {
+        championFilter.addEventListener('change', function() {
+          if (this.value) {
+            trackEvent('filter_fighters', {
+              event_category: 'Filter',
+              event_label: 'Champions Only',
+              filter_type: 'champion',
+              filter_value: this.value
+            });
+          }
+        });
+      }
+      
+      // Track weight class filter selection
+      document.querySelectorAll('#weight-class-filter-dropdown .filter-item').forEach(item => {
+        item.addEventListener('click', function(this: HTMLElement) {
+          const value = this.getAttribute('data-value');
+          if (value && value !== '') {
+            trackEvent('filter_fighters', {
+              event_category: 'Filter',
+              event_label: `Weight Class: ${value}`,
+              filter_type: 'weight_class',
+              filter_value: value
+            });
+          }
+        });
+      });
+      
+      // Track nationality filter selection
+      document.querySelectorAll('#nationality-filter-dropdown .filter-item').forEach(item => {
+        item.addEventListener('click', function(this: HTMLElement) {
+          const value = this.getAttribute('data-value');
+          if (value && value !== '') {
+            trackEvent('filter_fighters', {
+              event_category: 'Filter',
+              event_label: `Nationality: ${value}`,
+              filter_type: 'nationality',
+              filter_value: value
+            });
+          }
+        });
+      });
+      
+      // Track filter reset
+      const resetButton = document.getElementById('reset-filters');
+      if (resetButton) {
+        resetButton.addEventListener('click', () => {
+          trackEvent('reset_filters', {
+            event_category: 'Filter',
+            event_label: 'Reset All Filters'
+          });
+        });
+      }
+      
+      // Track load more clicks
+      const loadMoreButton = document.getElementById('load-more') as HTMLButtonElement | null;
+      if (loadMoreButton) {
+        loadMoreButton.addEventListener('click', () => {
+          const currentCount = parseInt(loadMoreButton.getAttribute('data-current-count') || '10');
+          trackEvent('load_more_fighters', {
+            event_category: 'Navigation',
+            event_label: `Loaded ${currentCount} more fighters`,
+            current_count: currentCount
+          });
+        });
+      }
+      
+      // Track fighter card clicks with proper TypeScript handling
+      document.addEventListener('click', (event) => {
+        if (!event.target) return;
+        
+        // Use type assertion to tell TypeScript that event.target is an Element
+        const target = event.target as Element;
+        const fighterCard = target.closest('.fighter-card') as HTMLAnchorElement | null;
+        
+        if (fighterCard) {
+          const fighterPath = fighterCard.getAttribute('href');
+          const fighterId = fighterPath ? fighterPath.split('/').pop() || '' : '';
+          const fighterName = fighterCard.querySelector('h2')?.textContent || 'Unknown Fighter';
+          const weightClass = fighterCard.dataset.weightClass || 'Unknown';
+          const nationality = fighterCard.dataset.nationality || 'Unknown';
+          
+          trackEvent('select_fighter', {
+            event_category: 'Navigation',
+            event_label: fighterName,
+            fighter_id: fighterId,
+            fighter_name: fighterName,
+            weight_class: weightClass,
+            nationality: nationality
+          });
+        }
+      }, true);
+    }).catch(err => {
+      console.error('Error loading analytics:', err);
+    });
+  });
+</script>
+
 <script is:inline>
   document.addEventListener('DOMContentLoaded', () => {
     // Elements for searching
@@ -748,7 +891,7 @@ const nationalityOptions: FilterOption[] = [
             <div class="fighter-record">
               <span class="record-value">${wins}-${losses}-${draws}</span>
               <span class="record-label">W-L-D</span>
-              <span class="record-nc">${noContests} NC</span>
+              ${noContests > 0 ? `<span class="record-nc">${noContests} NC</span>` : ''}
             </div>
             ${
               fighter.status !== 'Retired' &&

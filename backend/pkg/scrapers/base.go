@@ -17,27 +17,27 @@ var (
 )
 
 type ScraperConfig struct {
-	UserAgent          string
-	Timeout            time.Duration 
-	RetryCount         int
-	RetryWaitTime      time.Duration
-	MaxIdleConns       int
+	UserAgent           string
+	Timeout             time.Duration
+	RetryCount          int
+	RetryWaitTime       time.Duration
+	MaxIdleConns        int
 	MaxIdleConnsPerHost int
-	MaxConnsPerHost    int
-	IdleConnTimeout    time.Duration
+	MaxConnsPerHost     int
+	IdleConnTimeout     time.Duration
 }
 
 func DefaultConfig() ScraperConfig {
-    return ScraperConfig{
-        UserAgent:          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
-        Timeout:            30 * time.Second,
-        RetryCount:         3,
-        RetryWaitTime:      5 * time.Second,
-        MaxIdleConns:       100,
-        MaxIdleConnsPerHost: 20,
-        MaxConnsPerHost:     20,
-        IdleConnTimeout:     90 * time.Second,
-    }
+	return ScraperConfig{
+		UserAgent:           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
+		Timeout:             30 * time.Second,
+		RetryCount:          3,
+		RetryWaitTime:       5 * time.Second,
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 20,
+		MaxConnsPerHost:     20,
+		IdleConnTimeout:     90 * time.Second,
+	}
 }
 
 type Scraper interface {
@@ -53,7 +53,6 @@ type BaseScraper struct {
 }
 
 func NewBaseScraper(config ScraperConfig) *BaseScraper {
-	// Create a custom transport with optimized connection pooling
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
@@ -69,7 +68,6 @@ func NewBaseScraper(config ScraperConfig) *BaseScraper {
 		ForceAttemptHTTP2:   true,
 	}
 
-	// Create HTTP client with the optimized transport
 	client := &http.Client{
 		Transport: transport,
 		Timeout:   config.Timeout,

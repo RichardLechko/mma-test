@@ -821,3 +821,32 @@
     max-width: 100%;
   }
 }
+
+.filter-dropdown {
+  .filter-selected {
+    display: flex;
+    align-items: center;
+    white-space: nowrap; // Prevent wrapping
+    
+    span {
+      display: inline; // Change from default block to inline
+      white-space: nowrap; // Prevent wrapping to new line
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+  
+  // Additional responsive tweaks
+  @media (max-width: 640px) {
+    .filter-selected {
+      padding: 0.4rem 0.8rem;
+      
+      span {
+        font-size: 0.8rem;
+        // Keep everything on one line
+        display: inline;
+        white-space: nowrap;
+      }
+    }
+  }
+}
