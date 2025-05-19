@@ -2,14 +2,14 @@ import { supabase } from '../../lib/supabase';
 
 export async function GET({ request }) {
   try {
-    // Parse URL to get query parameters
+    
     const url = new URL(request.url);
     const offset = parseInt(url.searchParams.get('offset') || '0');
     const limit = parseInt(url.searchParams.get('limit') || '10');
 
     console.log(`API request: Fetching fighters with offset=${offset}, limit=${limit}`);
 
-    // Fetch fighters with pagination - use explicit start and end indices
+    
     const { data: fighters, error, count } = await supabase
       .from('fighters')
       .select('*', { count: 'exact' })
@@ -31,7 +31,7 @@ export async function GET({ request }) {
       );
     }
 
-    // Log fighter names for debugging
+    
     if (fighters && fighters.length > 0) {
       const names = fighters.map(f => f.name).join(', ');
       console.log(`API response: Fetched ${fighters.length} fighters from offset ${offset}: ${names}`);
@@ -39,13 +39,13 @@ export async function GET({ request }) {
       console.log(`API response: No fighters found for offset=${offset}, limit=${limit}`);
     }
 
-    // Return fighters data
+    
     return new Response(
       JSON.stringify({
         fighters: fighters,
         totalCount: count || 0,
-        requestedOffset: offset,  // Reflect back the requested offset
-        actualOffset: offset,     // The actual offset used
+        requestedOffset: offset,
+        actualOffset: offset,  
         limit: limit
       }),
       {

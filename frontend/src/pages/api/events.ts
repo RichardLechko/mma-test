@@ -6,16 +6,13 @@ export const GET: APIRoute = async ({ url }) => {
   const offset = parseInt(url.searchParams.get('offset') || '0');
   const limit = parseInt(url.searchParams.get('limit') || '10');
   
-  // Create date objects for start and end of year
   const startOfYear = new Date(year, 0, 1);
   const endOfYear = new Date(year, 11, 31, 23, 59, 59);
   
-  // Format dates as ISO strings
   const startISO = startOfYear.toISOString();
   const endISO = endOfYear.toISOString();
   
   try {
-    // Get the events with pagination
     const { data: events, error } = await supabase
       .from('events')
       .select('id, name, event_date, venue, city, country, status')
@@ -31,14 +28,12 @@ export const GET: APIRoute = async ({ url }) => {
       });
     }
     
-    // Filter out invalid dates
     const filteredEvents = events?.filter(event => {
       if (!event || !event.event_date) return false;
       const date = new Date(event.event_date);
       return !isNaN(date.getTime());
     });
     
-    // Check if there are more events
     const { count } = await supabase
       .from('events')
       .select('id', { count: 'exact', head: true })
