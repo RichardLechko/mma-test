@@ -32,51 +32,55 @@ const upcomingEvents = await getUpcomingEvents(4);
 
 function formatDate(dateString: string): string {
   if (!dateString) return '';
-  
+
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return 'Invalid date';
-  
+
   const utcYear = date.getUTCFullYear();
   const utcMonth = date.getUTCMonth();
   const utcDay = date.getUTCDate();
-  
+
   const displayDate = new Date(utcYear, utcMonth, utcDay);
-  
+
   return displayDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   });
 }
 
 function getDaysUntil(dateString: string): string {
   if (!dateString) return '';
-  
+
   const eventDate = new Date(dateString);
   if (isNaN(eventDate.getTime())) return 'Date unknown';
-  
+
   const utcYear = eventDate.getUTCFullYear();
   const utcMonth = eventDate.getUTCMonth();
   const utcDay = eventDate.getUTCDate();
-  
+
   const displayDate = new Date(utcYear, utcMonth, utcDay);
-  
+
   const today = new Date();
-  const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  
+  const todayAtMidnight = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
   const calculateDaysDifference = (date1: Date, date2: Date): number => {
     const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
     const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
-    
+
     const timeDiff = Math.abs(d2.getTime() - d1.getTime());
-    
+
     return Math.round(timeDiff / (1000 * 60 * 60 * 24));
   };
-  
+
   const diffDays = calculateDaysDifference(displayDate, todayAtMidnight);
   const isPastEvent = displayDate < todayAtMidnight;
-  
+
   if (isPastEvent) {
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
@@ -106,31 +110,33 @@ function getDaysUntil(dateString: string): string {
     <div class="content">
       <section class="event-preview card">
         <h2>Upcoming UFC Events</h2>
-        
+
         <div class="events-grid">
-          {upcomingEvents && upcomingEvents.length > 0 ? (
-            upcomingEvents.map(event => (
-              <div class="event-details">
-                <h3>{event.name}</h3>
-                <p class="event-date">{formatDate(event.event_date)}</p>
-                <p class="event-location">
-                  {event.venue && `${event.venue}, `}
-                  {event.city && `${event.city}, `}
-                  {event.country}
-                </p>
-                
-                <div class="countdown">
-                  <span>{getDaysUntil(event.event_date)}</span>
+          {
+            upcomingEvents && upcomingEvents.length > 0 ? (
+              upcomingEvents.map(event => (
+                <div class="event-details">
+                  <h3>{event.name}</h3>
+                  <p class="event-date">{formatDate(event.event_date)}</p>
+                  <p class="event-location">
+                    {event.venue && `${event.venue}, `}
+                    {event.city && `${event.city}, `}
+                    {event.country}
+                  </p>
+
+                  <div class="countdown">
+                    <span>{getDaysUntil(event.event_date)}</span>
+                  </div>
+
+                  <a href={`/events/event/${event.id}`} class="btn btn-primary">
+                    View Fight Card
+                  </a>
                 </div>
-                
-                <a href={`/events/event/${event.id}`} class="btn btn-primary">
-                  View Fight Card
-                </a>
-              </div>
-            ))
-          ) : (
-            <p>No upcoming events scheduled at this time.</p>
-          )}
+              ))
+            ) : (
+              <p>No upcoming events scheduled at this time.</p>
+            )
+          }
         </div>
       </section>
 
@@ -140,13 +146,13 @@ function getDaysUntil(dateString: string): string {
           <h3>Event Calendar</h3>
           <p>Stay up to date with all upcoming UFC events.</p>
         </div>
-        
+
         <div class="feature card">
           <div class="icon">👊</div>
           <h3>Fighter Database</h3>
           <p>Comprehensive fighter stats and records.</p>
         </div>
-        
+
         <div class="feature card">
           <div class="icon">🏆</div>
           <h3>Rankings</h3>
@@ -155,4 +161,108 @@ function getDaysUntil(dateString: string): string {
       </section>
     </div>
   </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Import analytics dynamically
+      import('../utils/analytics.ts')
+        .then(({ trackEvent }) => {
+          // Track homepage view
+          trackEvent('view_homepage', {
+            event_category: 'Page View',
+            event_label: 'MMA Scheduler Homepage',
+          });
+
+          // Track hero button clicks
+          const heroButtons = document.querySelectorAll('.hero-buttons .btn');
+          if (heroButtons) {
+            heroButtons.forEach(button => {
+              button.addEventListener('click', e => {
+                const target = e.currentTarget as HTMLAnchorElement;
+                const buttonText = target.textContent?.trim() || 'Unknown';
+                const destination = target.getAttribute('href') || '';
+
+                trackEvent('click_hero_button', {
+                  event_category: 'Navigation',
+                  event_label: buttonText,
+                  destination: destination,
+                });
+              });
+            });
+          }
+
+          // Track upcoming event clicks
+          const eventButtons = document.querySelectorAll('.event-details .btn');
+          if (eventButtons) {
+            eventButtons.forEach(button => {
+              button.addEventListener('click', e => {
+                const target = e.currentTarget as HTMLAnchorElement;
+                const eventCard = target.closest('.event-details');
+
+                if (eventCard) {
+                  const eventName =
+                    eventCard.querySelector('h3')?.textContent ||
+                    'Unknown Event';
+                  const eventDate =
+                    eventCard.querySelector('.event-date')?.textContent || '';
+                  const eventId =
+                    target.getAttribute('href')?.split('/').pop() || '';
+
+                  trackEvent('view_event_from_homepage', {
+                    event_category: 'Navigation',
+                    event_label: eventName,
+                    event_id: eventId,
+                    event_date: eventDate,
+                  });
+                }
+              });
+            });
+          }
+
+          // Track feature card clicks
+          const featureCards = document.querySelectorAll('.feature.card');
+          if (featureCards) {
+            featureCards.forEach(card => {
+              card.addEventListener('click', e => {
+                const target = e.currentTarget as HTMLElement;
+                const featureTitle =
+                  target.querySelector('h3')?.textContent || 'Unknown Feature';
+
+                trackEvent('click_feature_card', {
+                  event_category: 'Engagement',
+                  event_label: featureTitle,
+                });
+              });
+            });
+          }
+
+          // Track time on page (optional)
+          let startTime = Date.now();
+          let hasSentTimeEvent = false;
+
+          // Send time on page event when user leaves page or after 3 minutes
+          const sendTimeOnPage = () => {
+            if (hasSentTimeEvent) return;
+
+            const timeSpent = Math.floor((Date.now() - startTime) / 1000); // Time in seconds
+
+            trackEvent('time_on_homepage', {
+              event_category: 'Engagement',
+              event_label: 'Time on Homepage',
+              time_seconds: timeSpent,
+            });
+
+            hasSentTimeEvent = true;
+          };
+
+          // Send time event after 3 minutes
+          setTimeout(sendTimeOnPage, 180000); // 3 minutes
+
+          // Send time event when user leaves page
+          window.addEventListener('beforeunload', sendTimeOnPage);
+        })
+        .catch(err => {
+          console.error('Error loading analytics:', err);
+        });
+    });
+  </script>
 </Layout>

@@ -230,6 +230,7 @@
         gap: $spacing-md;
         align-items: center;
         margin: $spacing-md 0;
+
         .fighter {
           text-decoration: none;
           color: $text-primary;
@@ -300,6 +301,83 @@
               box-shadow: 0 4px 12px rgba(0, 128, 0, 0.4);
             }
           }
+
+          &.draw {
+            background: linear-gradient(
+              135deg,
+              rgba(255, 193, 7, 0.25),
+              rgba(255, 193, 7, 0.1)
+            );
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+
+            &:after {
+              content: 'DRAW';
+              position: absolute;
+              top: 10px;
+              right: -32px;
+              background: rgba(255, 193, 7, 0.9);
+              color: black;
+              font-size: 10px;
+              font-weight: bold;
+              padding: 3px 0;
+              width: 120px;
+              text-align: center;
+              transform: rotate(45deg);
+              letter-spacing: 1px;
+              text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+              z-index: 5;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+
+            .fighter-name .name {
+              color: #ffd54f;
+              text-shadow: 0 0 4px rgba(255, 193, 7, 0.5);
+            }
+
+            &:hover {
+              box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+            }
+          }
+
+          &.no-contest {
+            background: linear-gradient(
+              135deg,
+              rgba(158, 158, 158, 0.25),
+              rgba(158, 158, 158, 0.1)
+            );
+            border: 1px solid rgba(158, 158, 158, 0.5);
+            box-shadow: 0 0 15px rgba(158, 158, 158, 0.2);
+
+            &:after {
+              content: 'NO CONTEST';
+              position: absolute;
+              top: 12px; /* Moved down slightly to fix cutoff */
+              right: -32px;
+              background: rgba(158, 158, 158, 0.9);
+              color: white;
+              font-size: 10px;
+              font-weight: bold;
+              padding: 3px 0;
+              width: 120px;
+              text-align: center;
+              transform: rotate(45deg);
+              letter-spacing: 1px;
+              text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+              z-index: 5;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+
+            .fighter-name .name {
+              color: #e0e0e0;
+              text-shadow: 0 0 4px rgba(158, 158, 158, 0.5);
+            }
+
+            &:hover {
+              box-shadow: 0 4px 12px rgba(158, 158, 158, 0.4);
+            }
+          }
+
           .fighter-name {
             text-align: center;
             margin-bottom: $spacing-sm;
@@ -493,7 +571,7 @@
       .fight-result.draw-result {
         margin-top: $spacing-md;
         padding: $spacing-md;
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(255, 193, 7, 0.1);
         border-radius: $border-radius-sm;
         text-align: center;
         border-top: 2px solid rgba(255, 193, 7, 0.5);
@@ -501,10 +579,51 @@
         .result-header {
           font-size: $font-size-md;
           color: $text-primary;
+          position: relative;
+
+          &:before {
+            content: '⚖️';
+            margin-right: 8px;
+            font-size: 1.1em;
+          }
 
           .method {
             font-weight: bold;
             color: #ffc107;
+            background: rgba(255, 193, 7, 0.2);
+            padding: 4px 10px;
+            border-radius: 3px;
+            display: inline-block;
+          }
+        }
+      }
+
+      .fight-result.no-contest-result {
+        margin-top: $spacing-md;
+        padding: $spacing-md;
+        background: rgba(158, 158, 158, 0.1);
+        border-radius: $border-radius-sm;
+        text-align: center;
+        border-top: 2px solid rgba(158, 158, 158, 0.5);
+
+        .result-header {
+          font-size: $font-size-md;
+          color: $text-primary;
+          position: relative;
+
+          &:before {
+            content: '⛔';
+            margin-right: 8px;
+            font-size: 1.1em;
+          }
+
+          .method {
+            font-weight: bold;
+            color: #e0e0e0;
+            background: rgba(158, 158, 158, 0.2);
+            padding: 4px 10px;
+            border-radius: 3px;
+            display: inline-block;
           }
         }
       }
@@ -561,21 +680,21 @@
 @media (max-width: 768px) {
   .event-page {
     padding: $spacing-md $spacing-sm;
-    
+
     .event-header {
       padding: $spacing-md;
-      
+
       h1 {
         font-size: $font-size-xl;
         margin: 0 0 $spacing-sm;
         max-width: 100%;
       }
-      
+
       .event-meta {
         gap: $spacing-sm;
         max-width: 100%;
       }
-      
+
       .event-countdown {
         position: static;
         margin-top: $spacing-sm;
@@ -585,51 +704,51 @@
         max-width: 300px;
       }
     }
-    
+
     .fight-card {
       padding: $spacing-md;
-      
+
       h2 {
         font-size: $font-size-lg;
         margin-bottom: $spacing-sm;
       }
-      
+
       .fights-list {
         gap: $spacing-sm;
       }
-      
+
       .fight {
         padding: $spacing-sm;
-        
+
         .fighters {
           gap: $spacing-sm;
-          
+
           .fighter {
             padding: $spacing-sm;
-            
+
             .fighter-name .name {
               font-size: $font-size-md;
             }
           }
         }
-        
+
         .fight-result {
           padding: $spacing-sm;
         }
       }
     }
-    
+
     .no-fights {
       padding: $spacing-md;
-      
+
       p {
         font-size: $font-size-md;
       }
     }
-    
+
     .event-not-found {
       padding: $spacing-lg;
-      
+
       h1 {
         font-size: $font-size-xl;
       }
@@ -640,172 +759,184 @@
 @media (max-width: 640px) {
   .event-page {
     padding: $spacing-sm $spacing-xs;
-    
+
     .event-details-container {
       border-radius: $border-radius-sm;
     }
-    
+
     .event-header {
       padding: $spacing-sm;
       border-radius: $border-radius-sm $border-radius-sm 0 0;
-      
+
       h1 {
         font-size: $font-size-lg;
         margin: 0 0 $spacing-sm;
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
       }
-      
+
       .ufc-link {
         padding: $spacing-xs * 0.7 $spacing-xs;
         border-radius: $border-radius-sm;
         margin-bottom: $spacing-sm;
-        
-        .ufc-icon, .link-text {
+
+        .ufc-icon,
+        .link-text {
           font-size: $font-size-xs;
         }
       }
-      
+
       .event-meta {
         gap: $spacing-xs;
         flex-direction: column;
         width: 100%;
-        
-        .event-date-time, .event-location {
+
+        .event-date-time,
+        .event-location {
           padding: $spacing-xs $spacing-sm;
           border-radius: $border-radius-sm;
-          
-          .event-date, .venue {
+
+          .event-date,
+          .venue {
             font-size: $font-size-sm;
           }
-          
-          .event-time, .location, .attendance {
+
+          .event-time,
+          .location,
+          .attendance {
             font-size: $font-size-xs;
           }
         }
       }
-      
+
       .event-countdown {
         padding: $spacing-xs $spacing-sm;
         border-radius: $border-radius-sm;
-        
+
         .countdown-value {
           font-size: $font-size-lg;
         }
-        
+
         .countdown-label {
           font-size: $font-size-xs;
         }
       }
     }
-    
+
     .fight-card {
       padding: $spacing-sm;
-      
+
       h2 {
         font-size: $font-size-md;
         margin-bottom: $spacing-sm;
         padding-bottom: $spacing-xs * 0.7;
       }
-      
+
       .fights-list {
         gap: $spacing-xs;
       }
-      
+
       .fight {
         padding: $spacing-xs;
         border-radius: $border-radius-sm;
-        
-        &.main-event, &.title-fight {
+
+        &.main-event,
+        &.title-fight {
           border-left-width: 3px;
         }
-        
-        .main-event-tag, .title-fight-tag, .canceled-tag {
+
+        .main-event-tag,
+        .title-fight-tag,
+        .canceled-tag {
           font-size: 10px;
           padding: 2px 6px;
         }
-        
+
         .weight-class {
           font-size: 11px;
           padding: 2px 6px;
           margin-bottom: $spacing-xs;
         }
-        
+
         .fighters {
           margin: $spacing-xs 0;
           gap: $spacing-xs;
           grid-template-columns: 1fr auto 1fr;
-          
+
           .fighter {
             padding: $spacing-xs;
-            
+
             .fighter-name .name {
               font-size: $font-size-sm;
             }
-            
+
             .fighter-status {
-              .fighter-rank, .fighter-unranked {
+              .fighter-rank,
+              .fighter-unranked {
                 font-size: 10px;
                 padding: 2px 6px;
               }
-              
+
               .champion-badge {
                 width: 20px;
                 height: 20px;
                 font-size: 10px;
               }
             }
-            
-            &.winner::after {
+
+            &.winner::after,
+            &.draw::after,
+            &.no-contest::after {
               font-size: 8px;
               right: -30px;
               top: 8px;
               width: 100px;
             }
           }
-          
+
           .vs {
             font-size: $font-size-md;
             width: 30px;
             height: 30px;
           }
         }
-        
+
         .fight-result {
           margin-top: $spacing-xs;
           padding: $spacing-xs;
-          
+
           .result-header {
             font-size: $font-size-sm;
             margin-bottom: 8px;
-            
+
             .winner-name {
               padding: 3px 8px;
             }
           }
-          
-          .result-details, .result-timing {
+
+          .result-details,
+          .result-timing {
             font-size: 11px;
           }
         }
       }
     }
-    
+
     .no-fights p {
       font-size: $font-size-md;
     }
-    
+
     .event-not-found {
       padding: $spacing-md;
-      
+
       h1 {
         font-size: $font-size-lg;
       }
-      
+
       p {
         font-size: $font-size-sm;
         margin-bottom: $spacing-md;
       }
-      
+
       .back-button {
         padding: $spacing-xs $spacing-sm;
         font-size: $font-size-sm;
@@ -818,21 +949,23 @@
   .event-page .fight-card .fight .fighters {
     grid-template-columns: 1fr;
     gap: $spacing-xs;
-    
+
     .fighter {
-      &.winner::after {
+      &.winner::after,
+      &.draw::after,
+      &.no-contest::after {
         transform: rotate(45deg) translateY(-5px);
         right: -40px;
         top: 15px;
       }
     }
-    
+
     .vs {
       display: none;
     }
-    
+
     &::after {
-      content: "VS";
+      content: 'VS';
       display: block;
       text-align: center;
       padding: $spacing-xs 0;
@@ -850,22 +983,23 @@
       h1 {
         font-size: $font-size-md;
       }
-      
+
       .event-countdown .countdown-value {
         font-size: $font-size-md;
       }
     }
-    
+
     .fight-card .fight {
-      &.main-event, &.title-fight {
+      &.main-event,
+      &.title-fight {
         border-left-width: 2px;
       }
-      
+
       .fight-result .result-header {
         display: flex;
         flex-direction: column;
         gap: 5px;
-        
+
         .winner-name {
           margin-right: 0;
         }

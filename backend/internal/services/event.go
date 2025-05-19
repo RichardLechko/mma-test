@@ -11,19 +11,16 @@ import (
 	"mma-scheduler/internal/models"
 )
 
-// EventService handles database operations for events
 type EventService struct {
 	db *sql.DB
 }
 
-// NewEventService creates a new event service instance
 func NewEventService(db *sql.DB) *EventService {
 	return &EventService{
 		db: db,
 	}
 }
 
-// GetUpcomingEvents retrieves all events that are scheduled to occur in the future
 func (s *EventService) GetUpcomingEvents(ctx context.Context) ([]*models.Event, error) {
 	query := `
 		SELECT id, name, event_date, venue, city, country, ufc_url, status, created_at, updated_at, attendance
@@ -41,7 +38,6 @@ func (s *EventService) GetUpcomingEvents(ctx context.Context) ([]*models.Event, 
 	return s.scanEvents(rows)
 }
 
-// GetEventsSince retrieves all events that occurred since the given date
 func (s *EventService) GetEventsSince(ctx context.Context, since time.Time) ([]*models.Event, error) {
 	query := `
 		SELECT id, name, event_date, venue, city, country, ufc_url, status, created_at, updated_at, attendance
@@ -59,7 +55,6 @@ func (s *EventService) GetEventsSince(ctx context.Context, since time.Time) ([]*
 	return s.scanEvents(rows)
 }
 
-// GetEventByID retrieves an event by its ID
 func (s *EventService) GetEventByID(ctx context.Context, id string) (*models.Event, error) {
 	query := `
 		SELECT id, name, event_date, venue, city, country, ufc_url, status, created_at, updated_at, attendance
@@ -96,7 +91,6 @@ func (s *EventService) GetEventByID(ctx context.Context, id string) (*models.Eve
 	return event, nil
 }
 
-// GetEventByUFCURL retrieves an event by its UFC URL
 func (s *EventService) GetEventByUFCURL(ctx context.Context, ufcURL string) (*models.Event, error) {
 	query := `
 		SELECT id, name, event_date, venue, city, country, ufc_url, status, created_at, updated_at, attendance
@@ -125,7 +119,7 @@ func (s *EventService) GetEventByUFCURL(ctx context.Context, ufcURL string) (*mo
 	
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // Return nil, nil if not found (to handle upsert logic)
+			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to scan event: %w", err)
 	}
@@ -133,21 +127,17 @@ func (s *EventService) GetEventByUFCURL(ctx context.Context, ufcURL string) (*mo
 	return event, nil
 }
 
-// CreateEvent inserts a new event into the database
 func (s *EventService) CreateEvent(ctx context.Context, event *models.Event) error {
-	// First check if the event already exists by UFC URL
 	existingEvent, err := s.GetEventByUFCURL(ctx, event.UFCURL)
 	if err != nil {
 		return fmt.Errorf("error checking for existing event: %w", err)
 	}
 	
-	// If the event already exists, update it instead
 	if existingEvent != nil {
-		event.ID = existingEvent.ID // Ensure we update the correct record
+		event.ID = existingEvent.ID
 		return s.UpdateEvent(ctx, event)
 	}
 	
-	// Otherwise, insert a new record
 	query := `
 		INSERT INTO events (name, event_date, venue, city, country, ufc_url, status, attendance)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -167,7 +157,6 @@ func (s *EventService) CreateEvent(ctx context.Context, event *models.Event) err
 		event.Attendance,
 	)
 
-	// Get the ID of the newly inserted event
 	err = row.Scan(&event.ID)
 	if err != nil {
 		return fmt.Errorf("failed to insert event: %w", err)
@@ -195,7 +184,7 @@ func (s *EventService) UpdateEvent(ctx context.Context, event *models.Event) err
         event.UFCURL,
         event.Status,
         event.Attendance,
-        event.ID,  // This should be the 9th parameter
+        event.ID,
     )
     
     if err != nil {
@@ -215,7 +204,6 @@ func (s *EventService) UpdateEvent(ctx context.Context, event *models.Event) err
     return nil
 }
 
-// DeleteEvent removes an event from the database
 func (s *EventService) DeleteEvent(ctx context.Context, id string) error {
 	query := `DELETE FROM events WHERE id = $1`
 
@@ -237,7 +225,6 @@ func (s *EventService) DeleteEvent(ctx context.Context, id string) error {
 	return nil
 }
 
-// scanEvents is a helper function to scan multiple event rows
 func (s *EventService) scanEvents(rows *sql.Rows) ([]*models.Event, error) {
 	var events []*models.Event
 	

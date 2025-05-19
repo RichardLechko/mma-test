@@ -6,7 +6,6 @@ import (
 	"fmt"
 )
 
-// Event represents the structure for UFC events
 type Event struct {
     Name      string
     Date      string
@@ -22,7 +21,6 @@ var db *SupabaseDB
 
 func GetDB() *SupabaseDB {
     if db == nil {
-        // You'll need to get this from your config
         databaseURL := "your_supabase_connection_string"
         var err error
         db, err = NewSupabaseDB(databaseURL)

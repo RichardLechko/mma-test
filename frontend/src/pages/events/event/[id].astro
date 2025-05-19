@@ -325,7 +325,11 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                       <div class="fighters">
                         <a
                           href={`/fighters/${fight.fighter1.id}`}
-                          class={`fighter fighter-1 ${fight.winner_id === fight.fighter1_id ? 'winner' : ''} ${isCanceled ? 'canceled' : ''}`}
+                          class={`fighter fighter-1 
+    ${fight.winner_id === fight.fighter1_id ? 'winner' : ''} 
+    ${fight.result_method === 'Draw' ? 'draw' : ''} 
+    ${fight.result_method === 'No Contest' ? 'no-contest' : ''} 
+    ${isCanceled ? 'canceled' : ''}`}
                         >
                           <div class="fighter-name">
                             <span class="name">{fight.fighter1.name}</span>
@@ -353,7 +357,11 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                         <div class="vs">VS</div>
                         <a
                           href={`/fighters/${fight.fighter2.id}`}
-                          class={`fighter fighter-2 ${fight.winner_id === fight.fighter2_id ? 'winner' : ''} ${isCanceled ? 'canceled' : ''}`}
+                          class={`fighter fighter-2 
+    ${fight.winner_id === fight.fighter2_id ? 'winner' : ''}
+    ${fight.result_method === 'Draw' ? 'draw' : ''} 
+    ${fight.result_method === 'No Contest' ? 'no-contest' : ''}
+    ${isCanceled ? 'canceled' : ''}`}
                         >
                           <div class="fighter-name">
                             <span class="name">{fight.fighter2.name}</span>
@@ -408,7 +416,6 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                                     fight.result_time &&
                                     ` • `}
                                   {fight.result_time &&
-                                    // Time handling logic
                                     (() => {
                                       const timeStr = fight.result_time;
                                       const halfLength = timeStr.length / 2;
@@ -425,7 +432,7 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                                 </div>
                               )}
                             </div>
-                          ) : fight.result_method ? (
+                          ) : fight.result_method === 'Draw' ? (
                             <div class="fight-result draw-result">
                               <div class="result-header">
                                 <span class="method">
@@ -440,7 +447,38 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                                     fight.result_time &&
                                     ` • `}
                                   {fight.result_time &&
-                                    // Time handling logic
+                                    (() => {
+                                      const timeStr = fight.result_time;
+                                      const halfLength = timeStr.length / 2;
+                                      const firstHalf = timeStr.substring(
+                                        0,
+                                        halfLength,
+                                      );
+                                      const secondHalf =
+                                        timeStr.substring(halfLength);
+
+                                      return firstHalf === secondHalf
+                                        ? firstHalf
+                                        : timeStr;
+                                    })()}
+                                </div>
+                              )}
+                            </div>
+                          ) : fight.result_method === 'No Contest' ? (
+                            <div class="fight-result no-contest-result">
+                              <div class="result-header">
+                                <span class="method">
+                                  {fight.result_method}
+                                </span>
+                              </div>
+                              {(fight.result_round || fight.result_time) && (
+                                <div class="result-timing">
+                                  {fight.result_round &&
+                                    `Round ${fight.result_round}`}
+                                  {fight.result_round &&
+                                    fight.result_time &&
+                                    ` • `}
+                                  {fight.result_time &&
                                     (() => {
                                       const timeStr = fight.result_time;
                                       const halfLength = timeStr.length / 2;

@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-// ValidationError represents a validation error
 type ValidationError struct {
 	Field   string
 	Message string
@@ -16,8 +15,6 @@ type ValidationError struct {
 func (e ValidationError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Field, e.Message)
 }
-
-// Common validation functions
 
 func ValidateRequired(field, value string) error {
 	if strings.TrimSpace(value) == "" {
@@ -59,8 +56,6 @@ func ValidatePositiveNumber(field string, value float64) error {
 	return nil
 }
 
-// Domain-specific validation functions
-
 var weightClasses = []string{
 	"strawweight", "flyweight", "bantamweight", "featherweight",
 	"lightweight", "welterweight", "middleweight", "light_heavyweight",
@@ -92,7 +87,6 @@ func ValidateFinishType(finishType string) error {
 	return ValidateEnum("finish_type", finishType, validTypes)
 }
 
-// ValidateWeight checks if a weight is within reasonable bounds for MMA
 func ValidateWeight(weight float64) error {
 	if weight < 105 || weight > 300 {
 		return &ValidationError{
@@ -103,7 +97,6 @@ func ValidateWeight(weight float64) error {
 	return nil
 }
 
-// ValidateHeight checks if a height is within reasonable bounds
 func ValidateHeight(height float64) error {
 	if height < 120 || height > 240 {
 		return &ValidationError{
@@ -114,7 +107,6 @@ func ValidateHeight(height float64) error {
 	return nil
 }
 
-// ValidateRounds validates the number of rounds for a fight
 func ValidateRounds(rounds int) error {
 	if rounds != 3 && rounds != 5 {
 		return &ValidationError{
@@ -125,7 +117,6 @@ func ValidateRounds(rounds int) error {
 	return nil
 }
 
-// ValidateRank validates a fighter's ranking
 func ValidateRank(rank int) error {
 	if rank < 1 || rank > 15 {
 		return &ValidationError{
@@ -136,12 +127,11 @@ func ValidateRank(rank int) error {
 	return nil
 }
 
-// ValidateURL validates a URL string
 func ValidateURL(field, url string) error {
 	if url == "" {
-		return nil // Allow empty URLs
+		return nil
 	}
-	
+
 	urlRegex := regexp.MustCompile(`^https?:\/\/.+`)
 	if !urlRegex.MatchString(url) {
 		return &ValidationError{
