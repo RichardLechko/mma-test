@@ -728,13 +728,455 @@
   margin-right: 5px;
 }
 
-@media (max-width: 640px) {
-  .fighter-header {
-    .fighter-info {
+@media (max-width: 768px) {
+  .fighter-page {
+    padding: $spacing-md $spacing-sm;
+    
+    .fighter-header {
+      padding: $spacing-md;
+      
+      .fighter-info h1 {
+        font-size: $font-size-xl;
+      }
+      
       .fighter-nickname {
         font-size: $font-size-sm;
+      }
+      
+      .fighter-weight-class {
+        font-size: $font-size-sm;
+      }
+    }
+    
+    .fighter-profile {
+      padding: $spacing-md;
+      gap: $spacing-sm;
+      
+      h2 {
+        font-size: $font-size-lg;
+        margin-bottom: $spacing-sm;
+      }
+      
+      .fighter-record .record-card {
+        padding: $spacing-sm;
+        
+        .record-main .count {
+          font-size: 1.5rem;
+        }
+      }
+      
+      .win-methods .methods-container h3 {
+        font-size: $font-size-sm;
+      }
+    }
+    
+    .fighter-fights {
+      padding: $spacing-md;
+      
+      h2 {
+        font-size: $font-size-lg;
+      }
+      
+      .fights-list {
+        gap: $spacing-sm;
+      }
+      
+      .event-name {
+        font-size: 1rem;
+      }
+      
+      .fight-details {
+        padding: $spacing-sm;
+      }
+      
+      .result-method {
+        font-size: 0.95rem;
+      }
+      
+      .no-fights {
+        padding: $spacing-md;
+      }
+    }
+    
+    .fighter-not-found {
+      padding: $spacing-lg;
+      
+      h1 {
+        font-size: $font-size-xl;
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .fighter-page {
+    padding: $spacing-sm $spacing-xs;
+    
+    .fighter-container {
+      border-radius: $border-radius-sm;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .fighter-header {
+      padding: $spacing-sm;
+      
+      
+      .fighter-info h1 {
+        font-size: $font-size-lg;
+      }
+      
+      .fighter-nickname {
         margin-bottom: $spacing-xs;
       }
+      
+      .fighter-rank {
+        font-size: $font-size-xs;
+        padding: $spacing-xs * 0.7 $spacing-xs;
+      }
+      
+      .ufc-profile-link {
+        
+        font-size: $font-size-xs;
+        padding: $spacing-xs * 0.7 $spacing-xs;
+        align-self: flex-start;
+      }
+    }
+    
+    .fighter-profile {
+      grid-template-columns: 1fr;
+      padding: $spacing-sm;
+      gap: $spacing-sm;
+      
+      h2 {
+        font-size: $font-size-md;
+      }
+      
+      .fighter-stats .stats-grid {
+        gap: $spacing-xs;
+        
+        .stat-item {
+          padding: $spacing-xs;
+          
+          .stat-label {
+            font-size: $font-size-xs * 0.9;
+          }
+          
+          .stat-value {
+            font-size: $font-size-sm;
+          }
+          
+          .locations-list {
+            padding-left: 15px;
+            
+            li {
+              font-size: $font-size-sm;
+              margin-bottom: 3px;
+            }
+          }
+        }
+      }
+      
+      .fighter-record {
+        .record-card {
+          padding: $spacing-xs;
+          margin-bottom: $spacing-sm;
+          
+          .record-main {
+            .win-box, .loss-box, .draw-box, .nc-box {
+              padding: $spacing-xs;
+            }
+            
+            .count {
+              font-size: 1.3rem;
+            }
+            
+            .label {
+              font-size: 0.7rem;
+              letter-spacing: 0.3px;
+            }
+          }
+        }
+        
+        .win-methods {
+          gap: $spacing-sm;
+          
+          .methods-container {
+            margin-bottom: $spacing-sm;
+            
+            h3 {
+              margin-bottom: $spacing-xs;
+              padding-bottom: $spacing-xs * 0.7;
+            }
+            
+            .method-items {
+              gap: $spacing-xs;
+              
+              .method-item {
+                padding: $spacing-xs;
+                
+                .method-value {
+                  font-size: $font-size-md;
+                }
+                
+                .method-label {
+                  font-size: $font-size-xs * 0.9;
+                  margin-top: $spacing-xs * 0.3;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    .fighter-fights {
+      padding: $spacing-sm;
+      
+      h2 {
+        font-size: $font-size-md;
+        margin-bottom: $spacing-sm;
+      }
+      
+      .fights-list {
+        margin-top: $spacing-sm;
+        gap: $spacing-xs;
+      }
+      
+      .fight-card {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        
+        &.main-event::before,
+        &.title-fight::before,
+        &.main-event.title-fight::before,
+        &.result-win::after,
+        &.result-loss::after,
+        &.result-draw::after,
+        &.result-nc::after,
+        &.result-canceled::after {
+          width: 3px;
+        }
+      }
+      
+      .fight-date {
+        padding: $spacing-xs * 0.7 $spacing-xs;
+        font-size: 0.85rem;
+        flex-wrap: wrap;
+      }
+      
+      .weight-class-badge,
+      .weight-class-pill,
+      .main-event-badge,
+      .title-fight-badge,
+      .canceled-badge {
+        font-size: 0.75rem;
+        padding: 2px $spacing-xs * 0.7;
+      }
+      
+      .event-badges {
+        gap: $spacing-xs * 0.7;
+        flex-wrap: wrap;
+      }
+      
+      .fight-details {
+        padding: $spacing-xs;
+      }
+      
+      .event-name {
+        font-size: 0.9rem;
+        margin-bottom: $spacing-xs;
+      }
+      
+      .matchup {
+        margin-bottom: $spacing-xs;
+      }
+      
+      .fighter-vs {
+        flex-wrap: wrap;
+        
+        .fighter-name-container {
+          flex-wrap: wrap;
+          margin-bottom: 3px;
+        }
+        
+        .fighter-link {
+          font-size: 0.85rem;
+          margin-right: 8px;
+        }
+        
+        .vs {
+          font-size: 0.85rem;
+          margin: 0 8px;
+        }
+      }
+      
+      .rank {
+        font-size: 0.75rem;
+        padding: 2px 5px;
+        margin-right: 8px;
+        margin-bottom: 3px;
+        
+        &.champion {
+          width: 20px;
+          height: 20px;
+          font-size: 0.7rem;
+        }
+      }
+      
+      .result-badge {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+        letter-spacing: 0.3px;
+      }
+      
+      .result-method {
+        font-size: 0.85rem;
+        padding: $spacing-xs 0;
+        margin-top: $spacing-xs;
+      }
+      
+      .no-fights {
+        padding: $spacing-sm;
+      }
+      
+      .load-more-container {
+        margin-top: $spacing-sm;
+      }
+      
+      .load-more-button {
+        padding: $spacing-xs $spacing-md;
+        font-size: 0.85rem;
+      }
+      
+      .fights-count {
+        margin-top: $spacing-xs;
+        font-size: 0.8rem;
+      }
+    }
+    
+    .fighter-not-found {
+      padding: $spacing-md;
+      
+      h1 {
+        font-size: $font-size-lg;
+        margin-bottom: $spacing-sm;
+      }
+      
+      p {
+        font-size: $font-size-sm;
+        margin-bottom: $spacing-sm;
+      }
+      
+      .back-button {
+        padding: $spacing-xs $spacing-sm;
+        font-size: $font-size-sm;
+      }
+    }
+  }
+  
+  .fighter-rankings {
+    gap: 3px;
+    margin-top: 3px;
+    flex-wrap: wrap;
+  }
+  
+  .fighter-rank {
+    margin-top: 3px;
+    font-size: 0.8rem;
+  }
+  
+  .rank-division {
+    font-size: 0.8rem;
+  }
+  
+  .champion-badge {
+    font-size: calc(var(--font-size-xs) * 0.85);
+    padding: 1px 4px;
+    margin-right: 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fighter-page .fighter-fights .fighter-vs {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    gap: 6px;
+    
+    .fighter-name-container:first-child {
+      grid-area: 1 / 1 / 2 / 2;
+    }
+    
+    .vs {
+      grid-area: 2 / 1 / 3 / 3;
+      justify-self: center;
+      margin: 0;
+    }
+    
+    .fighter-name-container:nth-child(3) {
+      grid-area: 3 / 1 / 4 / 2;
+    }
+    
+    .result-badge {
+      grid-area: 2 / 2 / 3 / 3;
+      margin-left: auto;
+      margin-right: 0;
+    }
+  }
+}
+
+@media (max-width: 400px) {
+  .fighter-page {
+    .fighter-profile {
+      .fighter-stats .stats-grid {
+        grid-template-columns: 1fr;
+        
+        .fighting-locations {
+          grid-column: span 1;
+        }
+      }
+      
+      .fighter-record {
+        .record-card .record-main .count {
+          font-size: 1.1rem;
+        }
+        
+        .win-methods .methods-container .method-items {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    }
+    
+    .fighter-fights {
+      .weight-class-badge,
+      .weight-class-pill,
+      .main-event-badge,
+      .title-fight-badge,
+      .canceled-badge {
+        font-size: 0.65rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 375px) {
+  .fighter-page .fighter-fights .fight-date {
+    flex-direction: column;
+    align-items: flex-start;
+    
+    .event-badges {
+      margin-top: 4px;
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 350px) {
+  .fighter-page .fighter-profile .fighter-record .win-methods .methods-container .method-items {
+    grid-template-columns: 1fr;
+    
+    &.has-four-methods,
+    &:has(.method-item:nth-child(4)) {
+      grid-template-columns: 1fr;
     }
   }
 }

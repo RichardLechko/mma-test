@@ -14,18 +14,18 @@ import (
 )
 
 type FighterExtraInfo struct {
-    KOLosses      int
-    SubLosses     int
-    DecLosses     int
-    DQLosses      int
-    NoContests    int
-    FightingOutOf string
-    Age           int
-    WikiURL       string
+	KOLosses      int
+	SubLosses     int
+	DecLosses     int
+	DQLosses      int
+	NoContests    int
+	FightingOutOf string
+	Age           int
+	WikiURL       string
 
-    KOWins  int
-    SubWins int
-    DecWins int
+	KOWins  int
+	SubWins int
+	DecWins int
 }
 
 type WikiFighterScraper struct {
@@ -236,391 +236,402 @@ func isFighterPage(doc *goquery.Document, fighterName string) int {
 }
 
 func (s *WikiFighterScraper) ScrapeExtraInfo(fighterName, wikiURL, ufcURL string, ufcWins, ufcLosses int) (*FighterExtraInfo, error) {
-    // Create a context with timeout
-    ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-    defer cancel()
+	// Create a context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
 
-    // Prepare alternative URLs to try in parallel
-    cleanName := strings.ReplaceAll(fighterName, " ", "_")
-    cleanName = strings.ReplaceAll(cleanName, ".", "") // Remove periods
-    cleanName = strings.ReplaceAll(cleanName, "'", "") // Remove apostrophes
+	// Prepare alternative URLs to try in parallel
+	cleanName := strings.ReplaceAll(fighterName, " ", "_")
+	cleanName = strings.ReplaceAll(cleanName, ".", "") // Remove periods
 
-    // Collection of URLs to try
-    allURLs := []string{}
-    
-    // Add the original URL only if it exists and isn't NULL
-    if wikiURL != "" && wikiURL != "NULL" {
-        allURLs = append(allURLs, wikiURL)
-    }
-    
-    // Add generated URLs
-    allURLs = append(allURLs, 
-        fmt.Sprintf("https://en.wikipedia.org/wiki/%s", cleanName),
-        fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(fighter)", cleanName),
-        fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(mixed_martial_artist)", cleanName),
-        fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(martial_artist)", cleanName),
-        fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(The_Ultimate_Fighter)", cleanName))
+	// Instead of removing apostrophes, encode them properly for URLs
+	// Replace apostrophes with %27 for URL encoding
+	encodedName := strings.ReplaceAll(cleanName, "'", "%27")
 
-    // Use a WaitGroup to wait for all goroutines to finish
-    var wg sync.WaitGroup
+	// Collection of URLs to try
+	allURLs := []string{}
 
-    // Create a channel to receive successful results with their URLs
-    type docResult struct {
-        doc *goquery.Document
-        url string
-    }
-    resultChan := make(chan docResult, len(allURLs))
+	// Add the original URL only if it exists and isn't NULL
+	if wikiURL != "" && wikiURL != "NULL" {
+		allURLs = append(allURLs, wikiURL)
+	}
 
-    // Create a context with cancellation for early termination
-    fetchCtx, fetchCancel := context.WithCancel(ctx)
-    defer fetchCancel()
+	// Add generated URLs
+	allURLs = append(allURLs,
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s", cleanName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s", encodedName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(fighter)", cleanName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(fighter)", encodedName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(mixed_martial_artist)", cleanName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(mixed_martial_artist)", encodedName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(martial_artist)", cleanName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(martial_artist)", encodedName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(MMA)", cleanName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(MMA)", encodedName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(UFC)", cleanName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(UFC)", encodedName),
+		fmt.Sprintf("https://en.wikipedia.org/wiki/%s_(The_Ultimate_Fighter)", cleanName))
 
-    // Launch concurrent requests to all URLs
-    for _, url := range allURLs {
-        wg.Add(1)
-        go func(url string) {
-            defer wg.Done()
+	// Use a WaitGroup to wait for all goroutines to finish
+	var wg sync.WaitGroup
 
-            // Try to fetch and validate the URL
-            doc, err := s.fetchURL(fetchCtx, url, fighterName)
-            if err == nil && doc != nil {
-                // Successfully found a valid page, send it to the result channel with its URL
-                select {
-                case resultChan <- docResult{doc: doc, url: url}:
-                    // Cancel other requests since we found a valid result
-                    fetchCancel()
-                default:
-                    // Channel is full, which means we already have a result
-                }
-            }
-        }(url)
-    }
+	// Create a channel to receive successful results with their URLs
+	type docResult struct {
+		doc *goquery.Document
+		url string
+	}
+	resultChan := make(chan docResult, len(allURLs))
 
-    // Use a goroutine to close the result channel when all URL fetches are done
-    go func() {
-        wg.Wait()
-        close(resultChan)
-    }()
+	// Create a context with cancellation for early termination
+	fetchCtx, fetchCancel := context.WithCancel(ctx)
+	defer fetchCancel()
 
-    // Wait for a successful result or for all goroutines to finish
-    var doc *goquery.Document
-    var successfulURL string
-    select {
-    case result := <-resultChan:
-        doc = result.doc
-        successfulURL = result.url
-    case <-ctx.Done():
-        return nil, fmt.Errorf("timeout while fetching Wikipedia page for %s", fighterName)
-    }
+	// Launch concurrent requests to all URLs
+	for _, url := range allURLs {
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
 
-    // If we didn't get a valid document, return an error
-    if doc == nil {
-        return nil, fmt.Errorf("failed to find a valid Wikipedia page for %s", fighterName)
-    }
+			// Try to fetch and validate the URL
+			doc, err := s.fetchURL(fetchCtx, url, fighterName)
+			if err == nil && doc != nil {
+				// Successfully found a valid page, send it to the result channel with its URL
+				select {
+				case resultChan <- docResult{doc: doc, url: url}:
+					// Cancel other requests since we found a valid result
+					fetchCancel()
+				default:
+					// Channel is full, which means we already have a result
+				}
+			}
+		}(url)
+	}
 
-    // Use goroutines to extract different types of information in parallel
-    var wgExtract sync.WaitGroup
-    info := &FighterExtraInfo{
-        WikiURL: successfulURL, // Store the successful URL
-    }
+	// Use a goroutine to close the result channel when all URL fetches are done
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
 
-    // Extract fighting out of information
-    wgExtract.Add(1)
-    go func() {
-        defer wgExtract.Done()
-        info.FightingOutOf = extractFightingOutOf(doc)
-    }()
+	// Wait for a successful result or for all goroutines to finish
+	var doc *goquery.Document
+	var successfulURL string
+	select {
+	case result := <-resultChan:
+		doc = result.doc
+		successfulURL = result.url
+	case <-ctx.Done():
+		return nil, fmt.Errorf("timeout while fetching Wikipedia page for %s", fighterName)
+	}
 
-    // Extract record data
-    wgExtract.Add(1)
-    go func() {
-        defer wgExtract.Done()
-        extractRecordData(doc, info)
-    }()
+	// If we didn't get a valid document, return an error
+	if doc == nil {
+		return nil, fmt.Errorf("failed to find a valid Wikipedia page for %s", fighterName)
+	}
 
-    // Extract age information
-    wgExtract.Add(1)
-    go func() {
-        defer wgExtract.Done()
-        info.Age = extractAge(doc)
-    }()
+	// Use goroutines to extract different types of information in parallel
+	var wgExtract sync.WaitGroup
+	info := &FighterExtraInfo{
+		WikiURL: successfulURL, // Store the successful URL
+	}
 
-    // Extract no contests directly (not as part of record data)
-    wgExtract.Add(1)
-    go func() {
-        defer wgExtract.Done()
-        extractNoContests(doc, info)
-    }()
+	// Extract fighting out of information
+	wgExtract.Add(1)
+	go func() {
+		defer wgExtract.Done()
+		info.FightingOutOf = extractFightingOutOf(doc)
+	}()
 
-    // Wait for all extraction goroutines to complete
-    wgExtract.Wait()
+	// Extract record data
+	wgExtract.Add(1)
+	go func() {
+		defer wgExtract.Done()
+		extractRecordData(doc, info)
+	}()
 
-    // Final validation
-    validateFighterInfo(info, ufcWins, ufcLosses)
+	// Extract age information
+	wgExtract.Add(1)
+	go func() {
+		defer wgExtract.Done()
+		info.Age = extractAge(doc)
+	}()
 
-    // Log what we found
-    fmt.Printf("Fighter %s: Found FightingOutOf=%s, Age=%d, NoContests=%d, Win methods: KO=%d, Sub=%d, Dec=%d\n",
-        fighterName, info.FightingOutOf, info.Age, info.NoContests, info.KOWins, info.SubWins, info.DecWins)
+	// Extract no contests directly (not as part of record data)
+	wgExtract.Add(1)
+	go func() {
+		defer wgExtract.Done()
+		extractNoContests(doc, info)
+	}()
 
-    // Make sure we're not nullifying the WikiURL even if other fields are empty
-    if isEmpty(info) && info.WikiURL != "" {
-        // If we have a valid URL but no other data, still return the info
-        return info, nil
-    } else if isEmpty(info) {
-        return nil, nil
-    }
+	// Wait for all extraction goroutines to complete
+	wgExtract.Wait()
 
-    return info, nil
+	// Final validation
+	validateFighterInfo(info, ufcWins, ufcLosses)
+
+	// Log what we found
+	fmt.Printf("Fighter %s: Found FightingOutOf=%s, Age=%d, NoContests=%d, Win methods: KO=%d, Sub=%d, Dec=%d\n",
+		fighterName, info.FightingOutOf, info.Age, info.NoContests, info.KOWins, info.SubWins, info.DecWins)
+
+	// Make sure we're not nullifying the WikiURL even if other fields are empty
+	if isEmpty(info) && info.WikiURL != "" {
+		// If we have a valid URL but no other data, still return the info
+		return info, nil
+	} else if isEmpty(info) {
+		return nil, nil
+	}
+
+	return info, nil
 }
 
 // isEmpty checks if all fight data fields are empty
 func isEmpty(info *FighterExtraInfo) bool {
-    return info.KOLosses == 0 &&
-        info.SubLosses == 0 &&
-        info.DecLosses == 0 &&
-        info.DQLosses == 0 &&
-        info.NoContests == 0 &&
-        info.FightingOutOf == "" &&
-        info.KOWins == 0 &&
-        info.SubWins == 0 &&
-        info.DecWins == 0 &&
-        info.Age == 0
-    // Not checking WikiURL as we want to return the object even if only WikiURL is set
+	return info.KOLosses == 0 &&
+		info.SubLosses == 0 &&
+		info.DecLosses == 0 &&
+		info.DQLosses == 0 &&
+		info.NoContests == 0 &&
+		info.FightingOutOf == "" &&
+		info.KOWins == 0 &&
+		info.SubWins == 0 &&
+		info.DecWins == 0 &&
+		info.Age == 0
+	// Not checking WikiURL as we want to return the object even if only WikiURL is set
 }
 
 // Extract the "Fighting out of" information as a JSON array string
 func extractFightingOutOf(doc *goquery.Document) string {
-    var locations []string
+	var locations []string
 
-    // Look for the "Fighting out of" row
-    doc.Find("tr").Each(func(i int, row *goquery.Selection) {
-        headerCell := row.Find("th").First()
-        if headerCell.Length() == 0 {
-            return
-        }
+	// Look for the "Fighting out of" row
+	doc.Find("tr").Each(func(i int, row *goquery.Selection) {
+		headerCell := row.Find("th").First()
+		if headerCell.Length() == 0 {
+			return
+		}
 
-        headerText := strings.ToLower(strings.TrimSpace(headerCell.Text()))
-        if strings.Contains(headerText, "fighting out of") {
-            dataCell := row.Find("td").First()
-            if dataCell.Length() > 0 {
-                // First, try to handle lists with <li> elements
-                listItems := dataCell.Find("li")
-                if listItems.Length() > 0 {
-                    // Handle structured list
-                    listItems.Each(func(i int, item *goquery.Selection) {
-                        locationText := sanitizeLocationText(item.Text())
-                        if locationText != "" {
-                            locations = append(locations, locationText)
-                        }
-                    })
-                } else {
-                    // For cells with <br> tags, we need to process each element separately
-                    // Clone the cell to avoid modifying the original
-                    cellContents := dataCell.Clone()
-                    
-                    // Replace <br> tags with a special marker
-                    html, _ := cellContents.Html()
-                    html = strings.ReplaceAll(html, "<br>", "|||BREAK|||")
-                    html = strings.ReplaceAll(html, "<br/>", "|||BREAK|||")
-                    html = strings.ReplaceAll(html, "<br />", "|||BREAK|||")
-                    
-                    // Create a new document with the modified HTML
-                    tempDoc, err := goquery.NewDocumentFromReader(strings.NewReader("<div>" + html + "</div>"))
-                    if err == nil {
-                        // Get the text with our special markers
-                        fullText := tempDoc.Find("div").Text()
-                        
-                        // Split by our special marker
-                        parts := strings.Split(fullText, "|||BREAK|||")
-                        
-                        for _, part := range parts {
-                            locationText := sanitizeLocationText(part)
-                            if locationText != "" {
-                                locations = append(locations, locationText)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    })
+		headerText := strings.ToLower(strings.TrimSpace(headerCell.Text()))
+		if strings.Contains(headerText, "fighting out of") {
+			dataCell := row.Find("td").First()
+			if dataCell.Length() > 0 {
+				// First, try to handle lists with <li> elements
+				listItems := dataCell.Find("li")
+				if listItems.Length() > 0 {
+					// Handle structured list
+					listItems.Each(func(i int, item *goquery.Selection) {
+						locationText := sanitizeLocationText(item.Text())
+						if locationText != "" {
+							locations = append(locations, locationText)
+						}
+					})
+				} else {
+					// For cells with <br> tags, we need to process each element separately
+					// Clone the cell to avoid modifying the original
+					cellContents := dataCell.Clone()
 
-    // If we have locations, format them as a JSON array string
-    if len(locations) > 0 {
-        // Format as {loc1}, {loc2}, {loc3}
-        var formattedLocations []string
-        for _, loc := range locations {
-            formattedLocations = append(formattedLocations, "{"+loc+"}")
-        }
-        return strings.Join(formattedLocations, ", ")
-    }
+					// Replace <br> tags with a special marker
+					html, _ := cellContents.Html()
+					html = strings.ReplaceAll(html, "<br>", "|||BREAK|||")
+					html = strings.ReplaceAll(html, "<br/>", "|||BREAK|||")
+					html = strings.ReplaceAll(html, "<br />", "|||BREAK|||")
 
-    return ""
+					// Create a new document with the modified HTML
+					tempDoc, err := goquery.NewDocumentFromReader(strings.NewReader("<div>" + html + "</div>"))
+					if err == nil {
+						// Get the text with our special markers
+						fullText := tempDoc.Find("div").Text()
+
+						// Split by our special marker
+						parts := strings.Split(fullText, "|||BREAK|||")
+
+						for _, part := range parts {
+							locationText := sanitizeLocationText(part)
+							if locationText != "" {
+								locations = append(locations, locationText)
+							}
+						}
+					}
+				}
+			}
+		}
+	})
+
+	// If we have locations, format them as a JSON array string
+	if len(locations) > 0 {
+		// Format as {loc1}, {loc2}, {loc3}
+		var formattedLocations []string
+		for _, loc := range locations {
+			formattedLocations = append(formattedLocations, "{"+loc+"}")
+		}
+		return strings.Join(formattedLocations, ", ")
+	}
+
+	return ""
 }
 
 // Helper function to sanitize location text
 func sanitizeLocationText(text string) string {
-    // Remove CSS styles that might be part of the content
-    styleRegex := regexp.MustCompile(`\.mw-parser-output[^}]+}`)
-    text = styleRegex.ReplaceAllString(text, "")
-    
-    // Remove citations like [1], [2], etc.
-    citationRegex := regexp.MustCompile(`\[\d+\]`)
-    text = citationRegex.ReplaceAllString(text, "")
-    
-    // Remove extra whitespace
-    text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
-    
-    return strings.TrimSpace(text)
+	// Remove CSS styles that might be part of the content
+	styleRegex := regexp.MustCompile(`\.mw-parser-output[^}]+}`)
+	text = styleRegex.ReplaceAllString(text, "")
+
+	// Remove citations like [1], [2], etc.
+	citationRegex := regexp.MustCompile(`\[\d+\]`)
+	text = citationRegex.ReplaceAllString(text, "")
+
+	// Remove extra whitespace
+	text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
+
+	return strings.TrimSpace(text)
 }
 
 func extractRecordData(doc *goquery.Document, info *FighterExtraInfo) {
-    var inWinsSection, inLossesSection bool
-    var totalWins, totalLosses int
+	var inWinsSection, inLossesSection bool
+	var totalWins, totalLosses int
 
-    // Process each row in the infobox table
-    doc.Find("table.infobox tr, table.vcard tr").Each(func(i int, row *goquery.Selection) {
-        // Extract header text - we need to be careful with HTML entities like &nbsp;
-        headerCell := row.Find("th").First()
-        if headerCell.Length() == 0 {
-            return
-        }
+	// Process each row in the infobox table
+	doc.Find("table.infobox tr, table.vcard tr").Each(func(i int, row *goquery.Selection) {
+		// Extract header text - we need to be careful with HTML entities like &nbsp;
+		headerCell := row.Find("th").First()
+		if headerCell.Length() == 0 {
+			return
+		}
 
-        // Get both text and HTML of the header for different matching approaches
-        headerText := strings.TrimSpace(headerCell.Text())
-        headerHTML, _ := headerCell.Html()
-        headerTextLower := strings.ToLower(headerText)
+		// Get both text and HTML of the header for different matching approaches
+		headerText := strings.TrimSpace(headerCell.Text())
+		headerHTML, _ := headerCell.Html()
+		headerTextLower := strings.ToLower(headerText)
 
-        // Check for major section headers
-        if (strings.Contains(headerTextLower, "wins") && !strings.Contains(headerTextLower, "by")) ||
-            (headerCell.Find("b").Length() > 0 && strings.Contains(headerCell.Find("b").Text(), "Wins")) {
-            inWinsSection = true
-            inLossesSection = false
+		// Check for major section headers
+		if (strings.Contains(headerTextLower, "wins") && !strings.Contains(headerTextLower, "by")) ||
+			(headerCell.Find("b").Length() > 0 && strings.Contains(headerCell.Find("b").Text(), "Wins")) {
+			inWinsSection = true
+			inLossesSection = false
 
-            // Get total wins from the data cell
-            dataCell := row.Find("td").First()
-            if dataCell.Length() > 0 {
-                totalWins = extractNumber(dataCell.Text())
-            }
-            return
-        } else if (strings.Contains(headerTextLower, "losses") && !strings.Contains(headerTextLower, "by")) ||
-            (headerCell.Find("b").Length() > 0 && strings.Contains(headerCell.Find("b").Text(), "Losses")) {
-            inWinsSection = false
-            inLossesSection = true
+			// Get total wins from the data cell
+			dataCell := row.Find("td").First()
+			if dataCell.Length() > 0 {
+				totalWins = extractNumber(dataCell.Text())
+			}
+			return
+		} else if (strings.Contains(headerTextLower, "losses") && !strings.Contains(headerTextLower, "by")) ||
+			(headerCell.Find("b").Length() > 0 && strings.Contains(headerCell.Find("b").Text(), "Losses")) {
+			inWinsSection = false
+			inLossesSection = true
 
-            // Get total losses from the data cell
-            dataCell := row.Find("td").First()
-            if dataCell.Length() > 0 {
-                totalLosses = extractNumber(dataCell.Text())
-            }
-            return
-        }
+			// Get total losses from the data cell
+			dataCell := row.Find("td").First()
+			if dataCell.Length() > 0 {
+				totalLosses = extractNumber(dataCell.Text())
+			}
+			return
+		}
 
-        // Extract win methods
-        if inWinsSection {
-            dataCell := row.Find("td").First()
-            if dataCell.Length() == 0 {
-                return
-            }
+		// Extract win methods
+		if inWinsSection {
+			dataCell := row.Find("td").First()
+			if dataCell.Length() == 0 {
+				return
+			}
 
-            value := extractNumber(dataCell.Text())
+			value := extractNumber(dataCell.Text())
 
-            // Match different patterns for the methods
-            if strings.Contains(headerTextLower, "knockout") || strings.Contains(headerTextLower, "ko") {
-                info.KOWins = value
-            } else if strings.Contains(headerTextLower, "submission") {
-                info.SubWins = value
-            } else if strings.Contains(headerTextLower, "decision") {
-                info.DecWins = value
-            }
-        }
+			// Match different patterns for the methods
+			if strings.Contains(headerTextLower, "knockout") || strings.Contains(headerTextLower, "ko") {
+				info.KOWins = value
+			} else if strings.Contains(headerTextLower, "submission") {
+				info.SubWins = value
+			} else if strings.Contains(headerTextLower, "decision") {
+				info.DecWins = value
+			}
+		}
 
-        // Extract loss methods
-        if inLossesSection {
-            dataCell := row.Find("td").First()
-            if dataCell.Length() == 0 {
-                return
-            }
+		// Extract loss methods
+		if inLossesSection {
+			dataCell := row.Find("td").First()
+			if dataCell.Length() == 0 {
+				return
+			}
 
-            value := extractNumber(dataCell.Text())
+			value := extractNumber(dataCell.Text())
 
-            // Match different patterns for the methods
-            if strings.Contains(headerTextLower, "knockout") || strings.Contains(headerTextLower, "ko") {
-                info.KOLosses = value
-            } else if strings.Contains(headerTextLower, "submission") {
-                info.SubLosses = value
-            } else if strings.Contains(headerTextLower, "decision") {
-                info.DecLosses = value
-            } else if strings.Contains(headerTextLower, "disqualification") || strings.Contains(headerTextLower, "dq") {
-                info.DQLosses = value
-            }
-        }
+			// Match different patterns for the methods
+			if strings.Contains(headerTextLower, "knockout") || strings.Contains(headerTextLower, "ko") {
+				info.KOLosses = value
+			} else if strings.Contains(headerTextLower, "submission") {
+				info.SubLosses = value
+			} else if strings.Contains(headerTextLower, "decision") {
+				info.DecLosses = value
+			} else if strings.Contains(headerTextLower, "disqualification") || strings.Contains(headerTextLower, "dq") {
+				info.DQLosses = value
+			}
+		}
 
-        // Comprehensive check for No Contests using multiple patterns
-        isNoContests := false
-        
-        // Pattern 1: Direct text match (case insensitive)
-        if strings.Contains(headerTextLower, "no") && strings.Contains(headerTextLower, "contest") {
-            isNoContests = true
-        }
-        
-        // Pattern 2: Bold tag with No Contests
-        if headerCell.Find("b").Length() > 0 {
-            boldText := strings.ToLower(headerCell.Find("b").Text())
-            if strings.Contains(boldText, "no") && strings.Contains(boldText, "contest") {
-                isNoContests = true
-            }
-        }
-        
-        // Pattern 3: HTML with non-breaking space: "No&nbsp;contests"
-        if strings.Contains(headerHTML, "No&nbsp;contest") {
-            isNoContests = true
-        }
-        
-        if isNoContests {
-            dataCell := row.Find("td").First()
-            if dataCell.Length() > 0 {
-                info.NoContests = extractNumber(dataCell.Text())
-            }
-        }
-    })
+		// Comprehensive check for No Contests using multiple patterns
+		isNoContests := false
 
-    // Try direct extraction if the above didn't work
-    if info.KOWins+info.SubWins+info.DecWins == 0 && totalWins > 0 {
-        directExtractWinMethods(doc, info)
-    }
+		// Pattern 1: Direct text match (case insensitive)
+		if strings.Contains(headerTextLower, "no") && strings.Contains(headerTextLower, "contest") {
+			isNoContests = true
+		}
 
-    if info.KOLosses+info.SubLosses+info.DecLosses+info.DQLosses == 0 && totalLosses > 0 {
-        directExtractLossMethods(doc, info)
-    }
+		// Pattern 2: Bold tag with No Contests
+		if headerCell.Find("b").Length() > 0 {
+			boldText := strings.ToLower(headerCell.Find("b").Text())
+			if strings.Contains(boldText, "no") && strings.Contains(boldText, "contest") {
+				isNoContests = true
+			}
+		}
 
-    // If we still couldn't find No Contests, make a separate direct search
-    if info.NoContests == 0 {
-        extractNoContests(doc, info)
-    }
+		// Pattern 3: HTML with non-breaking space: "No&nbsp;contests"
+		if strings.Contains(headerHTML, "No&nbsp;contest") {
+			isNoContests = true
+		}
 
-    // Validate that win methods add up to total wins
-    if totalWins > 0 {
-        methodsSum := info.KOWins + info.SubWins + info.DecWins
-        if methodsSum > 0 && methodsSum != totalWins {
-            // If they don't match, clear them
-            info.KOWins = 0
-            info.SubWins = 0
-            info.DecWins = 0
-        }
-    }
+		if isNoContests {
+			dataCell := row.Find("td").First()
+			if dataCell.Length() > 0 {
+				info.NoContests = extractNumber(dataCell.Text())
+			}
+		}
+	})
 
-    // Validate that loss methods add up to total losses
-    if totalLosses > 0 {
-        methodsSum := info.KOLosses + info.SubLosses + info.DecLosses + info.DQLosses
-        if methodsSum > 0 && methodsSum != totalLosses {
-            // If they don't match, clear them
-            info.KOLosses = 0
-            info.SubLosses = 0
-            info.DecLosses = 0
-            info.DQLosses = 0
-        }
-    }
+	// Try direct extraction if the above didn't work
+	if info.KOWins+info.SubWins+info.DecWins == 0 && totalWins > 0 {
+		directExtractWinMethods(doc, info)
+	}
+
+	if info.KOLosses+info.SubLosses+info.DecLosses+info.DQLosses == 0 && totalLosses > 0 {
+		directExtractLossMethods(doc, info)
+	}
+
+	// If we still couldn't find No Contests, make a separate direct search
+	if info.NoContests == 0 {
+		extractNoContests(doc, info)
+	}
+
+	// Validate that win methods add up to total wins
+	if totalWins > 0 {
+		methodsSum := info.KOWins + info.SubWins + info.DecWins
+		if methodsSum > 0 && methodsSum != totalWins {
+			// If they don't match, clear them
+			info.KOWins = 0
+			info.SubWins = 0
+			info.DecWins = 0
+		}
+	}
+
+	// Validate that loss methods add up to total losses
+	if totalLosses > 0 {
+		methodsSum := info.KOLosses + info.SubLosses + info.DecLosses + info.DQLosses
+		if methodsSum > 0 && methodsSum != totalLosses {
+			// If they don't match, clear them
+			info.KOLosses = 0
+			info.SubLosses = 0
+			info.DecLosses = 0
+			info.DQLosses = 0
+		}
+	}
 }
 
 // More direct extraction method for win methods
@@ -870,161 +881,161 @@ func extractAge(doc *goquery.Document) int {
 }
 
 func extractNoContests(doc *goquery.Document, info *FighterExtraInfo) {
-    // First approach: Look for specific row patterns
-    doc.Find("table.infobox tr, table.vcard tr").Each(func(i int, row *goquery.Selection) {
-        headerCell := row.Find("th").First()
-        if headerCell.Length() == 0 {
-            return
-        }
-        
-        // Get both text and HTML content
-        headerText := strings.TrimSpace(headerCell.Text())
-        headerHTML, _ := headerCell.Html()
-        headerTextLower := strings.ToLower(headerText)
-        
-        // Check for "No contests" with bold tag
-        boldText := ""
-        headerCell.Find("b").Each(func(j int, boldElem *goquery.Selection) {
-            boldText += strings.TrimSpace(boldElem.Text()) + " "
-        })
-        boldTextLower := strings.ToLower(strings.TrimSpace(boldText))
-        
-        // Check for the specific format in the example
-        if boldTextLower == "no contests" || 
-           boldTextLower == "no contest" ||
-           strings.Contains(boldTextLower, "no contest") {
-            dataCell := row.Find("td").First()
-            if dataCell.Length() > 0 {
-                info.NoContests = extractNumber(dataCell.Text())
-                fmt.Printf("Found No Contests (via bold): %d\n", info.NoContests)
-                return
-            }
-        }
-        
-        // Check for the non-breaking space version "No&nbsp;contests"
-        if strings.Contains(headerHTML, "<b>No&nbsp;contests</b>") || 
-           strings.Contains(headerHTML, "<b>No&nbsp;contest</b>") || 
-           strings.Contains(headerHTML, "No&nbsp;contests") || 
-           strings.Contains(headerHTML, "No&nbsp;contest") {
-            dataCell := row.Find("td").First()
-            if dataCell.Length() > 0 {
-                info.NoContests = extractNumber(dataCell.Text())
-                fmt.Printf("Found No Contests (via HTML): %d\n", info.NoContests)
-                return
-            }
-        }
-        
-        // Look for basic text match for "No contests" in the header text
-        if headerTextLower == "no contests" || 
-           headerTextLower == "no contest" ||
-           strings.Contains(headerTextLower, "no contests") || 
-           strings.Contains(headerTextLower, "no contest") ||
-           (strings.Contains(headerTextLower, "no") && 
-            strings.Contains(headerTextLower, "contest")) {
-            dataCell := row.Find("td").First()
-            if dataCell.Length() > 0 {
-                info.NoContests = extractNumber(dataCell.Text())
-                fmt.Printf("Found No Contests (via text): %d\n", info.NoContests)
-                return
-            }
-        }
-    })
-    
-    // Second approach: Look for rows after the "Draws" row
-    if info.NoContests == 0 {
-        var foundDrawsRow bool
-        doc.Find("table.infobox tr, table.vcard tr").Each(func(i int, row *goquery.Selection) {
-            headerCell := row.Find("th").First()
-            if headerCell.Length() == 0 {
-                return
-            }
-            
-            headerText := strings.ToLower(strings.TrimSpace(headerCell.Text()))
-            boldText := strings.ToLower(strings.TrimSpace(headerCell.Find("b").Text()))
-            
-            // Check if this is the Draws row
-            if foundDrawsRow == false && (boldText == "draws" || headerText == "draws" || 
-                strings.Contains(headerText, "draw") || strings.Contains(boldText, "draw")) {
-                foundDrawsRow = true
-                return
-            }
-            
-            // If we've found the Draws row, check if the next row is No Contests
-            if foundDrawsRow {
-                // This might be the No Contests row - check all possible patterns
-                headerTextLower := strings.ToLower(headerText)
-                if strings.Contains(headerTextLower, "no") && strings.Contains(headerTextLower, "contest") {
-                    dataCell := row.Find("td").First()
-                    if dataCell.Length() > 0 {
-                        info.NoContests = extractNumber(dataCell.Text())
-                        fmt.Printf("Found No Contests (after Draws): %d\n", info.NoContests)
-                        foundDrawsRow = false // Reset to avoid checking further rows
-                        return
-                    }
-                }
-            }
-        })
-    }
-    
-    // Third approach: Scan the entire table for No Contest text
-    if info.NoContests == 0 {
-        doc.Find("table.infobox, table.vcard").Each(func(i int, table *goquery.Selection) {
-            tableHTML, _ := table.Html()
-            tableText := table.Text()
-            
-            // Only process if the table contains any mention of "no contest"
-            if strings.Contains(strings.ToLower(tableHTML), "no contest") || 
-               strings.Contains(strings.ToLower(tableText), "no contest") {
-                
-                // Try to find the specific row that contains No Contest
-                table.Find("tr").Each(func(j int, row *goquery.Selection) {
-                    rowHTML, _ := row.Html()
-                    rowText := row.Text()
-                    
-                    if strings.Contains(strings.ToLower(rowHTML), "no contest") || 
-                       strings.Contains(strings.ToLower(rowText), "no contest") {
-                        
-                        // Found a row with "no contest" - extract the number from the TD
-                        dataCell := row.Find("td").First()
-                        if dataCell.Length() > 0 {
-                            info.NoContests = extractNumber(dataCell.Text())
-                            fmt.Printf("Found No Contests (via table search): %d\n", info.NoContests)
-                            return
-                        }
-                    }
-                })
-            }
-        })
-    }
-    
-    // Fourth approach: Check for infobox-label class specifically (used in your example)
-    if info.NoContests == 0 {
-        doc.Find("th.infobox-label").Each(func(i int, th *goquery.Selection) {
-            thText := strings.ToLower(strings.TrimSpace(th.Text()))
-            
-            // Check if this is a No Contest header
-            if strings.Contains(thText, "no") && strings.Contains(thText, "contest") {
-                // Get the data cell (next td in same row)
-                dataCell := th.Parent().Find("td.infobox-data").First()
-                if dataCell.Length() > 0 {
-                    info.NoContests = extractNumber(dataCell.Text())
-                    fmt.Printf("Found No Contests (via infobox-label): %d\n", info.NoContests)
-                    return
-                }
-            }
-            
-            // Check for bold element within the header
-            th.Find("b").Each(func(j int, b *goquery.Selection) {
-                boldText := strings.ToLower(strings.TrimSpace(b.Text()))
-                if boldText == "no contests" || boldText == "no contest" {
-                    dataCell := th.Parent().Find("td.infobox-data").First()
-                    if dataCell.Length() > 0 {
-                        info.NoContests = extractNumber(dataCell.Text())
-                        fmt.Printf("Found No Contests (via bold in infobox-label): %d\n", info.NoContests)
-                        return
-                    }
-                }
-            })
-        })
-    }
+	// First approach: Look for specific row patterns
+	doc.Find("table.infobox tr, table.vcard tr").Each(func(i int, row *goquery.Selection) {
+		headerCell := row.Find("th").First()
+		if headerCell.Length() == 0 {
+			return
+		}
+
+		// Get both text and HTML content
+		headerText := strings.TrimSpace(headerCell.Text())
+		headerHTML, _ := headerCell.Html()
+		headerTextLower := strings.ToLower(headerText)
+
+		// Check for "No contests" with bold tag
+		boldText := ""
+		headerCell.Find("b").Each(func(j int, boldElem *goquery.Selection) {
+			boldText += strings.TrimSpace(boldElem.Text()) + " "
+		})
+		boldTextLower := strings.ToLower(strings.TrimSpace(boldText))
+
+		// Check for the specific format in the example
+		if boldTextLower == "no contests" ||
+			boldTextLower == "no contest" ||
+			strings.Contains(boldTextLower, "no contest") {
+			dataCell := row.Find("td").First()
+			if dataCell.Length() > 0 {
+				info.NoContests = extractNumber(dataCell.Text())
+				fmt.Printf("Found No Contests (via bold): %d\n", info.NoContests)
+				return
+			}
+		}
+
+		// Check for the non-breaking space version "No&nbsp;contests"
+		if strings.Contains(headerHTML, "<b>No&nbsp;contests</b>") ||
+			strings.Contains(headerHTML, "<b>No&nbsp;contest</b>") ||
+			strings.Contains(headerHTML, "No&nbsp;contests") ||
+			strings.Contains(headerHTML, "No&nbsp;contest") {
+			dataCell := row.Find("td").First()
+			if dataCell.Length() > 0 {
+				info.NoContests = extractNumber(dataCell.Text())
+				fmt.Printf("Found No Contests (via HTML): %d\n", info.NoContests)
+				return
+			}
+		}
+
+		// Look for basic text match for "No contests" in the header text
+		if headerTextLower == "no contests" ||
+			headerTextLower == "no contest" ||
+			strings.Contains(headerTextLower, "no contests") ||
+			strings.Contains(headerTextLower, "no contest") ||
+			(strings.Contains(headerTextLower, "no") &&
+				strings.Contains(headerTextLower, "contest")) {
+			dataCell := row.Find("td").First()
+			if dataCell.Length() > 0 {
+				info.NoContests = extractNumber(dataCell.Text())
+				fmt.Printf("Found No Contests (via text): %d\n", info.NoContests)
+				return
+			}
+		}
+	})
+
+	// Second approach: Look for rows after the "Draws" row
+	if info.NoContests == 0 {
+		var foundDrawsRow bool
+		doc.Find("table.infobox tr, table.vcard tr").Each(func(i int, row *goquery.Selection) {
+			headerCell := row.Find("th").First()
+			if headerCell.Length() == 0 {
+				return
+			}
+
+			headerText := strings.ToLower(strings.TrimSpace(headerCell.Text()))
+			boldText := strings.ToLower(strings.TrimSpace(headerCell.Find("b").Text()))
+
+			// Check if this is the Draws row
+			if foundDrawsRow == false && (boldText == "draws" || headerText == "draws" ||
+				strings.Contains(headerText, "draw") || strings.Contains(boldText, "draw")) {
+				foundDrawsRow = true
+				return
+			}
+
+			// If we've found the Draws row, check if the next row is No Contests
+			if foundDrawsRow {
+				// This might be the No Contests row - check all possible patterns
+				headerTextLower := strings.ToLower(headerText)
+				if strings.Contains(headerTextLower, "no") && strings.Contains(headerTextLower, "contest") {
+					dataCell := row.Find("td").First()
+					if dataCell.Length() > 0 {
+						info.NoContests = extractNumber(dataCell.Text())
+						fmt.Printf("Found No Contests (after Draws): %d\n", info.NoContests)
+						foundDrawsRow = false // Reset to avoid checking further rows
+						return
+					}
+				}
+			}
+		})
+	}
+
+	// Third approach: Scan the entire table for No Contest text
+	if info.NoContests == 0 {
+		doc.Find("table.infobox, table.vcard").Each(func(i int, table *goquery.Selection) {
+			tableHTML, _ := table.Html()
+			tableText := table.Text()
+
+			// Only process if the table contains any mention of "no contest"
+			if strings.Contains(strings.ToLower(tableHTML), "no contest") ||
+				strings.Contains(strings.ToLower(tableText), "no contest") {
+
+				// Try to find the specific row that contains No Contest
+				table.Find("tr").Each(func(j int, row *goquery.Selection) {
+					rowHTML, _ := row.Html()
+					rowText := row.Text()
+
+					if strings.Contains(strings.ToLower(rowHTML), "no contest") ||
+						strings.Contains(strings.ToLower(rowText), "no contest") {
+
+						// Found a row with "no contest" - extract the number from the TD
+						dataCell := row.Find("td").First()
+						if dataCell.Length() > 0 {
+							info.NoContests = extractNumber(dataCell.Text())
+							fmt.Printf("Found No Contests (via table search): %d\n", info.NoContests)
+							return
+						}
+					}
+				})
+			}
+		})
+	}
+
+	// Fourth approach: Check for infobox-label class specifically (used in your example)
+	if info.NoContests == 0 {
+		doc.Find("th.infobox-label").Each(func(i int, th *goquery.Selection) {
+			thText := strings.ToLower(strings.TrimSpace(th.Text()))
+
+			// Check if this is a No Contest header
+			if strings.Contains(thText, "no") && strings.Contains(thText, "contest") {
+				// Get the data cell (next td in same row)
+				dataCell := th.Parent().Find("td.infobox-data").First()
+				if dataCell.Length() > 0 {
+					info.NoContests = extractNumber(dataCell.Text())
+					fmt.Printf("Found No Contests (via infobox-label): %d\n", info.NoContests)
+					return
+				}
+			}
+
+			// Check for bold element within the header
+			th.Find("b").Each(func(j int, b *goquery.Selection) {
+				boldText := strings.ToLower(strings.TrimSpace(b.Text()))
+				if boldText == "no contests" || boldText == "no contest" {
+					dataCell := th.Parent().Find("td.infobox-data").First()
+					if dataCell.Length() > 0 {
+						info.NoContests = extractNumber(dataCell.Text())
+						fmt.Printf("Found No Contests (via bold in infobox-label): %d\n", info.NoContests)
+						return
+					}
+				}
+			})
+		})
+	}
 }
