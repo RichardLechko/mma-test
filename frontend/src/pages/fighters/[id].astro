@@ -1,9 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { supabase } from '../../lib/supabase';
-import { trackFighterView } from '../../utils/analytics';
 
-// Define interfaces for type safety
 interface Fighter {
   id: string;
   ufc_id: string;
@@ -616,47 +614,6 @@ const isFightCanceled = (fight: Fight) => {
         </div>
       )
     }
-
-    <script
-      define:vars={{
-        fighterId,
-        fighterName: fighterData?.name || 'Unknown Fighter',
-      }}
-    >
-      // Track the fighter view when the page loads
-      document.addEventListener('DOMContentLoaded', () => {
-        // Dynamic import to avoid SSR issues
-        import('../../utils/analytics.ts')
-          .then(({ trackFighterView }) => {
-            // Track this fighter view
-            trackFighterView(fighterId, fighterName);
-
-            // Optional: Track when user clicks on opponent links
-            document.querySelectorAll('.fighter-link').forEach(link => {
-              if (link.getAttribute('href') !== `/fighters/${fighterId}`) {
-                link.addEventListener('click', () => {
-                  const opponentId =
-                    link.getAttribute('href')?.split('/').pop() || '';
-                  const opponentName =
-                    link.textContent?.trim() || 'Unknown Fighter';
-
-                  import('/src/utils/analytics.js').then(({ trackEvent }) => {
-                    trackEvent('click_opponent', {
-                      event_category: 'Navigation',
-                      event_label: opponentName,
-                      from_fighter_id: fighterId,
-                      to_fighter_id: opponentId,
-                    });
-                  });
-                });
-              }
-            });
-          })
-          .catch(err => {
-            console.error('Error loading analytics:', err);
-          });
-      });
-    </script>
 
     <script>
       document.addEventListener('DOMContentLoaded', () => {
