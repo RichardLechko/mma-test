@@ -771,15 +771,32 @@ const { data: allYearEvents } = await supabase
         calendarContainer.classList.remove('hidden');
         eventsContainer.classList.add('hidden');
 
-        const currentMonth = new Date().getMonth();
-        const currentMonthElement = document.getElementById(
-          `month-${currentMonth}`,
-        );
+        // Get the year from the URL path
+        const pathParts = window.location.pathname.split('/');
+        const yearParam = pathParts[pathParts.length - 1] || '';
+        const selectedYear = parseInt(yearParam) || 0;
+        const currentYear = new Date().getFullYear();
 
-        if (currentMonthElement) {
-          setTimeout(() => {
-            currentMonthElement.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
+        // Only jump to current month if we're viewing the current year
+        if (selectedYear === currentYear) {
+          const currentMonth = new Date().getMonth();
+          const currentMonthElement = document.getElementById(
+            `month-${currentMonth}`,
+          );
+
+          if (currentMonthElement) {
+            setTimeout(() => {
+              currentMonthElement.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }
+        } else {
+          // For non-current years, scroll to January (or the first available month)
+          const firstMonth = document.querySelector('.calendar-month');
+          if (firstMonth) {
+            setTimeout(() => {
+              firstMonth.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }
         }
 
         localStorage.setItem('events-view-mode', 'calendar');
