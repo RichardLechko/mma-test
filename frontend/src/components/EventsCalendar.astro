@@ -222,5 +222,80 @@ const currentMonth = today.getMonth();
         }
       });
     }
+    
+    // Add proximity classes to calendar days based on date
+    enhanceCalendarDays();
   });
+
+  /**
+   * Enhance calendar days with visual indicators for upcoming events
+   */
+  function enhanceCalendarDays() {
+    const calendarDays = document.querySelectorAll('.calendar-day');
+    if (!calendarDays.length) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    calendarDays.forEach(day => {
+      // Skip empty days and days without a number
+      if (day.classList.contains('empty')) return;
+      
+      const dayNumberElement = day.querySelector('.day-number');
+      if (!dayNumberElement || !dayNumberElement.textContent) return;
+      
+      // Get the date from the calendar day
+      const dayNumber = parseInt(dayNumberElement.textContent);
+      if (isNaN(dayNumber)) return;
+      
+      // Find which month this belongs to
+      const monthElement = day.closest('.calendar-month');
+      if (!monthElement) return;
+      
+      const monthTitleElement = monthElement.querySelector('.month-title');
+      if (!monthTitleElement || !monthTitleElement.textContent) return;
+      
+      const monthTitle = monthTitleElement.textContent;
+      const monthMatch = monthTitle.match(/([A-Za-z]+)\s+(\d{4})/);
+      if (!monthMatch) return;
+      
+      const monthName = monthMatch[1];
+      const year = parseInt(monthMatch[2]);
+      const monthIndex = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ].indexOf(monthName);
+      
+      if (monthIndex === -1 || isNaN(year)) return;
+      
+      // Create date object for this calendar day
+      const calendarDate = new Date(year, monthIndex, dayNumber);
+      calendarDate.setHours(0, 0, 0, 0);
+      
+      // Calculate days difference
+      const timeDifference = calendarDate.getTime() - today.getTime();
+      const daysDifference = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+      
+      // Add special classes based on proximity to today
+      if (daysDifference === 1) {
+        day.classList.add('future-1day');
+      } else if (daysDifference > 1 && daysDifference <= 3) {
+        day.classList.add('future-3days');
+      } else if (daysDifference > 3 && daysDifference <= 7) {
+        day.classList.add('future-7days');
+      }
+      
+      // Only add tooltip to days with events
+      if (day.classList.contains('has-events')) {
+        // Add a title attribute to show days until event on hover
+        if (daysDifference > 0) {
+          day.setAttribute('title', `Event in ${daysDifference} days`);
+        } else if (daysDifference === 0) {
+          day.setAttribute('title', 'Event today!');
+        } else {
+          day.setAttribute('title', `Event was ${Math.abs(daysDifference)} days ago`);
+        }
+      }
+    });
+  }
 </script>
