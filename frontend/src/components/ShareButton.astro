@@ -1,0 +1,115 @@
+---
+// ShareButton.astro - Place in frontend/src/components/
+// A simple share button component for events
+interface Props {
+  title: string;
+  date?: string;
+  time?: string;
+  venue?: string;
+  customClass?: string;
+}
+const { title, date, time, venue, customClass = '' } = Astro.props;
+// Prepare share data
+const shareText = [title, date, time, venue].filter(Boolean).join(' - ');
+---
+<button
+  class={`share-button ${customClass}`}
+  data-share-text={shareText}
+  data-original-text="Share"
+  aria-label="Share this event"
+>
+  Share
+</button>
+
+<script>
+  // Store timeouts globally so they persist across function calls
+  const buttonTimeouts = new Map<HTMLElement, number>();
+  
+  function initializeShareButtons() {
+    const shareButtons = document.querySelectorAll('.share-button');
+    
+    shareButtons.forEach((buttonElement) => {
+      // Only add event listener if it doesn't already have one
+      if (!(buttonElement as any)._hasShareListener) {
+        const button = buttonElement as HTMLElement;
+        
+        // Use arrow function to avoid 'this' binding issues
+        button.addEventListener('click', (e: Event) => {
+          handleShareButtonClick(e, button);
+        });
+        
+        // Mark as initialized to prevent duplicate event listeners
+        (button as any)._hasShareListener = true;
+      }
+    });
+  }
+
+  // Separate function with explicit button parameter instead of using 'this'
+  async function handleShareButtonClick(e: Event, button: HTMLElement) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      // Get share text from data attribute
+      const shareText = button.getAttribute('data-share-text') || 'UFC Event';
+      
+      // Get the URL from the closest anchor tag or current URL
+      const parentAnchor = button.closest('a');
+      const url = parentAnchor ? parentAnchor.href : window.location.href;
+      
+      // Prepare share data
+      const shareData = {
+        title: shareText.split(' - ')[0] || 'UFC Event',
+        text: shareText,
+        url: url,
+      };
+      
+      // Use Web Share API if available
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback to copying URL to clipboard
+        const input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        
+        // Clear any existing timeout for this button
+        const existingTimeout = buttonTimeouts.get(button);
+        if (existingTimeout) {
+          window.clearTimeout(existingTimeout);
+          buttonTimeouts.delete(button);
+        }
+        
+        // Store original text only if we don't already have it
+        const originalText = button.getAttribute('data-original-text') || button.textContent;
+        button.setAttribute('data-original-text', originalText || 'Share');
+        
+        // Show feedback to user
+        button.textContent = 'Copied!';
+        button.classList.add('success');
+        
+        // Set a new timeout to restore the original content
+        const timeoutId = window.setTimeout(() => {
+          // Restore to original text
+          button.textContent = button.getAttribute('data-original-text') || 'Share';
+          button.classList.remove('success');
+          buttonTimeouts.delete(button);
+        }, 2000);
+        
+        // Store the timeout ID in our Map
+        buttonTimeouts.set(button, timeoutId);
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  }
+
+  // Initialize on DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', initializeShareButtons);
+  
+  // Re-export the function to make it accessible from outside
+  (window as any).initializeShareButtons = initializeShareButtons;
+</script>

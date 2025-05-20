@@ -146,15 +146,12 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
             <div class="event-meta">
               <div class="event-date-time">
                 {(() => {
-                  // Parse the event date string directly without converting
                   const eventDate = new Date(eventData.event_date);
 
                   if (isNaN(eventDate.getTime())) {
                     return <div>Date not available</div>;
                   }
 
-                  // Format the date in user's local timezone
-                  // (no manual UTC conversion needed - the date object handles this)
                   const formattedDate = eventDate.toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',

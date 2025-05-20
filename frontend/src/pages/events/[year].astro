@@ -2,6 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import FilterDropdown from '../../components/FilterDropdown.astro';
 import { supabase } from '../../lib/supabase';
+import EventsCalendar from '../../components/EventsCalendar.astro';
+import ShareButton from '../../components/ShareButton.astro';
 
 // Get the year from the URL parameter
 const { year: yearParam } = Astro.params;
@@ -10,15 +12,15 @@ const yearNum = parseInt(yearParam || new Date().getFullYear().toString());
 // Validate year or default to current
 const currentYear = new Date().getFullYear();
 const validYear = !isNaN(yearNum) ? yearNum : currentYear;
+const startDate = new Date(validYear, 0, 1).toISOString();
+const endDate = new Date(validYear, 11, 31, 23, 59, 59).toISOString();
 const isHistoricalYear = validYear < currentYear;
 
 // Get all available years for dropdown
 let availableYears: string[] = [validYear.toString()];
 try {
-  const { data, error } = await supabase
-    .from('events')
-    .select('event_date');
-  
+  const { data, error } = await supabase.from('events').select('event_date');
+
   if (!error && data) {
     // Extract years, filter out invalid dates, and remove duplicates
     const years = data
@@ -27,12 +29,12 @@ try {
         return !isNaN(date.getTime()) ? date.getFullYear() : null;
       })
       .filter(year => year !== null);
-    
+
     // Make sure current year is included
     if (!years.includes(currentYear)) {
       years.push(currentYear);
     }
-    
+
     // Get unique years and sort in descending order
     availableYears = [...new Set(years)]
       .sort((a, b) => b - a)
@@ -45,8 +47,15 @@ try {
 // Create year options for dropdown
 const yearOptions = availableYears.map(year => ({
   value: year,
-  label: year
+  label: year,
 }));
+
+const { data: allYearEvents } = await supabase
+  .from('events')
+  .select('id, name, event_date, venue, city, country, status')
+  .gte('event_date', startDate)
+  .lte('event_date', endDate)
+  .order('event_date', { ascending: true });
 ---
 
 <Layout title={`UFC Events - ${validYear}`}>
@@ -54,7 +63,7 @@ const yearOptions = availableYears.map(year => ({
     <section class="events-container">
       <div class="events-header">
         <h1>UFC Events {validYear}</h1>
-        
+
         <!-- Year filter dropdown using your FilterDropdown component -->
         <FilterDropdown
           label="Year"
@@ -62,18 +71,65 @@ const yearOptions = availableYears.map(year => ({
           currentValue={validYear.toString()}
           id="year-selector"
         />
-        
+
         <!-- Hidden select for the redirect functionality -->
         <select id="year-selector" class="hidden-select">
-          {availableYears.map(year => (
-            <option value={year} selected={year === validYear.toString()}>
-              {year}
-            </option>
-          ))}
+          {
+            availableYears.map(year => (
+              <option value={year} selected={year === validYear.toString()}>
+                {year}
+              </option>
+            ))
+          }
         </select>
       </div>
-      
-      <div id="events-container" data-year={validYear} data-is-current-year={isHistoricalYear ? 'false' : 'true'}>
+
+      <div class="view-mode-container">
+        <button class="view-mode-button active" id="grid-view-button">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Grid View
+        </button>
+        <button class="view-mode-button" id="calendar-view-button">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          Calendar View
+        </button>
+      </div>
+
+      <div id="calendar-container" class="hidden">
+        <EventsCalendar events={allYearEvents || []} currentYear={validYear} />
+      </div>
+
+      <div
+        id="events-container"
+        data-year={validYear}
+        data-is-current-year={isHistoricalYear ? 'false' : 'true'}
+      >
         <div class="loading-container">
           <div class="loading-spinner"></div>
           <p>Loading events for {validYear}...</p>
@@ -85,13 +141,31 @@ const yearOptions = availableYears.map(year => ({
 
 <script>
   import { supabase } from '../../lib/supabase';
-  
+
   // Cache keys
   const EVENTS_CACHE_PREFIX = 'mmascheduler-events-';
-  
+
   // Constants
   const INITIAL_LOAD = 10;
-  
+
+  function createShareButtonHTML(
+    title: string,
+    date: string,
+    time: string,
+    venue: string,
+    customClass: string = 'event-share-button',
+  ): string {
+    return `
+    <button
+      class="share-button ${customClass}"
+      data-share-text="${[title, date, time, venue].filter(Boolean).join(' - ')}"
+      aria-label="Share this event"
+    >
+      Share
+    </button>
+  `;
+  }
+
   // Type definitions
   interface Event {
     id: string;
@@ -101,44 +175,143 @@ const yearOptions = availableYears.map(year => ({
     city: string | null;
     country: string | null;
   }
-  
+
   // Main initialization
   document.addEventListener('DOMContentLoaded', async () => {
     // Get container and year
     const container = document.getElementById('events-container');
     if (!container) return;
-    
+
     const year = parseInt(container.dataset.year || '0');
     const isCurrentYear = container.dataset.isCurrentYear === 'true';
-    
+
     // Set up year selector to redirect
     const yearSelector = document.getElementById('year-selector');
     if (yearSelector) {
-      yearSelector.addEventListener('change', (e) => {
+      yearSelector.addEventListener('change', e => {
         const target = e.target as HTMLSelectElement;
         window.location.href = `/events/${target.value}`;
       });
     }
-    
+
     // Load events
     await loadEvents(year, isCurrentYear);
+
+    // Initialize all share buttons in the page after events are loaded
+    initializeShareButtons();
   });
-  
+
+  function initializeShareButtons() {
+    // Check if our component has already defined this function globally
+    if ((window as any).initializeShareButtons) {
+      // Use the component's implementation
+      (window as any).initializeShareButtons();
+      return;
+    }
+
+    // Fallback implementation if component function isn't available
+    const shareButtons = document.querySelectorAll('.share-button');
+
+    // Store timeouts globally
+    if (!(window as any).buttonTimeouts) {
+      (window as any).buttonTimeouts = new Map();
+    }
+    const buttonTimeouts = (window as any).buttonTimeouts;
+
+    shareButtons.forEach(button => {
+      // Only add listener if it doesn't already have one
+      if (!(button as any)._hasShareListener) {
+        button.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          try {
+            // Get share text from data attribute
+            const shareText =
+              button.getAttribute('data-share-text') || 'UFC Event';
+
+            // Get the URL from the closest anchor tag or current URL
+            const parentAnchor = button.closest('a');
+            const url = parentAnchor ? parentAnchor.href : window.location.href;
+
+            // Prepare share data
+            const shareData = {
+              title: shareText.split(' - ')[0] || 'UFC Event',
+              text: shareText,
+              url: url,
+            };
+
+            // Use Web Share API if available
+            if (navigator.share) {
+              navigator
+                .share(shareData)
+                .catch(err => console.error('Share error:', err));
+            } else {
+              // Fallback to copying URL to clipboard
+              const input = document.createElement('input');
+              input.value = url;
+              document.body.appendChild(input);
+              input.select();
+              document.execCommand('copy');
+              document.body.removeChild(input);
+
+              // Clear any existing timeout for this button
+              const existingTimeout = buttonTimeouts.get(button);
+              if (existingTimeout) {
+                window.clearTimeout(existingTimeout);
+                buttonTimeouts.delete(button);
+              }
+
+              // Store original text
+              const originalText =
+                button.getAttribute('data-original-text') || button.textContent;
+              button.setAttribute(
+                'data-original-text',
+                originalText || 'Share',
+              );
+
+              // Show feedback to user
+              button.textContent = 'Copied!';
+              button.classList.add('success');
+
+              // Set a new timeout to restore the original content
+              const timeoutId = window.setTimeout(() => {
+                // Restore to original text
+                button.textContent =
+                  button.getAttribute('data-original-text') || 'Share';
+                button.classList.remove('success');
+                buttonTimeouts.delete(button);
+              }, 2000);
+
+              // Store the timeout ID in our Map
+              buttonTimeouts.set(button, timeoutId);
+            }
+          } catch (error) {
+            console.error('Error sharing:', error);
+          }
+        });
+
+        // Mark as initialized
+        (button as any)._hasShareListener = true;
+      }
+    });
+  }
+
   // Load events for the selected year
   async function loadEvents(year: number, isCurrentYear: boolean) {
     const container = document.getElementById('events-container');
     if (!container) return;
-    
+
     try {
       // Create date range for the year
       const startDate = new Date(year, 0, 1).toISOString();
       const endDate = new Date(year, 11, 31, 23, 59, 59).toISOString();
-      
+
       // Check cache for historical years
       const cacheKey = `${EVENTS_CACHE_PREFIX}${year}`;
       let events: Event[] = [];
       let totalCount = 0;
-      
+
       // For historical years, try cache first
       if (!isCurrentYear) {
         const cachedEvents = localStorage.getItem(cacheKey);
@@ -146,7 +319,7 @@ const yearOptions = availableYears.map(year => ({
           const cachedData = JSON.parse(cachedEvents);
           events = cachedData.events;
           totalCount = cachedData.total;
-          
+
           // If we have cached events, render them
           if (events && events.length > 0) {
             renderEvents(events, year, isCurrentYear, totalCount);
@@ -154,10 +327,10 @@ const yearOptions = availableYears.map(year => ({
           }
         }
       }
-      
+
       // Initial events load (limited for historical years)
       const limit = isCurrentYear ? 50 : INITIAL_LOAD;
-      
+
       // Get events
       const { data, error } = await supabase
         .from('events')
@@ -166,11 +339,11 @@ const yearOptions = availableYears.map(year => ({
         .lte('event_date', endDate)
         .order('event_date', { ascending: true })
         .limit(limit);
-      
+
       if (error) throw error;
-      
+
       events = data || [];
-      
+
       // Get total count for historical years
       if (!isCurrentYear) {
         const { count, error: countError } = await supabase
@@ -178,19 +351,22 @@ const yearOptions = availableYears.map(year => ({
           .select('id', { count: 'exact', head: true })
           .gte('event_date', startDate)
           .lte('event_date', endDate);
-        
+
         if (!countError && count !== null) {
           totalCount = count;
-          
+
           // Cache the results for historical years
-          localStorage.setItem(cacheKey, JSON.stringify({
-            events: events,
-            total: totalCount,
-            timestamp: Date.now()
-          }));
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              events: events,
+              total: totalCount,
+              timestamp: Date.now(),
+            }),
+          );
         }
       }
-      
+
       // Render the events
       renderEvents(events, year, isCurrentYear, totalCount);
     } catch (error) {
@@ -204,12 +380,17 @@ const yearOptions = availableYears.map(year => ({
       }
     }
   }
-  
+
   // Render events to the container
-  function renderEvents(events: Event[], year: number, isCurrentYear: boolean, totalCount: number) {
+  function renderEvents(
+    events: Event[],
+    year: number,
+    isCurrentYear: boolean,
+    totalCount: number,
+  ) {
     const container = document.getElementById('events-container');
     if (!container) return;
-    
+
     // If no events, show empty message
     if (!events || events.length === 0) {
       container.innerHTML = `
@@ -219,55 +400,79 @@ const yearOptions = availableYears.map(year => ({
       `;
       return;
     }
-    
+
     // Sort current year events by proximity to today
     const today = new Date();
     if (isCurrentYear) {
       events.sort((a: Event, b: Event) => {
         const dateA = new Date(a.event_date);
         const dateB = new Date(b.event_date);
-        
-        if ((dateA >= today && dateB >= today) || (dateA < today && dateB < today)) {
-          return dateA >= today 
-            ? dateA.getTime() - dateB.getTime() 
+
+        if (
+          (dateA >= today && dateB >= today) ||
+          (dateA < today && dateB < today)
+        ) {
+          return dateA >= today
+            ? dateA.getTime() - dateB.getTime()
             : dateB.getTime() - dateA.getTime();
         }
-        
+
         return dateA >= today ? -1 : 1;
       });
     }
-    
+
     // Create HTML for events
     let html = `<div class="events-grid">`;
-    
+
     events.forEach((event: Event) => {
       const eventDate = new Date(event.event_date);
-      const statusClass = eventDate > today ? 'status-scheduled' : 'status-completed';
-      
+      const statusClass =
+        eventDate > today ? 'status-scheduled' : 'status-completed';
+
+      // Format date for share button
+      const formattedDate = eventDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Format time for share button
+      const formattedTime = eventDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZoneName: 'short',
+      });
+
       html += `
-        <a href="/events/event/${event.id}" class="event-card ${statusClass}" data-event-date="${event.event_date}">
-          <div class="event-header ${statusClass}">
-            <h2>${event.name}</h2>
-            <span class="event-countdown"></span>
-          </div>
-          <div class="event-details">
-            <p class="event-date"></p>
-            <p class="event-location">
-              ${event.venue 
-                ? `<span class="venue">${event.venue}</span>
-                   ${event.city && event.country 
-                     ? `<span class="location">${event.city}, ${event.country}</span>` 
-                     : ''}`
-                : `<span class="location-tbd">Location TBD</span>`}
-            </p>
-            <p class="event-status">${eventDate > today ? 'Upcoming' : 'Completed'}</p>
-          </div>
-        </a>
-      `;
+  <a href="/events/event/${event.id}" class="event-card ${statusClass}" data-event-date="${event.event_date}">
+    <div class="event-header ${statusClass}">
+      <h2>${event.name}</h2>
+      <span class="event-countdown"></span>
+    </div>
+    <div class="event-details">
+      <p class="event-date"></p>
+      <p class="event-location">
+        ${
+          event.venue
+            ? `<span class="venue">${event.venue}</span>
+             ${
+               event.city && event.country
+                 ? `<span class="location">${event.city}, ${event.country}</span>`
+                 : ''
+             }`
+            : `<span class="location-tbd">Location TBD</span>`
+        }
+      </p>
+      <p class="event-status">${eventDate > today ? 'Upcoming' : 'Completed'}</p>
+    </div>
+    ${createShareButtonHTML(event.name, formattedDate, formattedTime, event.venue || '')}
+  </a>
+`;
     });
-    
+
     html += `</div>`;
-    
+
     // Add load more button for historical years if needed
     if (!isCurrentYear && events.length < totalCount) {
       const loadedCount = events.length;
@@ -279,86 +484,93 @@ const yearOptions = availableYears.map(year => ({
         </div>
       `;
     }
-    
+
     // Update the container
     container.innerHTML = html;
-    
+
     // Initialize event dates
     updateEventDates();
-    
+
+    // Initialize share buttons
+    initializeShareButtons();
+
     // Set up load more button
     const loadMoreBtn = document.getElementById('load-more-btn');
     if (loadMoreBtn) {
       loadMoreBtn.addEventListener('click', loadMoreEvents);
     }
   }
-  
+
   // Update event dates
   function updateEventDates() {
     // Get all event cards
     const eventCards = document.querySelectorAll('.event-card');
-    
+
     // Get today's date with time set to midnight for proper day comparison
     const today = new Date();
-    const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    
+    const todayAtMidnight = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+
     eventCards.forEach(card => {
       // Get the UTC date string
       const utcDateStr = card.getAttribute('data-event-date');
       if (!utcDateStr) return;
-      
+
       // Create a date object which automatically converts to local time
       const localDate = new Date(utcDateStr);
-      
+
       // Format date in user's locale
       const formattedDate = localDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
-      
+
       // Add time in local timezone
       const formattedTime = localDate.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
-        timeZoneName: 'short'
+        timeZoneName: 'short',
       });
-      
+
       // Update date display with local time
       const dateElement = card.querySelector('.event-date');
       if (dateElement) {
         dateElement.textContent = `${formattedDate} at ${formattedTime}`;
       }
-      
+
       // Calculate if the event is in the past
       const isPastEvent = localDate < todayAtMidnight;
-      
+
       // Calculate days difference
       const diffDays = calculateDaysDifference(localDate, todayAtMidnight);
-      
+
       // Handle "tomorrow", "today" and other cases
       let timeDisplay;
       if (!isPastEvent) {
         // Future event
         if (diffDays === 0) {
-          timeDisplay = "Today";
+          timeDisplay = 'Today';
         } else if (diffDays === 1) {
-          timeDisplay = "Tomorrow";
+          timeDisplay = 'Tomorrow';
         } else {
           timeDisplay = `${diffDays} days away`;
         }
       } else {
         // Past event
         if (diffDays === 0) {
-          timeDisplay = "Today";
+          timeDisplay = 'Today';
         } else if (diffDays === 1) {
-          timeDisplay = "Yesterday";
+          timeDisplay = 'Yesterday';
         } else {
           timeDisplay = `${diffDays} days ago`;
         }
       }
-      
+
       // Update the countdown display
       const countdownElement = card.querySelector('.event-countdown');
       if (countdownElement) {
@@ -366,40 +578,42 @@ const yearOptions = availableYears.map(year => ({
       }
     });
   }
-  
+
   // Calculate days difference between two dates
   function calculateDaysDifference(date1: Date, date2: Date): number {
     // Set both dates to midnight to get accurate day count
     const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
     const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
-    
+
     // Get the time difference in milliseconds
     const timeDiff = Math.abs(d2.getTime() - d1.getTime());
-    
+
     // Convert to days and round to handle DST changes
     return Math.round(timeDiff / (1000 * 60 * 60 * 24));
   }
-  
+
   // Load more events
   async function loadMoreEvents() {
-    const loadMoreBtn = document.getElementById('load-more-btn') as HTMLButtonElement;
+    const loadMoreBtn = document.getElementById(
+      'load-more-btn',
+    ) as HTMLButtonElement;
     if (!loadMoreBtn) return;
-    
+
     // Get data attributes
     const year = parseInt(loadMoreBtn.dataset.year || '0');
     const offset = parseInt(loadMoreBtn.dataset.offset || '0');
     const total = parseInt(loadMoreBtn.dataset.total || '0');
     const limit = 10; // Load 10 more events each time
-    
+
     // Disable button and show loading indicator
     loadMoreBtn.disabled = true;
     loadMoreBtn.innerHTML = 'Loading... <span class="loading"></span>';
-    
+
     try {
       // Create date range for the year
       const startDate = new Date(year, 0, 1).toISOString();
       const endDate = new Date(year, 11, 31, 23, 59, 59).toISOString();
-      
+
       // Get more events
       const { data, error } = await supabase
         .from('events')
@@ -408,69 +622,106 @@ const yearOptions = availableYears.map(year => ({
         .lte('event_date', endDate)
         .order('event_date', { ascending: true })
         .range(offset, offset + limit - 1);
-        
+
       if (error) throw error;
-      
+
       const moreEvents = data || [];
-      
+
       if (moreEvents.length > 0) {
         const eventsGrid = document.querySelector('.events-grid');
-        
+
         if (eventsGrid) {
           // Add new event cards
           moreEvents.forEach((event: Event) => {
             const today = new Date();
             const eventDate = new Date(event.event_date);
-            const statusClass = eventDate > today ? 'status-scheduled' : 'status-completed';
-            
+            const statusClass =
+              eventDate > today ? 'status-scheduled' : 'status-completed';
+
+            // Format date for share button
+            const formattedDate = eventDate.toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            });
+
+            // Format time for share button
+            const formattedTime = eventDate.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              timeZoneName: 'short',
+            });
+
             const eventCard = document.createElement('a');
             eventCard.href = `/events/event/${event.id}`;
             eventCard.className = `event-card ${statusClass}`;
             eventCard.dataset.eventDate = event.event_date;
-            
-            eventCard.innerHTML = `
-              <div class="event-header ${statusClass}">
-                <h2>${event.name}</h2>
-                <span class="event-countdown"></span>
-              </div>
-              <div class="event-details">
-                <p class="event-date"></p>
-                <p class="event-location">
-                  ${event.venue 
-                    ? `<span class="venue">${event.venue}</span>
-                       ${event.city && event.country 
-                         ? `<span class="location">${event.city}, ${event.country}</span>` 
-                         : ''}`
-                    : `<span class="location-tbd">Location TBD</span>`}
-                </p>
-                <p class="event-status">${eventDate > today ? 'Upcoming' : 'Completed'}</p>
-              </div>
-            `;
-            
+
+            // Add share button
+            const shareButtonHTML = createShareButtonHTML(
+              event.name,
+              formattedDate,
+              formattedTime,
+              event.venue || '',
+              'event-share-button',
+            );
+
+            // Create main card content
+            const cardContent = `
+  <div class="event-header ${statusClass}">
+    <h2>${event.name}</h2>
+    <span class="event-countdown"></span>
+  </div>
+  <div class="event-details">
+    <p class="event-date"></p>
+    <p class="event-location">
+      ${
+        event.venue
+          ? `<span class="venue">${event.venue}</span>
+           ${
+             event.city && event.country
+               ? `<span class="location">${event.city}, ${event.country}</span>`
+               : ''
+           }`
+          : `<span class="location-tbd">Location TBD</span>`
+      }
+    </p>
+    <p class="event-status">${eventDate > today ? 'Upcoming' : 'Completed'}</p>
+  </div>
+  ${shareButtonHTML}
+`;
+
+            // Add share button plus the rest of the content
+            eventCard.innerHTML = shareButtonHTML + cardContent;
+
             eventsGrid.appendChild(eventCard);
           });
-          
+
           // Update the cache
           const cacheKey = `${EVENTS_CACHE_PREFIX}${year}`;
           const cachedEvents = localStorage.getItem(cacheKey);
-          
+
           if (cachedEvents) {
             const cachedData = JSON.parse(cachedEvents);
             cachedData.events = [...cachedData.events, ...moreEvents];
             localStorage.setItem(cacheKey, JSON.stringify(cachedData));
           }
-          
+
           // Update dates for new cards
           updateEventDates();
-          
+
+          // Initialize share buttons
+          initializeShareButtons();
+
           // Update loaded count
           const newOffset = offset + moreEvents.length;
           const loadedCount = Math.min(newOffset, total);
-          
+
           // Update button text and data
           loadMoreBtn.dataset.offset = newOffset.toString();
           loadMoreBtn.innerHTML = `Load 10 More Events (${loadedCount}/${total})`;
-          
+
           // Hide button if all events are loaded
           if (loadedCount >= total) {
             loadMoreBtn.style.display = 'none';
@@ -488,6 +739,61 @@ const yearOptions = availableYears.map(year => ({
       loadMoreBtn.disabled = false;
     }
   }
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const gridViewButton = document.getElementById('grid-view-button');
+    const calendarViewButton = document.getElementById('calendar-view-button');
+    const eventsContainer = document.getElementById('events-container');
+    const calendarContainer = document.getElementById('calendar-container');
+
+    if (
+      gridViewButton &&
+      calendarViewButton &&
+      eventsContainer &&
+      calendarContainer
+    ) {
+      gridViewButton.addEventListener('click', () => {
+        gridViewButton.classList.add('active');
+        calendarViewButton.classList.remove('active');
+
+        eventsContainer.classList.remove('hidden');
+        calendarContainer.classList.add('hidden');
+
+        localStorage.setItem('events-view-mode', 'grid');
+      });
+
+      calendarViewButton.addEventListener('click', () => {
+        calendarViewButton.classList.add('active');
+        gridViewButton.classList.remove('active');
+
+        calendarContainer.classList.remove('hidden');
+        eventsContainer.classList.add('hidden');
+
+        const currentMonth = new Date().getMonth();
+        const currentMonthElement = document.getElementById(
+          `month-${currentMonth}`,
+        );
+
+        if (currentMonthElement) {
+          setTimeout(() => {
+            currentMonthElement.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }
+
+        localStorage.setItem('events-view-mode', 'calendar');
+      });
+
+      const viewMode = localStorage.getItem('events-view-mode');
+
+      if (viewMode === 'calendar') {
+        calendarViewButton.click();
+      } else {
+        gridViewButton.click();
+      }
+    }
+  });
 </script>
 
 <style>

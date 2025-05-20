@@ -1,0 +1,418 @@
+---
+// EventsCalendar.astro - Place in frontend/src/components/
+// A calendar component that displays UFC events by date
+
+interface Event {
+  id: string;
+  name: string;
+  event_date: string;
+  venue: string | null;
+  city: string | null;
+  country: string | null;
+  status: string;
+}
+
+interface Props {
+  events: Event[];
+  currentYear: number;
+}
+
+const { events, currentYear } = Astro.props;
+
+// Group events by month and date
+const eventsByDate = new Map<string, Event[]>();
+
+events.forEach(event => {
+  if (!event?.event_date) return;
+  
+  const eventDate = new Date(event.event_date);
+  if (isNaN(eventDate.getTime())) return;
+  
+  const dateKey = `${eventDate.getFullYear()}-${eventDate.getMonth()}-${eventDate.getDate()}`;
+  
+  if (!eventsByDate.has(dateKey)) {
+    eventsByDate.set(dateKey, []);
+  }
+  
+  eventsByDate.get(dateKey)?.push(event);
+});
+
+// Get number of days in a month
+const getDaysInMonth = (year: number, month: number): number => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+// Get the first day of the month (0 = Sunday, 1 = Monday, etc.)
+const getFirstDayOfMonth = (year: number, month: number): number => {
+  return new Date(year, month, 1).getDay();
+};
+
+// Create calendar data
+type CalendarDay = {
+  day: number | null;
+  events: Event[];
+  hasEvents?: boolean;
+};
+
+type CalendarMonth = {
+  month: number;
+  days: CalendarDay[];
+};
+
+const calendarData: CalendarMonth[] = [];
+
+for (let month = 0; month < 12; month++) {
+  const daysInMonth = getDaysInMonth(currentYear, month);
+  const firstDay = getFirstDayOfMonth(currentYear, month);
+  
+  const days: CalendarDay[] = [];
+  
+  // Add empty cells for days before the first day of the month
+  for (let i = 0; i < firstDay; i++) {
+    days.push({ day: null, events: [] });
+  }
+  
+  // Add days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateKey = `${currentYear}-${month}-${day}`;
+    const dayEvents = eventsByDate.get(dateKey) || [];
+    
+    days.push({
+      day,
+      events: dayEvents,
+      hasEvents: dayEvents.length > 0
+    });
+  }
+  
+  calendarData.push({
+    month,
+    days
+  });
+}
+
+// Month names
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+// Day names
+const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Format date
+const formatEventDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  
+  // Format time in 12-hour format
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const formattedHours = hours % 12 || 12;
+  const formattedMinutes = minutes.toString().padStart(2, '0');
+  
+  return `${formattedHours}:${formattedMinutes} ${ampm}`;
+};
+
+// Current date
+const today = new Date();
+const currentDay = today.getDate();
+const currentMonth = today.getMonth();
+---
+
+<div class="events-calendar">
+  <div class="calendar-months">
+    {calendarData.map((monthData, index) => (
+      <div 
+        class={`calendar-month ${currentMonth === index ? 'current-month' : ''}`} 
+        id={`month-${index}`}
+      >
+        <h3 class="month-title">{monthNames[monthData.month]} {currentYear}</h3>
+        
+        <div class="calendar-grid">
+          {/* Day names header */}
+          {dayNames.map(name => (
+            <div class="day-name">{name}</div>
+          ))}
+          
+          {/* Calendar days */}
+          {monthData.days.map(dayData => (
+            dayData.day ? (
+              <div 
+                class={`calendar-day ${dayData.hasEvents ? 'has-events' : ''} ${
+                  currentMonth === monthData.month && currentDay === dayData.day ? 'today' : ''
+                }`}
+              >
+                <span class="day-number">{dayData.day}</span>
+                
+                {dayData.hasEvents && (
+                  <div class="day-events">
+                    {dayData.events.map(event => (
+                      <a href={`/events/event/${event.id}`} class="calendar-event">
+                        <span class="event-time">{formatEventDate(event.event_date)}</span>
+                        <span class="event-name">{event.name}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div class="calendar-day empty"></div>
+            )
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+  
+  <div class="calendar-navigation">
+    <div class="month-selector">
+      <label for="month-select">Jump to month:</label>
+      <select id="month-select">
+        {monthNames.map((name, index) => (
+          <option value={index} selected={currentMonth === index}>{name}</option>
+        ))}
+      </select>
+    </div>
+  </div>
+</div>
+
+<style>
+  .events-calendar {
+    background: var(--background-dark);
+    border-radius: var(--border-radius-md);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .calendar-months {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+  
+  .month-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+  }
+  
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .day-name {
+    text-align: center;
+    font-weight: bold;
+    padding: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  
+  .calendar-day {
+    min-height: 6rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius-sm);
+    padding: 0.5rem;
+    position: relative;
+  }
+  
+  .calendar-day.today {
+    box-shadow: 0 0 0 2px var(--primary-color);
+  }
+  
+  .calendar-day.empty {
+    background: transparent;
+  }
+  
+  .calendar-day.has-events {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  .day-number {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--text-tertiary);
+  }
+  
+  .today .day-number {
+    color: var(--primary-color);
+    font-weight: bold;
+  }
+  
+  .day-events {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .calendar-event {
+    font-size: 0.8rem;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.4rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  
+  .calendar-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  .event-time {
+    font-size: 0.7rem;
+    opacity: 0.8;
+  }
+  
+  .event-name {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .calendar-navigation {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .month-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .month-selector label {
+    color: var(--text-secondary);
+  }
+  
+  .month-selector select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-sm);
+    color: var(--text-primary);
+    font-weight: bold;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .calendar-grid {
+      gap: 0.3rem;
+    }
+    
+    .calendar-day {
+      min-height: 5rem;
+      padding: 0.3rem;
+    }
+    
+    .day-events {
+      margin-top: 1.2rem;
+    }
+    
+    .calendar-event {
+      padding: 0.3rem 0.4rem;
+      font-size: 0.7rem;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .calendar-grid {
+      grid-template-columns: repeat(7, 1fr);
+      font-size: 0.8rem;
+      gap: 0.2rem;
+    }
+    
+    .calendar-day {
+      min-height: 4rem;
+      padding: 0.2rem;
+    }
+    
+    .day-name {
+      padding: 0.3rem;
+      font-size: 0.8rem;
+    }
+    
+    .day-number {
+      top: 0.2rem;
+      right: 0.3rem;
+      font-size: 0.8rem;
+    }
+    
+    .day-events {
+      margin-top: 1rem;
+      gap: 0.3rem;
+    }
+    
+    .calendar-event {
+      padding: 0.2rem 0.3rem;
+      font-size: 0.65rem;
+    }
+    
+    .event-time {
+      font-size: 0.6rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .calendar-day {
+      min-height: 3.5rem;
+    }
+    
+    .day-events {
+      margin-top: 0.8rem;
+    }
+    
+    .calendar-event {
+      padding: 0.15rem 0.25rem;
+      font-size: 0.6rem;
+    }
+    
+    .event-time {
+      font-size: 0.55rem;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Jump to current month initially
+    const currentMonth = new Date().getMonth();
+    const currentMonthElement = document.getElementById(`month-${currentMonth}`);
+    
+    if (currentMonthElement) {
+      currentMonthElement.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Handle month selector
+    const monthSelect = document.getElementById('month-select') as HTMLSelectElement;
+    
+    if (monthSelect) {
+      monthSelect.addEventListener('change', () => {
+        const selectedMonth = monthSelect.value;
+        const monthElement = document.getElementById(`month-${selectedMonth}`);
+        
+        if (monthElement) {
+          monthElement.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
+  });
+</script>

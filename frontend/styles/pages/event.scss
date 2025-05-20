@@ -131,7 +131,7 @@
 
     .event-countdown {
       position: absolute;
-      top: $spacing-lg;
+      top: calc($spacing-lg + 40px);
       right: $spacing-lg;
       background: rgba(0, 0, 0, 0.4);
       border-radius: $border-radius-md;
@@ -185,13 +185,18 @@
       padding: $spacing-md;
       position: relative;
       &.main-event {
-        border-left: 5px solid gold;
+        border-left: 5px solid #3675e0;
       }
       &.title-fight {
-        border-left: 5px solid crimson;
+        border-left: 5px solid var(--primary-color);
         &.main-event {
           border-left: 5px solid;
-          border-image: linear-gradient(to bottom, gold, crimson) 1 100%;
+          border-image: linear-gradient(
+              to bottom,
+              #3675e0,
+              var(--primary-color)
+            )
+            1 100%;
         }
       }
       .main-event-tag,
@@ -205,12 +210,12 @@
         text-transform: uppercase;
       }
       .main-event-tag {
-        background: gold;
-        color: black;
+        background: #3675e0;
+        color: white;
         margin-right: $spacing-xs;
       }
       .title-fight-tag {
-        background: crimson;
+        background: var(--primary-color);
         color: white;
       }
       .weight-class {
@@ -267,18 +272,18 @@
           &.winner {
             background: linear-gradient(
               135deg,
-              rgba(0, 128, 0, 0.25),
-              rgba(0, 128, 0, 0.1)
+              rgba(174, 0, 1, 0.25),
+              rgba(174, 0, 1, 0.1)
             );
-            border: 1px solid rgba(0, 128, 0, 0.5);
-            box-shadow: 0 0 15px rgba(0, 200, 0, 0.2);
+            border: 1px solid rgba(174, 0, 1, 0.5);
+            box-shadow: 0 0 15px rgba(174, 0, 1, 0.2);
 
             &:after {
               content: 'WINNER';
               position: absolute;
               top: 10px;
               right: -32px;
-              background: rgba(0, 128, 0, 0.9);
+              background: rgba(174, 0, 1, 0.9);
               color: white;
               font-size: 10px;
               font-weight: bold;
@@ -293,12 +298,12 @@
             }
 
             .fighter-name .name {
-              color: #90ee90;
-              text-shadow: 0 0 4px rgba(0, 128, 0, 0.5);
+              color: white;
+              text-shadow: 0 0 4px rgba(174, 0, 1, 0.5);
             }
 
             &:hover {
-              box-shadow: 0 4px 12px rgba(0, 128, 0, 0.4);
+              box-shadow: 0 4px 12px rgba(174, 0, 1, 0.4);
             }
           }
 
@@ -413,8 +418,8 @@
                 box-shadow 0.2s ease;
             }
             .champion-badge {
-              background: gold;
-              color: black;
+              background: var(--primary-color);
+              color: white;
               border-radius: 50%;
               width: 24px;
               height: 24px;
@@ -439,7 +444,7 @@
         }
         .vs {
           font-weight: bold;
-          color: gold;
+          color: var(--primary-color);
           font-size: $font-size-lg;
           background: rgba(0, 0, 0, 0.3);
           width: 40px;
@@ -456,7 +461,7 @@
         background: rgba(0, 0, 0, 0.2);
         border-radius: $border-radius-sm;
         text-align: center;
-        border-top: 2px solid rgba(0, 128, 0, 0.5);
+        border-top: 2px solid rgba(174, 0, 1, 0.5);
 
         .result-header {
           font-size: $font-size-md;
@@ -465,8 +470,8 @@
 
           .winner-name {
             font-weight: bold;
+            background: rgba(174, 0, 1, 0.7);
             color: white;
-            background: rgba(0, 128, 0, 0.7);
             padding: 4px 10px;
             border-radius: 3px;
             position: relative;
@@ -476,7 +481,7 @@
 
           .method {
             font-weight: bold;
-            color: #90ee90;
+            color: white;
           }
         }
 
@@ -675,8 +680,6 @@
   }
 }
 
-/* Media Queries for Event Page - Add these at the bottom of event.scss */
-
 @media (max-width: 768px) {
   .event-page {
     padding: $spacing-md $spacing-sm;
@@ -702,6 +705,7 @@
         margin-left: auto;
         margin-right: auto;
         max-width: 300px;
+        top: calc($spacing-md + 36px);
       }
     }
 
@@ -811,6 +815,7 @@
       .event-countdown {
         padding: $spacing-xs $spacing-sm;
         border-radius: $border-radius-sm;
+        top: calc($spacing-sm + 32px);
 
         .countdown-value {
           font-size: $font-size-lg;
