@@ -140,6 +140,24 @@ const { data: allYearEvents } = await supabase
 </Layout>
 
 <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const viewModeContainer = document.querySelector('.view-mode-container');
+
+    if (viewModeContainer) {
+      // Get initial position to determine when to apply the scrolled class
+      const containerRect = viewModeContainer.getBoundingClientRect();
+      const initialPosition = containerRect.top + window.scrollY;
+
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > initialPosition - 80) {
+          viewModeContainer.classList.add('scrolled');
+        } else {
+          viewModeContainer.classList.remove('scrolled');
+        }
+      });
+    }
+  });
+
   import { supabase } from '../../lib/supabase';
 
   // Cache keys

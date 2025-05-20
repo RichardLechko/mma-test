@@ -1,13 +1,57 @@
 .calendar-month {
   scroll-margin-top: 80px;
-  padding-top: 20px;
+  
 }
 
 .view-mode-container {
+  position: sticky;
+  top: 80px;
+  z-index: 5;
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 1rem;
   gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(26, 26, 26, 0.8);
+  backdrop-filter: blur(5px);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.view-mode-container.scrolled {
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.view-mode-container.scrolled .view-mode-button {
+  font-size: 1.1rem;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+}
+
+#year-selector-dropdown, 
+.filter-dropdown, 
+.year-selector, 
+.month-selector {
+  z-index: 10;
+}
+
+.view-mode-container.sticky {
+  animation: slide-in 0.3s ease-out;
+  transform: translateY(0);
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateY(-10px);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .view-mode-button {
@@ -129,10 +173,8 @@
 /* Calendar component styles */
 .events-calendar {
   background: var(--background-dark);
-  border-radius: var(--border-radius-md);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  margin: 6rem 0rem 2rem 0rem;
+  box-shadow: none;
 }
 
 .calendar-months {
@@ -173,7 +215,27 @@
 }
 
 .calendar-day.today {
-  box-shadow: 0 0 0 2px var(--primary-color);
+  background: rgba(174, 0, 1, 0.15);
+  border: 2px solid var(--primary-color);
+  position: relative;
+  overflow: visible;
+}
+
+.calendar-day.today::after {
+  content: 'TODAY';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--primary-color);
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  z-index: 1;
 }
 
 .calendar-day.empty {
@@ -182,7 +244,17 @@
 
 .calendar-day.has-events {
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: visible;
+}
+
+.calendar-day.has-events:hover {
+  background-color: #2a2a2a !important;
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  z-index: 5;
 }
 
 .day-number {
@@ -194,9 +266,17 @@
   color: var(--text-tertiary);
 }
 
-.today .day-number {
-  color: var(--primary-color);
+.calendar-day.today .day-number {
+  color: white;
+  background: var(--primary-color);
+  padding: 2px 6px;
+  border-radius: 50%;
   font-weight: bold;
+}
+
+.calendar-day.today .day-events {
+  position: relative;
+  z-index: 2;
 }
 
 .day-events {
@@ -206,21 +286,8 @@
   gap: 0.5rem;
 }
 
-/* Make calendar days with events clickable with hover effect */
-a.calendar-day {
-  text-decoration: none;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-/* CALENDAR DAY HOVER EFFECT */
-a.calendar-day:hover {
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 2px var(--primary-color);
-}
-
-/* Calendar event styling - NO HOVER EFFECTS */
 .calendar-event {
+  position: relative;
   font-size: 0.8rem;
   background: var(--primary-color);
   color: white;
@@ -229,14 +296,13 @@ a.calendar-day:hover {
   display: flex;
   flex-direction: column;
   text-decoration: none;
+  transition:
+    background-color 0.3s ease,
+    transform 0.1s ease;
+  overflow: hidden;
 }
 
-/* Explicitly remove any hover effects that might be added by the component */
-.calendar-event:hover {
-  transform: none !important;
-  box-shadow: none !important;
-  background: var(--primary-color) !important;
-}
+
 
 .event-time {
   font-size: 0.7rem;
@@ -253,8 +319,13 @@ a.calendar-day:hover {
 /* Responsive styles */
 @media (max-width: 768px) {
   .view-mode-button {
-    padding: 0.5rem 0.8rem;
+    padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
+  }
+
+  .view-mode-container {
+    top: 70px; /* Adjust for smaller navbar */
+    padding: 0.5rem 0.75rem;
   }
 
   .view-mode-button svg {
@@ -280,16 +351,21 @@ a.calendar-day:hover {
   .calendar-grid {
     gap: 0.3rem;
   }
-  
+
   .calendar-day {
     min-height: 5rem;
     padding: 0.3rem;
   }
-  
+
+  .calendar-day.today::after {
+    font-size: 0.55rem;
+    padding: 1px 3px;
+  }
+
   .day-events {
     margin-top: 1.2rem;
   }
-  
+
   .calendar-event {
     padding: 0.3rem 0.4rem;
     font-size: 0.7rem;
@@ -302,35 +378,43 @@ a.calendar-day:hover {
     font-size: 0.8rem;
     gap: 0.2rem;
   }
-  
+
   .calendar-day {
     min-height: 4rem;
     padding: 0.2rem;
   }
-  
+
   .day-name {
     padding: 0.3rem;
     font-size: 0.8rem;
   }
-  
+
   .day-number {
     top: 0.2rem;
     right: 0.3rem;
     font-size: 0.8rem;
   }
-  
+
   .day-events {
     margin-top: 1rem;
     gap: 0.3rem;
   }
-  
+
   .calendar-event {
     padding: 0.2rem 0.3rem;
     font-size: 0.65rem;
   }
-  
+
   .event-time {
     font-size: 0.6rem;
+  }
+
+  .view-mode-container {
+    top: 60px;
+    justify-content: center; /* Center buttons on small screens */
+    width: 95%;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
@@ -371,20 +455,20 @@ a.calendar-day:hover {
     min-width: 0;
     flex: 1;
   }
-  
+
   .calendar-day {
     min-height: 3.5rem;
   }
-  
+
   .day-events {
     margin-top: 0.8rem;
   }
-  
+
   .calendar-event {
     padding: 0.15rem 0.25rem;
     font-size: 0.6rem;
   }
-  
+
   .event-time {
     font-size: 0.55rem;
   }
