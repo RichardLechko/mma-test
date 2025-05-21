@@ -1,49 +1,379 @@
-import { supabase } from '../../lib/supabase';
-
 export async function GET({ request }) {
   try {
-    
     const url = new URL(request.url);
     const offset = parseInt(url.searchParams.get('offset') || '0');
     const limit = parseInt(url.searchParams.get('limit') || '10');
-
-    console.log(`API request: Fetching fighters with offset=${offset}, limit=${limit}`);
-
     
-    const { data: fighters, error, count } = await supabase
-      .from('fighters')
-      .select('*', { count: 'exact' })
-      .order('name', { ascending: true })
-      .range(offset, offset + limit - 1);
-
-    if (error) {
-      console.error('API error:', error);
-      return new Response(
-        JSON.stringify({
-          error: error.message
-        }),
-        {
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-    }
-
+    const allFighters = [
+      {
+        id: '1',
+        name: 'Jon Jones',
+        weight_class: 'Heavyweight',
+        nationality: 'United States',
+        wins: 27,
+        losses: 1,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 1,
+      },
+      {
+        id: '2',
+        name: 'Alex Pereira',
+        weight_class: 'Light Heavyweight',
+        nationality: 'Brazil',
+        wins: 9,
+        losses: 2,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '3',
+        name: 'Israel Adesanya',
+        weight_class: 'Middleweight',
+        nationality: 'Nigeria',
+        wins: 24,
+        losses: 3,
+        draws: 0,
+        rank: '1',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '4',
+        name: 'Leon Edwards',
+        weight_class: 'Welterweight',
+        nationality: 'United Kingdom',
+        wins: 21,
+        losses: 3,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 1,
+      },
+      {
+        id: '5',
+        name: 'Islam Makhachev',
+        weight_class: 'Lightweight',
+        nationality: 'Russia',
+        wins: 25,
+        losses: 1,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '6',
+        name: 'Ilia Topuria',
+        weight_class: 'Featherweight',
+        nationality: 'Spain',
+        wins: 15,
+        losses: 0,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '7',
+        name: "Sean O'Malley",
+        weight_class: 'Bantamweight',
+        nationality: 'United States',
+        wins: 17,
+        losses: 1,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 1,
+      },
+      {
+        id: '8',
+        name: 'Alexandre Pantoja',
+        weight_class: 'Flyweight',
+        nationality: 'Brazil',
+        wins: 27,
+        losses: 5,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '9',
+        name: 'Zhang Weili',
+        weight_class: "Women's Strawweight",
+        nationality: 'China',
+        wins: 24,
+        losses: 3,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '10',
+        name: 'Alexa Grasso',
+        weight_class: "Women's Flyweight",
+        nationality: 'Mexico',
+        wins: 16,
+        losses: 3,
+        draws: 1,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '11',
+        name: 'Julianna Peña',
+        weight_class: "Women's Bantamweight",
+        nationality: 'United States',
+        wins: 12,
+        losses: 5,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '12',
+        name: 'Dricus Du Plessis',
+        weight_class: 'Middleweight',
+        nationality: 'South Africa',
+        wins: 21,
+        losses: 2,
+        draws: 0,
+        rank: 'Champion',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '13',
+        name: 'Dustin Poirier',
+        weight_class: 'Lightweight',
+        nationality: 'United States',
+        wins: 29,
+        losses: 8,
+        draws: 0,
+        rank: '3',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '14',
+        name: 'Charles Oliveira',
+        weight_class: 'Lightweight',
+        nationality: 'Brazil',
+        wins: 34,
+        losses: 9,
+        draws: 0,
+        rank: '2',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '15',
+        name: 'Max Holloway',
+        weight_class: 'Featherweight',
+        nationality: 'United States',
+        wins: 26,
+        losses: 7,
+        draws: 0,
+        rank: '1',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '16',
+        name: 'Robert Whittaker',
+        weight_class: 'Middleweight',
+        nationality: 'Australia',
+        wins: 25,
+        losses: 7,
+        draws: 0,
+        rank: '3',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '17',
+        name: 'Colby Covington',
+        weight_class: 'Welterweight',
+        nationality: 'United States',
+        wins: 17,
+        losses: 4,
+        draws: 0,
+        rank: '4',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '18',
+        name: 'Brandon Moreno',
+        weight_class: 'Flyweight',
+        nationality: 'Mexico',
+        wins: 21,
+        losses: 7,
+        draws: 2,
+        rank: '1',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '19',
+        name: 'Merab Dvalishvili',
+        weight_class: 'Bantamweight',
+        nationality: 'Georgia',
+        wins: 16,
+        losses: 4,
+        draws: 0,
+        rank: '1',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '20',
+        name: 'Tom Aspinall',
+        weight_class: 'Heavyweight',
+        nationality: 'United Kingdom',
+        wins: 14,
+        losses: 3,
+        draws: 0,
+        rank: '1',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '21',
+        name: 'Khabib Nurmagomedov',
+        weight_class: 'Lightweight',
+        nationality: 'Russia',
+        wins: 29,
+        losses: 0,
+        draws: 0,
+        rank: null,
+        status: 'Retired',
+        no_contests: 0,
+      },
+      {
+        id: '22',
+        name: 'Conor McGregor',
+        weight_class: 'Lightweight',
+        nationality: 'Ireland',
+        wins: 22,
+        losses: 6,
+        draws: 0,
+        rank: '15',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '23',
+        name: 'Amanda Nunes',
+        weight_class: "Women's Bantamweight",
+        nationality: 'Brazil',
+        wins: 22,
+        losses: 5,
+        draws: 0,
+        rank: null,
+        status: 'Retired',
+        no_contests: 0,
+      },
+      {
+        id: '24',
+        name: 'Francis Ngannou',
+        weight_class: 'Heavyweight',
+        nationality: 'Cameroon',
+        wins: 17,
+        losses: 3,
+        draws: 0,
+        rank: null,
+        status: 'Not Fighting',
+        no_contests: 0,
+      },
+      {
+        id: '25',
+        name: 'Valentina Shevchenko',
+        weight_class: "Women's Flyweight",
+        nationality: 'Kyrgyzstan',
+        wins: 23,
+        losses: 4,
+        draws: 0,
+        rank: '1',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '26',
+        name: 'Justin Gaethje',
+        weight_class: 'Lightweight',
+        nationality: 'United States',
+        wins: 25,
+        losses: 4,
+        draws: 0,
+        rank: '4',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '27',
+        name: 'Belal Muhammad',
+        weight_class: 'Welterweight',
+        nationality: 'United States',
+        wins: 22,
+        losses: 3,
+        draws: 1,
+        rank: '2',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '28',
+        name: 'Rose Namajunas',
+        weight_class: "Women's Flyweight",
+        nationality: 'United States',
+        wins: 12,
+        losses: 6,
+        draws: 0,
+        rank: '2',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '29',
+        name: 'Aljamain Sterling',
+        weight_class: 'Featherweight',
+        nationality: 'United States',
+        wins: 23,
+        losses: 4,
+        draws: 0,
+        rank: '5',
+        status: 'Active',
+        no_contests: 0,
+      },
+      {
+        id: '30',
+        name: 'Stipe Miocic',
+        weight_class: 'Heavyweight',
+        nationality: 'United States',
+        wins: 20,
+        losses: 4,
+        draws: 0,
+        rank: '2',
+        status: 'Active',
+        no_contests: 0,
+      },
+    ];
     
-    if (fighters && fighters.length > 0) {
-      const names = fighters.map(f => f.name).join(', ');
-      console.log(`API response: Fetched ${fighters.length} fighters from offset ${offset}: ${names}`);
-    } else {
-      console.log(`API response: No fighters found for offset=${offset}, limit=${limit}`);
-    }
-
+    const totalCount = allFighters.length;
+    const fighters = allFighters.slice(offset, offset + limit);
     
     return new Response(
       JSON.stringify({
         fighters: fighters,
-        totalCount: count || 0,
+        totalCount: totalCount,
         requestedOffset: offset,
         actualOffset: offset,  
         limit: limit
@@ -56,7 +386,6 @@ export async function GET({ request }) {
       }
     );
   } catch (error) {
-    console.error('API error:', error);
     return new Response(
       JSON.stringify({
         error: error.message || 'Unknown error'

@@ -1,6 +1,5 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { supabase } from '../../lib/supabase';
 
 interface Fighter {
   id: string;
@@ -31,6 +30,7 @@ interface Fighter {
   loss_by_dq: number | null;
 }
 
+// Define interfaces for better type safety in both server and client
 interface Fight {
   id: string;
   event_id: string;
@@ -67,84 +67,188 @@ interface FighterRanking {
 
 // Get the fighter ID from the URL
 const { id } = Astro.params;
-const fighterId = id;
+const fighterId = id || '1';
 
-if (!fighterId) {
-  return Astro.redirect('/fighters');
-}
+// Dummy fighter data
+const fighterData: Fighter = {
+  id: fighterId,
+  ufc_id: "123456",
+  name: "Jon Jones",
+  nickname: "Bones",
+  weight_class: "Heavyweight",
+  rank: "Champion",
+  status: "Active",
+  fighting_out_of: "Rochester, New York",
+  height: "76",
+  weight: "248",
+  age: 37,
+  nationality: "United States",
+  wiki_url: "https://en.wikipedia.org/wiki/Jon_Jones",
+  ufc_url: "https://www.ufc.com/athlete/jon-jones",
+  reach: "84",
+  wins: 27,
+  losses: 1,
+  draws: 0,
+  no_contests: 1,
+  ko_wins: 10,
+  sub_wins: 7,
+  dec_wins: 10,
+  loss_by_ko: 0,
+  loss_by_sub: 0,
+  loss_by_dec: 1,
+  loss_by_dq: 0
+};
 
-// Fetch the fighter details
-const { data: fighter, error: fighterError } = await supabase
-  .from('fighters')
-  .select('*')
-  .eq('id', fighterId)
-  .single();
+// Dummy fighter rankings
+const fighterRankings: FighterRanking[] = [
+  {
+    id: "1",
+    fighter_id: fighterId,
+    weight_class: "Heavyweight",
+    rank: "Champion"
+  }
+];
 
-if (fighterError) {
-  console.error('Error fetching fighter:', fighterError);
-}
+// Dummy fights data
+const sortedFights: Fight[] = [
+  {
+    id: "1",
+    event_id: "123",
+    event: {
+      id: "123",
+      name: "UFC 285",
+      event_date: "2023-03-04T00:00:00.000Z"
+    },
+    fighter1_id: fighterId,
+    fighter2_id: "2",
+    fighter1_name: "Jon Jones",
+    fighter2_name: "Ciryl Gane",
+    fighter1_rank: "Champion",
+    fighter2_rank: "1",
+    weight_class: "Heavyweight",
+    is_main_event: true,
+    fighter1_was_champion: false,
+    fighter2_was_champion: false,
+    was_title_fight: true,
+    fight_order: 1,
+    winner_id: fighterId,
+    result_method: "Submission",
+    result_method_details: "Guillotine Choke",
+    result_round: 1,
+    result_time: "02:04"
+  },
+  {
+    id: "2",
+    event_id: "456",
+    event: {
+      id: "456",
+      name: "UFC 247",
+      event_date: "2020-02-08T00:00:00.000Z"
+    },
+    fighter1_id: fighterId,
+    fighter2_id: "3",
+    fighter1_name: "Jon Jones",
+    fighter2_name: "Dominick Reyes",
+    fighter1_rank: "Champion",
+    fighter2_rank: "1",
+    weight_class: "Light Heavyweight",
+    is_main_event: true,
+    fighter1_was_champion: true,
+    fighter2_was_champion: false,
+    was_title_fight: true,
+    fight_order: 1,
+    winner_id: fighterId,
+    result_method: "Decision",
+    result_method_details: "Unanimous",
+    result_round: 5,
+    result_time: "25:00"
+  },
+  {
+    id: "3",
+    event_id: "789",
+    event: {
+      id: "789",
+      name: "UFC 235",
+      event_date: "2019-03-02T00:00:00.000Z"
+    },
+    fighter1_id: fighterId,
+    fighter2_id: "4",
+    fighter1_name: "Jon Jones",
+    fighter2_name: "Anthony Smith",
+    fighter1_rank: "Champion",
+    fighter2_rank: "3",
+    weight_class: "Light Heavyweight",
+    is_main_event: true,
+    fighter1_was_champion: true,
+    fighter2_was_champion: false,
+    was_title_fight: true,
+    fight_order: 1,
+    winner_id: fighterId,
+    result_method: "Decision",
+    result_method_details: "Unanimous",
+    result_round: 5,
+    result_time: "25:00"
+  },
+  {
+    id: "4",
+    event_id: "101",
+    event: {
+      id: "101",
+      name: "UFC 232",
+      event_date: "2018-12-29T00:00:00.000Z"
+    },
+    fighter1_id: fighterId,
+    fighter2_id: "5",
+    fighter1_name: "Jon Jones",
+    fighter2_name: "Alexander Gustafsson",
+    fighter1_rank: "1",
+    fighter2_rank: "2",
+    weight_class: "Light Heavyweight",
+    is_main_event: true,
+    fighter1_was_champion: false,
+    fighter2_was_champion: false,
+    was_title_fight: true,
+    fight_order: 1,
+    winner_id: fighterId,
+    result_method: "KO/TKO",
+    result_method_details: "Punches",
+    result_round: 3,
+    result_time: "02:02"
+  },
+  {
+    id: "5",
+    event_id: "202",
+    event: {
+      id: "202",
+      name: "UFC 214",
+      event_date: "2017-07-29T00:00:00.000Z"
+    },
+    fighter1_id: fighterId,
+    fighter2_id: "6",
+    fighter1_name: "Jon Jones",
+    fighter2_name: "Daniel Cormier",
+    fighter1_rank: "1",
+    fighter2_rank: "Champion",
+    weight_class: "Light Heavyweight",
+    is_main_event: true,
+    fighter1_was_champion: false,
+    fighter2_was_champion: true,
+    was_title_fight: true,
+    fight_order: 1,
+    winner_id: null,
+    result_method: "No Contest",
+    result_method_details: null,
+    result_round: 3,
+    result_time: "03:01"
+  }
+];
 
-const fighterData = fighter as Fighter | null;
-
-// Fetch the fighter's multiple rankings
-const { data: rankings, error: rankingsError } = await supabase
-  .from('fighter_rankings')
-  .select('*')
-  .eq('fighter_id', fighterId);
-
-if (rankingsError) {
-  console.error('Error fetching fighter rankings:', rankingsError);
-}
-
-const fighterRankings = (rankings as FighterRanking[]) || [];
-
-// Fetch the fighter's fights (both as fighter1 and fighter2)
-const { data: fights1, error: fights1Error } = await supabase
-  .from('fights')
-  .select(
-    `
-    *,
-    event:event_id(id, name, event_date)
-  `,
-  )
-  .eq('fighter1_id', fighterId);
-
-const { data: fights2, error: fights2Error } = await supabase
-  .from('fights')
-  .select(
-    `
-    *,
-    event:event_id(id, name, event_date)
-  `,
-  )
-  .eq('fighter2_id', fighterId);
-
-if (fights1Error) {
-  console.error('Error fetching fights as fighter1:', fights1Error);
-}
-
-if (fights2Error) {
-  console.error('Error fetching fights as fighter2:', fights2Error);
-}
-
-// Combine and sort fights by date (most recent first)
-const allFights = [...(fights1 || []), ...(fights2 || [])];
-const sortedFights = allFights.sort((a, b) => {
-  const dateA = new Date(a.event.event_date);
-  const dateB = new Date(b.event.event_date);
-  return dateB.getTime() - dateA.getTime();
-});
-
+// Helper function to check if a fight was canceled
 const isFightCanceled = (fight: Fight) => {
-  // Check if the event date is in the past
   const eventDate = new Date(fight.event.event_date);
   const now = new Date();
   const isEventCompleted = eventDate < now;
 
-  // A fight is considered canceled if:
-  // 1. The event date is in the past
-  // 2. The fight has no winner_id
-  // 3. The fight has no result_method or it's not a Draw or No Contest
   return (
     isEventCompleted &&
     !fight.winner_id &&
@@ -163,12 +267,10 @@ const isFightCanceled = (fight: Fight) => {
             <div class="fighter-info">
               <h1>{fighterData.name}</h1>
 
-              {/* Display fighter nickname if available */}
               {fighterData.nickname && (
                 <p class="fighter-nickname">{fighterData.nickname}</p>
               )}
 
-              {/* Display multiple rankings if available */}
               {fighterRankings.length > 0 ? (
                 <div class="fighter-rankings">
                   {fighterRankings.map(ranking => (
@@ -188,7 +290,6 @@ const isFightCanceled = (fight: Fight) => {
                   ))}
                 </div>
               ) : (
-                /* Fall back to single weight class and rank if no multiple rankings */
                 <>
                   {fighterData.weight_class && (
                     <p class="fighter-weight-class">
@@ -273,12 +374,10 @@ const isFightCanceled = (fight: Fight) => {
                           .replace(/^\{|\}$/g, '')
                           .split('}, {');
 
-                        // If there's only one location, display it as text
                         if (locations.length === 1) {
                           return <span class="stat-value">{locations[0]}</span>;
                         }
 
-                        // If there are multiple locations, display as list
                         return (
                           <ul class="locations-list">
                             {locations.map(location => (
@@ -374,7 +473,6 @@ const isFightCanceled = (fight: Fight) => {
                           </span>
                           <span class="method-label">Decision</span>
                         </div>
-                        {/* Only show DQ losses if the value exists AND is greater than 0 */}
                         {fighterData.loss_by_dq !== null &&
                           fighterData.loss_by_dq !== undefined &&
                           fighterData.loss_by_dq > 0 && (
@@ -400,7 +498,7 @@ const isFightCanceled = (fight: Fight) => {
                   {sortedFights.slice(0, 3).map(fight => {
                     const isMainEvent = fight.is_main_event;
                     const isTitleFight = fight.was_title_fight;
-                    const fighterName = fighter.name;
+                    const fighterName = fighterData.name;
                     const opponent =
                       fight.fighter1_id === fighterId
                         ? fight.fighter2_name
@@ -410,7 +508,6 @@ const isFightCanceled = (fight: Fight) => {
                         ? fight.fighter2_id
                         : fight.fighter1_id;
 
-                    // Get the historical ranks from the fight data
                     let fighterRank =
                       fight.fighter1_id === fighterId
                         ? fight.fighter1_rank
@@ -420,7 +517,6 @@ const isFightCanceled = (fight: Fight) => {
                         ? fight.fighter2_rank
                         : fight.fighter1_rank;
 
-                    // Fix any "#C" or "C" champion designation
                     if (fighterRank === '#C' || fighterRank === 'C') {
                       fighterRank = 'Champion';
                     }
@@ -430,14 +526,9 @@ const isFightCanceled = (fight: Fight) => {
                     }
 
                     const eventDate = new Date(fight.event.event_date);
-
-                    // Check if this fight was canceled
                     const isCanceled = isFightCanceled(fight);
-
-                    // Determine if the fighter won this fight
                     const isWin = fight.winner_id === fighterId;
 
-                    // Determine result based on winner and canceled status
                     let result = '';
                     if (isCanceled) {
                       result = 'CANCELED';
@@ -550,22 +641,7 @@ const isFightCanceled = (fight: Fight) => {
                                 ` (${fight.result_method_details})`}
                               {fight.result_round && ` R${fight.result_round}`}
                               {fight.result_time &&
-                                ` ${
-                                  // Check if the time is duplicated (e.g., "00:04:1400:04:14")
-                                  fight.result_time.length % 2 === 0 &&
-                                  fight.result_time.substring(
-                                    0,
-                                    fight.result_time.length / 2,
-                                  ) ===
-                                    fight.result_time.substring(
-                                      fight.result_time.length / 2,
-                                    )
-                                    ? fight.result_time.substring(
-                                        0,
-                                        fight.result_time.length / 2,
-                                      )
-                                    : fight.result_time
-                                }`}
+                                ` ${fight.result_time}`}
                             </div>
                           ) : null}
                         </div>
@@ -617,10 +693,15 @@ const isFightCanceled = (fight: Fight) => {
 
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        // Define Fight interface for type safety
-        interface Fight {
+        // This type declaration helps TypeScript understand our fight data structure
+        type Fight = {
           id: string;
           event_id: string;
+          event: {
+            id: string;
+            name: string;
+            event_date: string;
+          };
           fighter1_id: string;
           fighter2_id: string;
           fighter1_name: string;
@@ -629,38 +710,18 @@ const isFightCanceled = (fight: Fight) => {
           fighter2_rank: string;
           weight_class: string;
           is_main_event: boolean;
+          fighter1_was_champion: boolean;
+          fighter2_was_champion: boolean;
           was_title_fight: boolean;
+          fight_order: number;
           winner_id: string | null;
-          result_method: string | null;
+          result_method: string;
           result_method_details: string | null;
           result_round: number | null;
           result_time: string | null;
-          event: {
-            id: string;
-            name: string;
-            event_date: string;
-          };
-        }
-
-        // Function to check if a fight was canceled with proper typing
-        function isFightCanceled(fight: Fight): boolean {
-          const eventDate = new Date(fight.event.event_date);
-          const now = new Date();
-          const isEventCompleted = eventDate < now;
-
-          return (
-            isEventCompleted &&
-            !fight.winner_id &&
-            (!fight.result_method ||
-              (fight.result_method !== 'Draw' &&
-                fight.result_method !== 'No Contest'))
-          );
-        }
-
-        // Get DOM elements with type safety
-        const loadMoreButton = document.getElementById(
-          'load-more-fights',
-        ) as HTMLButtonElement | null;
+        };
+        // Get DOM elements with proper type casting
+        const loadMoreButton = document.getElementById('load-more-fights') as HTMLButtonElement | null;
         const fightsList = document.getElementById('fights-list');
         const shownCountSpan = document.getElementById('shown-fights-count');
         const allFightsDataElement = document.getElementById('all-fights-data');
@@ -674,14 +735,13 @@ const isFightCanceled = (fight: Fight) => {
           !allFightsDataElement ||
           !fighterIdElement
         ) {
-          console.error('Required DOM elements not found');
           return;
         }
 
-        // Safely parse JSON data and extract fighter ID
+        // Parse JSON data and extract fighter ID
         const allFightsData = JSON.parse(
-          allFightsDataElement.textContent || '[]',
-        ) as Fight[];
+          allFightsDataElement.textContent || '[]'
+        );
         const fighterId = fighterIdElement.textContent?.trim() || '';
 
         // Track how many fights are currently visible
@@ -699,18 +759,18 @@ const isFightCanceled = (fight: Fight) => {
           // Get the next batch of fights
           const nextBatch = allFightsData.slice(
             visibleCount,
-            visibleCount + fightsToLoad,
+            visibleCount + fightsToLoad
           );
 
           // Increase visible count
           visibleCount += fightsToLoad;
 
-          // Get fighter name safely
+          // Get fighter name
           const h1Element = document.querySelector('h1');
           const fighterName = h1Element ? h1Element.textContent || '' : '';
 
           // Add the new fights to the list
-          nextBatch.forEach(fight => {
+          nextBatch.forEach((fight: Fight) => {
             const isMainEvent = fight.is_main_event;
             const isTitleFight = fight.was_title_fight;
 
@@ -747,12 +807,14 @@ const isFightCanceled = (fight: Fight) => {
             const eventDate = new Date(fight.event.event_date);
 
             // Check if this fight was canceled
-            const isCanceled = isFightCanceled(fight);
+            const isCanceled = eventDate < new Date() && 
+              !fight.winner_id && 
+              (!fight.result_method || (fight.result_method !== 'Draw' && fight.result_method !== 'No Contest'));
 
             // Determine if this fighter won
             const isWin = fight.winner_id === fighterId;
 
-            // Determine result based on winner and canceled status
+            // Determine result
             let result = '';
             if (isCanceled) {
               result = 'CANCELED';
@@ -768,101 +830,82 @@ const isFightCanceled = (fight: Fight) => {
             fightCard.className = `fight-card ${isMainEvent ? 'main-event' : ''} ${isTitleFight ? 'title-fight' : ''} result-${result.toLowerCase()}`;
 
             fightCard.innerHTML = `
-        <div class="fight-date">
-          <span>
-            ${eventDate.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
-          <div class="event-badges">
-            <span class="weight-class-badge">
-              ${fight.weight_class}
-            </span>
-            ${isMainEvent ? '<span class="main-event-badge">Main Event</span>' : ''}
-            ${isTitleFight ? '<span class="title-fight-badge">Title Fight</span>' : ''}
-            ${isCanceled ? '<span class="canceled-badge">Canceled</span>' : ''}
-          </div>
-        </div>
-
-        <div class="fight-details">
-          <a href="/events/event/${fight.event_id}" class="event-link">
-            <span class="event-name">${fight.event.name}</span>
-          </a>
-
-          <div class="matchup">
-            <div class="fighter-vs">
-              <div class="fighter-name-container${!isCanceled && isWin ? ' winner' : ''} ${isCanceled ? 'canceled' : ''}">
-                <a href="/fighters/${fighterId}" class="fighter-link">
-                  ${fighterName}
-                </a>
-                <span class="${fighterRank === 'Champion' ? 'rank champion' : 'rank'}">
-                  ${
-                    fighterRank === 'Champion'
-                      ? 'C'
-                      : !fighterRank || !fighterRank.trim()
-                        ? 'Unranked'
-                        : `#${fighterRank}`
-                  }
+              <div class="fight-date">
+                <span>
+                  ${eventDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
                 </span>
+                <div class="event-badges">
+                  <span class="weight-class-badge">
+                    ${fight.weight_class}
+                  </span>
+                  ${isMainEvent ? '<span class="main-event-badge">Main Event</span>' : ''}
+                  ${isTitleFight ? '<span class="title-fight-badge">Title Fight</span>' : ''}
+                  ${isCanceled ? '<span class="canceled-badge">Canceled</span>' : ''}
+                </div>
               </div>
-              <span class="vs">vs</span>
-              <div class="fighter-name-container${!isCanceled && !isWin && fight.winner_id ? ' winner' : ''} ${isCanceled ? 'canceled' : ''}">
-                <a href="/fighters/${opponentId}" class="fighter-link">
-                  ${opponent}
-                </a>
-                <span class="${opponentRank === 'Champion' ? 'rank champion' : 'rank'}">
-                  ${
-                    opponentRank === 'Champion'
-                      ? 'C'
-                      : !opponentRank || opponentRank === ''
-                        ? 'Unranked'
-                        : `#${opponentRank}`
-                  }
-                </span>
-              </div>
-              <span class="result-badge ${result.toLowerCase()}">
-                ${result}
-              </span>
-            </div>
-          </div>
 
-          ${
-            isCanceled
-              ? `<div class="result-method canceled">Fight Canceled</div>`
-              : fight.result_method
-                ? `
-                  <div class="result-method">
-                    ${fight.result_method}
-                    ${fight.result_method_details ? ` (${fight.result_method_details})` : ''}
-                    ${fight.result_round ? ` R${fight.result_round}` : ''}
-                    ${
-                      fight.result_time
-                        ? ` ${
-                            // Check if the time is duplicated (e.g., "00:04:1400:04:14")
-                            fight.result_time.length % 2 === 0 &&
-                            fight.result_time.substring(
-                              0,
-                              fight.result_time.length / 2,
-                            ) ===
-                              fight.result_time.substring(
-                                fight.result_time.length / 2,
-                              )
-                              ? fight.result_time.substring(
-                                  0,
-                                  fight.result_time.length / 2,
-                                )
-                              : fight.result_time
-                          }`
-                        : ''
-                    }
+              <div class="fight-details">
+                <a href="/events/event/${fight.event_id}" class="event-link">
+                  <span class="event-name">${fight.event.name}</span>
+                </a>
+
+                <div class="matchup">
+                  <div class="fighter-vs">
+                    <div class="fighter-name-container${!isCanceled && isWin ? ' winner' : ''} ${isCanceled ? 'canceled' : ''}">
+                      <a href="/fighters/${fighterId}" class="fighter-link">
+                        ${fighterName}
+                      </a>
+                      <span class="${fighterRank === 'Champion' ? 'rank champion' : 'rank'}">
+                        ${
+                          fighterRank === 'Champion'
+                            ? 'C'
+                            : !fighterRank || !fighterRank.trim()
+                              ? 'Unranked'
+                              : `#${fighterRank}`
+                        }
+                      </span>
+                    </div>
+                    <span class="vs">vs</span>
+                    <div class="fighter-name-container${!isCanceled && !isWin && fight.winner_id ? ' winner' : ''} ${isCanceled ? 'canceled' : ''}">
+                      <a href="/fighters/${opponentId}" class="fighter-link">
+                        ${opponent}
+                      </a>
+                      <span class="${opponentRank === 'Champion' ? 'rank champion' : 'rank'}">
+                        ${
+                          opponentRank === 'Champion'
+                            ? 'C'
+                            : !opponentRank || opponentRank === ''
+                              ? 'Unranked'
+                              : `#${opponentRank}`
+                        }
+                      </span>
+                    </div>
+                    <span class="result-badge ${result.toLowerCase()}">
+                      ${result}
+                    </span>
                   </div>
-                `
-                : ''
-          }
-        </div>
-      `;
+                </div>
+
+                ${
+                  isCanceled
+                    ? `<div class="result-method canceled">Fight Canceled</div>`
+                    : fight.result_method
+                      ? `
+                        <div class="result-method">
+                          ${fight.result_method}
+                          ${fight.result_method_details ? ` (${fight.result_method_details})` : ''}
+                          ${fight.result_round ? ` R${fight.result_round}` : ''}
+                          ${fight.result_time ? ` ${fight.result_time}` : ''}
+                        </div>
+                      `
+                      : ''
+                }
+              </div>
+            `;
 
             fightsList.appendChild(fightCard);
           });

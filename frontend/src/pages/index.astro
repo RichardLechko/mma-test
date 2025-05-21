@@ -1,6 +1,5 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getUpcomingEvents, getFighters } from '../lib/database';
 
 interface Fighter {
   id: string;
@@ -28,7 +27,44 @@ interface Event {
   status: string;
 }
 
-const upcomingEvents = await getUpcomingEvents(4);
+const upcomingEvents: Event[] = [
+  {
+    id: 'event-001',
+    name: 'UFC 999: Smith vs. Johnson',
+    event_date: '2025-06-15',
+    venue: 'T-Mobile Arena',
+    city: 'Las Vegas',
+    country: 'USA',
+    status: 'Scheduled',
+  },
+  {
+    id: 'event-002',
+    name: 'UFC Fight Night: Williams vs. Thompson',
+    event_date: '2025-06-22',
+    venue: 'Apex Center',
+    city: 'Las Vegas',
+    country: 'USA',
+    status: 'Scheduled',
+  },
+  {
+    id: 'event-003',
+    name: 'UFC 1000: Championship Showcase',
+    event_date: '2025-07-04',
+    venue: 'Madison Square Garden',
+    city: 'New York',
+    country: 'USA',
+    status: 'Scheduled',
+  },
+  {
+    id: 'event-004',
+    name: 'UFC Fight Night: International Series',
+    event_date: '2025-07-15',
+    venue: 'O2 Arena',
+    city: 'London',
+    country: 'UK',
+    status: 'Scheduled',
+  },
+];
 
 function formatDate(dateString: string): string {
   if (!dateString) return '';
@@ -161,108 +197,4 @@ function getDaysUntil(dateString: string): string {
       </section>
     </div>
   </main>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Import analytics dynamically
-      import('../utils/analytics.ts')
-        .then(({ trackEvent }) => {
-          // Track homepage view
-          trackEvent('view_homepage', {
-            event_category: 'Page View',
-            event_label: 'MMA Scheduler Homepage',
-          });
-
-          // Track hero button clicks
-          const heroButtons = document.querySelectorAll('.hero-buttons .btn');
-          if (heroButtons) {
-            heroButtons.forEach(button => {
-              button.addEventListener('click', e => {
-                const target = e.currentTarget as HTMLAnchorElement;
-                const buttonText = target.textContent?.trim() || 'Unknown';
-                const destination = target.getAttribute('href') || '';
-
-                trackEvent('click_hero_button', {
-                  event_category: 'Navigation',
-                  event_label: buttonText,
-                  destination: destination,
-                });
-              });
-            });
-          }
-
-          // Track upcoming event clicks
-          const eventButtons = document.querySelectorAll('.event-details .btn');
-          if (eventButtons) {
-            eventButtons.forEach(button => {
-              button.addEventListener('click', e => {
-                const target = e.currentTarget as HTMLAnchorElement;
-                const eventCard = target.closest('.event-details');
-
-                if (eventCard) {
-                  const eventName =
-                    eventCard.querySelector('h3')?.textContent ||
-                    'Unknown Event';
-                  const eventDate =
-                    eventCard.querySelector('.event-date')?.textContent || '';
-                  const eventId =
-                    target.getAttribute('href')?.split('/').pop() || '';
-
-                  trackEvent('view_event_from_homepage', {
-                    event_category: 'Navigation',
-                    event_label: eventName,
-                    event_id: eventId,
-                    event_date: eventDate,
-                  });
-                }
-              });
-            });
-          }
-
-          // Track feature card clicks
-          const featureCards = document.querySelectorAll('.feature.card');
-          if (featureCards) {
-            featureCards.forEach(card => {
-              card.addEventListener('click', e => {
-                const target = e.currentTarget as HTMLElement;
-                const featureTitle =
-                  target.querySelector('h3')?.textContent || 'Unknown Feature';
-
-                trackEvent('click_feature_card', {
-                  event_category: 'Engagement',
-                  event_label: featureTitle,
-                });
-              });
-            });
-          }
-
-          // Track time on page (optional)
-          let startTime = Date.now();
-          let hasSentTimeEvent = false;
-
-          // Send time on page event when user leaves page or after 3 minutes
-          const sendTimeOnPage = () => {
-            if (hasSentTimeEvent) return;
-
-            const timeSpent = Math.floor((Date.now() - startTime) / 1000); // Time in seconds
-
-            trackEvent('time_on_homepage', {
-              event_category: 'Engagement',
-              event_label: 'Time on Homepage',
-              time_seconds: timeSpent,
-            });
-
-            hasSentTimeEvent = true;
-          };
-
-          // Send time event after 3 minutes
-          setTimeout(sendTimeOnPage, 180000); // 3 minutes
-
-          // Send time event when user leaves page
-          window.addEventListener('beforeunload', sendTimeOnPage);
-        })
-        .catch(err => {
-          console.error('Error loading analytics:', err);
-        });
-    });
-  </script>
 </Layout>

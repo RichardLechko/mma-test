@@ -1,8 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import { supabase } from '../../../lib/supabase';
 
-// Define interfaces for type safety
 interface Event {
   id: string;
   name: string;
@@ -47,72 +45,175 @@ interface Fight {
   winner: Fighter | null;
 }
 
-// Get the event ID from the URL
 const { id } = Astro.params;
-const eventId = id;
+const eventId = id || "1";
 
-if (!eventId) {
-  return Astro.redirect('/events');
-}
+// Dummy event data from our events collection
+const eventData: Event = {
+  id: eventId,
+  name: "UFC 300",
+  event_date: "2024-04-13T22:00:00.000Z",
+  venue: "T-Mobile Arena",
+  city: "Las Vegas",
+  country: "USA",
+  status: "Completed",
+  ufc_url: "https://www.ufc.com/event/ufc-300",
+  attendance: "20,000"
+};
 
-// Optimize by combining both queries into a single Supabase call
-const [eventResult, fightsResult] = await Promise.all([
-  // Query 1: Fetch only needed event fields - added ufc_url to the select
-  supabase
-    .from('events')
-    .select(
-      'id, name, event_date, venue, city, country, status, ufc_url, attendance',
-    )
-    .eq('id', eventId)
-    .single(),
+// Dummy fighters data
+const fighters: Record<string, Fighter> = {
+  "f1": { 
+    id: "f1", 
+    name: "Alex Pereira", 
+    nickname: "Poatan", 
+    weight_class: "Light Heavyweight" 
+  },
+  "f2": { 
+    id: "f2", 
+    name: "Jamahal Hill", 
+    nickname: "Sweet Dreams", 
+    weight_class: "Light Heavyweight" 
+  },
+  "f3": { 
+    id: "f3", 
+    name: "Zhang Weili", 
+    nickname: "Magnum", 
+    weight_class: "Women's Strawweight" 
+  },
+  "f4": { 
+    id: "f4", 
+    name: "Yan Xiaonan", 
+    nickname: "Fury", 
+    weight_class: "Women's Strawweight" 
+  },
+  "f5": { 
+    id: "f5", 
+    name: "Max Holloway", 
+    nickname: "Blessed", 
+    weight_class: "Featherweight" 
+  },
+  "f6": { 
+    id: "f6", 
+    name: "Justin Gaethje", 
+    nickname: "The Highlight", 
+    weight_class: "Lightweight" 
+  },
+  "f7": { 
+    id: "f7", 
+    name: "Charles Oliveira", 
+    nickname: "Do Bronx", 
+    weight_class: "Lightweight" 
+  },
+  "f8": { 
+    id: "f8", 
+    name: "Arman Tsarukyan", 
+    nickname: "Ahalkalakets", 
+    weight_class: "Lightweight" 
+  }
+};
 
-  // Query 2: Fetch fights with only needed fighter data
-  supabase
-    .from('fights')
-    .select(
-      `
-      id, event_id, fighter1_id, fighter2_id, fighter1_name, fighter2_name,
-      fighter1_rank, fighter2_rank, weight_class, is_main_event, 
-      fighter1_was_champion, fighter2_was_champion, was_title_fight,
-      fight_order, winner_id, result_method, result_method_details, 
-      result_round, result_time,
-      fighter1:fighter1_id(id, name),
-      fighter2:fighter2_id(id, name),
-      winner:winner_id(id, name)
-    `,
-    )
-    .eq('event_id', eventId)
-    .order('fight_order', { ascending: true }),
-]);
+// Dummy fights data
+const fightsList: Fight[] = [
+  {
+    id: "fight1",
+    event_id: eventId,
+    fighter1_id: "f1",
+    fighter2_id: "f2",
+    fighter1_name: "Alex Pereira",
+    fighter2_name: "Jamahal Hill",
+    fighter1_rank: "Champion",
+    fighter2_rank: "1",
+    weight_class: "Light Heavyweight",
+    is_main_event: true,
+    fighter1_was_champion: true,
+    fighter2_was_champion: false,
+    was_title_fight: true,
+    fight_order: 1,
+    winner_id: "f1",
+    result_method: "KO/TKO",
+    result_method_details: "Punches",
+    result_round: 1,
+    result_time: "03:14",
+    fighter1: fighters.f1,
+    fighter2: fighters.f2,
+    winner: fighters.f1
+  },
+  {
+    id: "fight2",
+    event_id: eventId,
+    fighter1_id: "f3",
+    fighter2_id: "f4",
+    fighter1_name: "Zhang Weili",
+    fighter2_name: "Yan Xiaonan",
+    fighter1_rank: "Champion",
+    fighter2_rank: "1",
+    weight_class: "Women's Strawweight",
+    is_main_event: false,
+    fighter1_was_champion: true,
+    fighter2_was_champion: false,
+    was_title_fight: true,
+    fight_order: 2,
+    winner_id: "f3",
+    result_method: "Decision",
+    result_method_details: "Unanimous",
+    result_round: 5,
+    result_time: "25:00",
+    fighter1: fighters.f3,
+    fighter2: fighters.f4,
+    winner: fighters.f3
+  },
+  {
+    id: "fight3",
+    event_id: eventId,
+    fighter1_id: "f5",
+    fighter2_id: "f6",
+    fighter1_name: "Max Holloway",
+    fighter2_name: "Justin Gaethje",
+    fighter1_rank: "1",
+    fighter2_rank: "2",
+    weight_class: "Lightweight",
+    is_main_event: false,
+    fighter1_was_champion: false,
+    fighter2_was_champion: false,
+    was_title_fight: false,
+    fight_order: 3,
+    winner_id: "f5",
+    result_method: "KO/TKO",
+    result_method_details: "Punches",
+    result_round: 5,
+    result_time: "4:59",
+    fighter1: fighters.f5,
+    fighter2: fighters.f6,
+    winner: fighters.f5
+  },
+  {
+    id: "fight4",
+    event_id: eventId,
+    fighter1_id: "f7",
+    fighter2_id: "f8",
+    fighter1_name: "Charles Oliveira",
+    fighter2_name: "Arman Tsarukyan",
+    fighter1_rank: "1",
+    fighter2_rank: "4",
+    weight_class: "Lightweight",
+    is_main_event: false,
+    fighter1_was_champion: false,
+    fighter2_was_champion: false,
+    was_title_fight: false,
+    fight_order: 4,
+    winner_id: "f8",
+    result_method: "Decision",
+    result_method_details: "Split",
+    result_round: 3,
+    result_time: "15:00",
+    fighter1: fighters.f7,
+    fighter2: fighters.f8,
+    winner: fighters.f8
+  }
+];
 
-// Handle potential errors
-if (eventResult.error) {
-  console.error('Error fetching event:', eventResult.error);
-}
-
-if (fightsResult.error) {
-  console.error('Error fetching fights:', fightsResult.error);
-}
-
-const eventData = eventResult.data as Event | null;
-
-// Fix the TypeScript error with proper type handling
-let fightsList: Fight[] = [];
-if (fightsResult.data) {
-  // Use type assertion with unknown first to fix the TypeScript error
-  fightsList = fightsResult.data as unknown as Fight[];
-}
-
-// Determine if the event is in the past based on status
 const isEventCompleted = eventData?.status === 'Completed';
-
-// Set cache control headers for better performance
-// Completed events can be cached longer since they don't change
-if (isEventCompleted) {
-  Astro.response.headers.set('Cache-Control', 'public, max-age=86400'); // 24 hours
-} else {
-  Astro.response.headers.set('Cache-Control', 'public, max-age=3600'); // 1 hour
-}
 
 const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
   return (
@@ -159,7 +260,6 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                     day: 'numeric',
                   });
 
-                  // Format the time in user's local timezone
                   const formattedTime = eventDate.toLocaleTimeString('en-US', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -191,14 +291,11 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                       <span class="attendance-icon">👥</span>
                       <span class="attendance-count">
                         {(() => {
-                          // First convert to string to handle any unexpected types
                           const attendanceStr = String(eventData.attendance);
-                          // Extract all numeric digits from the string
                           const numericValue = attendanceStr.replace(
                             /[^\d]/g,
                             '',
                           );
-                          // Parse as integer and format with commas
                           const formattedAttendance = numericValue
                             ? new Intl.NumberFormat().format(
                                 parseInt(numericValue),
@@ -294,7 +391,6 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
             {fightsList.length > 0 ? (
               <div class="fights-list">
                 {fightsList.map(fight => {
-                  // Determine if fight was canceled
                   const isCanceled = isFightCanceled(fight, isEventCompleted);
 
                   return (
@@ -331,17 +427,14 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                             <span class="name">{fight.fighter1.name}</span>
                           </div>
                           <div class="fighter-status">
-                            {/* If they were champion, show champion badge */}
                             {fight.fighter1_was_champion ? (
                               <div class="champion-badge">C</div>
                             ) : fight.fighter1_rank &&
                               fight.fighter1_rank !== 'NR' ? (
-                              /* If they had a rank, show it */
                               <div class="fighter-rank">
                                 #{fight.fighter1_rank}
                               </div>
                             ) : (
-                              /* Only show Unranked if the other fighter has a rank or is champion */
                               (fight.fighter2_was_champion ||
                                 (fight.fighter2_rank &&
                                   fight.fighter2_rank !== 'NR')) && (
@@ -363,17 +456,14 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                             <span class="name">{fight.fighter2.name}</span>
                           </div>
                           <div class="fighter-status">
-                            {/* If they were champion, show champion badge */}
                             {fight.fighter2_was_champion ? (
                               <div class="champion-badge">C</div>
                             ) : fight.fighter2_rank &&
                               fight.fighter2_rank !== 'NR' ? (
-                              /* If they had a rank, show it */
                               <div class="fighter-rank">
                                 #{fight.fighter2_rank}
                               </div>
                             ) : (
-                              /* Only show Unranked if the other fighter has a rank or is champion */
                               (fight.fighter1_was_champion ||
                                 (fight.fighter1_rank &&
                                   fight.fighter1_rank !== 'NR')) && (
@@ -384,7 +474,6 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
                         </a>
                       </div>
 
-                      {/* Show fight result if the event is completed */}
                       {isEventCompleted && (
                         <>
                           {isCanceled ? (
@@ -523,20 +612,14 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
 </Layout>
 
 <script>
-  // Client-side caching for this event page
   document.addEventListener('DOMContentLoaded', () => {
-    // Store this page in the browser's cache (sessionStorage)
-    // This helps with back-button navigation performance
     const currentUrl = window.location.pathname;
     const eventId = currentUrl.split('/').pop();
 
     if (eventId) {
-      // Generate a key for this event page
       const cacheKey = `event-page-${eventId}`;
 
-      // Don't cache if this is a POST request or form submission
       if (window.performance && window.performance.navigation.type !== 1) {
-        // Store current page HTML (for quick back button navigation)
         try {
           sessionStorage.setItem(cacheKey, document.documentElement.outerHTML);
           sessionStorage.setItem(
@@ -544,28 +627,23 @@ const isFightCanceled = (fight: Fight, isCompleted: boolean) => {
             Date.now().toString(),
           );
         } catch (e) {
-          // Storage might be full, handle gracefully
           console.warn('Could not cache page:', e);
         }
       }
     }
 
-    // Preconnect to the API domain for fighter page navigation
     const preconnect = document.createElement('link');
     preconnect.rel = 'preconnect';
     preconnect.href = window.location.origin;
     document.head.appendChild(preconnect);
 
-    // Prefetch the events list page for when users go back
     const prefetch = document.createElement('link');
     prefetch.rel = 'prefetch';
     prefetch.href = '/events';
     document.head.appendChild(prefetch);
 
-    // Preload fighter data for fighters in this event
     const fighterLinks = document.querySelectorAll('.fighter');
     if (fighterLinks.length > 0) {
-      // Only preload the main event fighters
       const mainEventLinks = document.querySelectorAll('.main-event .fighter');
       if (mainEventLinks.length > 0) {
         mainEventLinks.forEach(link => {

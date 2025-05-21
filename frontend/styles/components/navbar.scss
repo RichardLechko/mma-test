@@ -50,7 +50,7 @@ $hamburger-transition: 0.3s ease;
     font-weight: 700;
     color: $text-primary;
     text-decoration: none;
-    z-index: 101; // Keep logo above the sidebar
+    z-index: 101;
    
     &:hover {
       color: $primary-color;
@@ -61,7 +61,6 @@ $hamburger-transition: 0.3s ease;
     }
   }
  
-  // Hamburger menu
   &-toggle {
     display: none;
     flex-direction: column;
@@ -69,7 +68,7 @@ $hamburger-transition: 0.3s ease;
     width: 30px;
     height: 21px;
     cursor: pointer;
-    z-index: 101; // Keep toggle above the sidebar
+    z-index: 101;
    
     @include tablet {
       display: flex;
@@ -125,7 +124,7 @@ $hamburger-transition: 0.3s ease;
       padding-top: 80px;
       box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
       transition: right 0.3s ease;
-      z-index: 200; /* Higher than overlay */
+      z-index: 200;
       
       &.active {
         right: 0;
@@ -161,7 +160,7 @@ $hamburger-transition: 0.3s ease;
      
       &:hover, &.active {
         background-color: rgba(255, 255, 255, 0.05);
-        padding-left: calc(#{$spacing-md} + 5px); // Indent on hover for visual effect
+        padding-left: calc(#{$spacing-md} + 5px);
       }
     }
   }
@@ -175,14 +174,13 @@ $hamburger-transition: 0.3s ease;
       font-size: $font-size-sm;
      
       @include tablet {
-        font-size: $font-size-md; // Larger text in sidebar
+        font-size: $font-size-md;
         padding: $spacing-sm $spacing-md;
       }
     }
   }
 }
 
-// Overlay when sidebar is active
 .navbar-overlay {
   display: none;
   position: fixed;
@@ -203,7 +201,6 @@ $hamburger-transition: 0.3s ease;
   }
 }
 
-// Prevent scrolling when sidebar is open
 body.sidebar-open {
   overflow: hidden;
 }

@@ -357,7 +357,7 @@
             &:after {
               content: 'NO CONTEST';
               position: absolute;
-              top: 12px; /* Moved down slightly to fix cutoff */
+              top: 12px;
               right: -32px;
               background: rgba(158, 158, 158, 0.9);
               color: white;

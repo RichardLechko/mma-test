@@ -335,9 +335,6 @@
   &[data-country="czechia"] { background-image: url("https://flagcdn.com/w80/cz.png"); }
 }
 
-/* Media Queries for Rankings Page - With Dropdown for Mobile */
-
-/* Default state - Hide the dropdown */
 .rankings-weight-dropdown {
   display: none;
 }
@@ -410,12 +407,10 @@
       }
     }
     
-    /* Hide the regular tabs on mobile */
     .rankings-weight-class-tabs {
       display: none;
     }
     
-    /* Show and style the dropdown */
     .rankings-weight-dropdown {
       display: block;
       margin-bottom: $spacing-md;

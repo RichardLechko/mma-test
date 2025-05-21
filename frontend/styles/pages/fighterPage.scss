@@ -537,31 +537,31 @@
 
 .custom-filters {
   display: grid;
-  grid-template-columns: repeat(4, 1fr) auto; // 4 filters + reset button
+  grid-template-columns: repeat(4, 1fr) auto;
   gap: $spacing-md;
-  align-items: end; // Align items to bottom instead of top
+  align-items: end;
   width: 100%;
   
   @include mobile {
     gap: $spacing-xs;
   }
 
-  // Reset button styling - fixed alignment
+  
   .reset-button {
-    height: 38px; // Match height with filter dropdowns
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 0; // Remove margin-top to align with filters
+    margin-top: 0;
     
     @include mobile {
       height: 34px;
     }
   }
   
-  // Breakpoint for desktop (≤1200px)
+  
   @media (max-width: $breakpoint-desktop) {
-    grid-template-columns: repeat(4, 1fr); // 4 filters only
+    grid-template-columns: repeat(4, 1fr);
     
     .reset-button {
       position: absolute;
@@ -576,9 +576,8 @@
     }
   }
   
-  // Breakpoint for tablet landscape (≤1024px)
   @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr); // 2x2 grid
+    grid-template-columns: repeat(2, 1fr);
     
     .filter-dropdown {
       width: 100%;
@@ -588,7 +587,6 @@
       }
     }
     
-    // Keep reset button visible
     .reset-button {
       position: absolute; 
       top: $spacing-md;
@@ -602,23 +600,20 @@
     }
   }
   
-  // Breakpoint for mobile layout - FIXED HERE
   @media (max-width: 640px) {
-    grid-template-columns: 1fr; // 1 item per row
+    grid-template-columns: 1fr;
     gap: $spacing-xs;
     
-    // Fix for reset button - critical change to resolve the merging issue
     .reset-button {
-      position: static; // Changed from relative to static
+      position: static;
       margin: $spacing-sm 0 0 0;
       width: 100%;
-      order: 5; // Ensure it's at the bottom
+      order: 5;
       top: auto;
       right: auto;
     }
   }
   
-  // Added an even smaller breakpoint for very small devices
   @media (max-width: 400px) {
     gap: $spacing-xs * 0.7;
     
@@ -736,7 +731,6 @@
   background-color: rgba(255, 255, 255, 0.5);
 }
 
-// Responsive filter dropdown styles
 .filter-dropdown {
   @media (max-width: 1024px) {
     width: 100%;
@@ -815,7 +809,6 @@
   }
 }
 
-// Override for the search container at mobile sizes
 @media (max-width: 640px) {
   .fighters-page .fighters-container .filters-section .search-container {
     max-width: 100%;
@@ -826,24 +819,22 @@
   .filter-selected {
     display: flex;
     align-items: center;
-    white-space: nowrap; // Prevent wrapping
+    white-space: nowrap;
     
     span {
-      display: inline; // Change from default block to inline
-      white-space: nowrap; // Prevent wrapping to new line
+      display: inline;
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
   }
   
-  // Additional responsive tweaks
   @media (max-width: 640px) {
     .filter-selected {
       padding: 0.4rem 0.8rem;
       
       span {
         font-size: 0.8rem;
-        // Keep everything on one line
         display: inline;
         white-space: nowrap;
       }

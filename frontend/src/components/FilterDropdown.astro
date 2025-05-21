@@ -1,7 +1,4 @@
 ---
-// FilterDropdown.astro
-// A reusable dropdown component for filtering with the same styling as YearSelector
-
 interface Option {
   value: string;
   label: string;
@@ -16,7 +13,6 @@ interface Props {
 
 const { label, options, currentValue, id } = Astro.props;
 
-// Determine the display text based on current value
 const displayText = currentValue
   ? options.find(opt => opt.value === currentValue)?.label || 'All'
   : 'All';
@@ -112,8 +108,8 @@ const displayText = currentValue
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
     min-width: 120px;
-    flex: 1; /* Take up remaining space */
-    justify-content: space-between; /* Push arrow to the right */
+    flex: 1;
+    justify-content: space-between;
 
     @media (max-width: 1024px) {
       width: 100%;
@@ -266,7 +262,6 @@ const displayText = currentValue
 </style>
 
 <script define:vars={{ id }}>
-  // Initialize the dropdown when the component is mounted
   document.addEventListener('DOMContentLoaded', () => {
     const dropdown = document.getElementById(`${id}-dropdown`);
     const selected = document.getElementById(`${id}-selected`);
@@ -274,21 +269,18 @@ const displayText = currentValue
     const items = menu.querySelectorAll('.filter-item');
     const selectElement = document.getElementById(id);
 
-    // Toggle dropdown when clicking the selected option
     if (selected && dropdown) {
       selected.addEventListener('click', e => {
         e.stopPropagation();
         dropdown.classList.toggle('active');
       });
 
-      // Close dropdown when clicking outside
       document.addEventListener('click', e => {
         if (!(e.target instanceof Node) || !dropdown.contains(e.target)) {
           dropdown.classList.remove('active');
         }
       });
 
-      // Close dropdown when pressing escape
       document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
           dropdown.classList.remove('active');
@@ -296,31 +288,24 @@ const displayText = currentValue
       });
     }
 
-    // Handle filter item selection
     items.forEach(item => {
       item.addEventListener('click', () => {
         const value = item.getAttribute('data-value');
-        // Use the simplified display text for the selected item
         const displayText =
           item.getAttribute('data-display') || item.textContent;
 
-        // Update the visual selected state
         items.forEach(i => i.classList.remove('active'));
         item.classList.add('active');
 
-        // Update the displayed text (simplified for "All" options)
         selected.querySelector('span').textContent = displayText;
 
-        // Update the underlying select element
         if (selectElement) {
           selectElement.value = value;
 
-          // Trigger a change event
           const event = new Event('change', { bubbles: true });
           selectElement.dispatchEvent(event);
         }
 
-        // Close the dropdown
         dropdown.classList.remove('active');
       });
     });

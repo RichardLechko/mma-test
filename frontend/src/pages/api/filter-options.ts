@@ -1,42 +1,49 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../lib/supabase';
 
 export const GET: APIRoute = async () => {
   try {
-    const { data: nationalities, error: natError } = await supabase
-      .from('fighters')
-      .select('nationality')
-      .not('nationality', 'is', null)
-      .order('nationality');
+    const uniqueNationalities = [
+      'Australia',
+      'Brazil',
+      'Cameroon',
+      'Canada',
+      'China',
+      'France',
+      'Georgia',
+      'Ireland',
+      'Jamaica',
+      'Japan',
+      'Kazakhstan',
+      'Kyrgyzstan',
+      'Mexico',
+      'Netherlands',
+      'New Zealand',
+      'Nigeria',
+      'Poland',
+      'Russia',
+      'South Africa',
+      'South Korea',
+      'Spain',
+      'Sweden',
+      'Thailand',
+      'United Kingdom',
+      'United States'
+    ];
 
-    const { data: weightClasses, error: wcError } = await supabase
-      .from('fighters')
-      .select('weight_class')
-      .not('weight_class', 'is', null)
-      .order('weight_class');
-
-    if (natError || wcError) {
-      return new Response(JSON.stringify({ error: natError?.message || wcError?.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    const uniqueNationalities = Array.from(
-      new Set(
-        (nationalities || [])
-          .map(item => item.nationality)
-          .filter(Boolean)
-      )
-    ).sort();
-
-    const uniqueWeightClasses = Array.from(
-      new Set(
-        (weightClasses || [])
-          .map(item => item.weight_class)
-          .filter(Boolean)
-      )
-    ).sort();
+    const uniqueWeightClasses = [
+      'Flyweight',
+      'Bantamweight',
+      'Featherweight',
+      'Lightweight',
+      'Welterweight',
+      'Middleweight',
+      'Light Heavyweight',
+      'Heavyweight',
+      "Women's Strawweight",
+      "Women's Flyweight",
+      "Women's Bantamweight",
+      "Women's Featherweight"
+    ];
 
     return new Response(JSON.stringify({
       nationalities: uniqueNationalities,

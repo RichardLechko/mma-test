@@ -1,7 +1,4 @@
 ---
-// EventsCalendar.astro - Place in frontend/src/components/
-// A calendar component that displays UFC events by date
-
 interface Event {
   id: string;
   name: string;
@@ -19,35 +16,31 @@ interface Props {
 
 const { events, currentYear } = Astro.props;
 
-// Group events by month and date
 const eventsByDate = new Map<string, Event[]>();
 
 events.forEach(event => {
   if (!event?.event_date) return;
-  
+
   const eventDate = new Date(event.event_date);
   if (isNaN(eventDate.getTime())) return;
-  
+
   const dateKey = `${eventDate.getFullYear()}-${eventDate.getMonth()}-${eventDate.getDate()}`;
-  
+
   if (!eventsByDate.has(dateKey)) {
     eventsByDate.set(dateKey, []);
   }
-  
+
   eventsByDate.get(dateKey)?.push(event);
 });
 
-// Get number of days in a month
 const getDaysInMonth = (year: number, month: number): number => {
   return new Date(year, month + 1, 0).getDate();
 };
 
-// Get the first day of the month (0 = Sunday, 1 = Monday, etc.)
 const getFirstDayOfMonth = (year: number, month: number): number => {
   return new Date(year, month, 1).getDay();
 };
 
-// Create calendar data
 type CalendarDay = {
   day: number | null;
   events: Event[];
@@ -64,56 +57,59 @@ const calendarData: CalendarMonth[] = [];
 for (let month = 0; month < 12; month++) {
   const daysInMonth = getDaysInMonth(currentYear, month);
   const firstDay = getFirstDayOfMonth(currentYear, month);
-  
+
   const days: CalendarDay[] = [];
-  
-  // Add empty cells for days before the first day of the month
+
   for (let i = 0; i < firstDay; i++) {
     days.push({ day: null, events: [] });
   }
-  
-  // Add days of the month
+
   for (let day = 1; day <= daysInMonth; day++) {
     const dateKey = `${currentYear}-${month}-${day}`;
     const dayEvents = eventsByDate.get(dateKey) || [];
-    
+
     days.push({
       day,
       events: dayEvents,
-      hasEvents: dayEvents.length > 0
+      hasEvents: dayEvents.length > 0,
     });
   }
-  
+
   calendarData.push({
     month,
-    days
+    days,
   });
 }
 
-// Month names
 const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
-// Day names
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// Format date
 const formatEventDate = (dateString: string): string => {
   const date = new Date(dateString);
   const hours = date.getHours();
   const minutes = date.getMinutes();
-  
-  // Format time in 12-hour format
+
   const ampm = hours >= 12 ? 'PM' : 'AM';
   const formattedHours = hours % 12 || 12;
   const formattedMinutes = minutes.toString().padStart(2, '0');
-  
+
   return `${formattedHours}:${formattedMinutes} ${ampm}`;
 };
 
-// Current date
 const today = new Date();
 const currentDay = today.getDate();
 const currentMonth = today.getMonth();
@@ -121,65 +117,79 @@ const currentMonth = today.getMonth();
 
 <div class="events-calendar">
   <div class="calendar-months">
-    {calendarData.map((monthData, index) => (
-      <div 
-        class={`calendar-month ${currentMonth === index ? 'current-month' : ''}`} 
-        id={`month-${index}`}
-      >
-        <h3 class="month-title">{monthNames[monthData.month]} {currentYear}</h3>
-        
-        <div class="calendar-grid">
-          {/* Day names header */}
-          {dayNames.map(name => (
-            <div class="day-name">{name}</div>
-          ))}
-          
-          {/* Calendar days */}
-          {monthData.days.map(dayData =>
-            dayData.day ? (
-              dayData.hasEvents ? (
-                <a 
-                  href={`/events/event/${dayData.events[0].id}`} 
-                  class={`calendar-day ${
-                    currentMonth === monthData.month && currentDay === dayData.day ? 'today' : ''
-                  } has-events`}
-                >
-                  <span class="day-number">{dayData.day}</span>
-                  
-                  <div class="day-events">
-                    {dayData.events.map(event => (
-                      <div class="calendar-event">
-                        <span class="event-time">{formatEventDate(event.event_date)}</span>
-                        <span class="event-name">{event.name}</span>
-                      </div>
-                    ))}
+    {
+      calendarData.map((monthData, index) => (
+        <div
+          class={`calendar-month ${currentMonth === index ? 'current-month' : ''}`}
+          id={`month-${index}`}
+        >
+          <h3 class="month-title">
+            {monthNames[monthData.month]} {currentYear}
+          </h3>
+
+          <div class="calendar-grid">
+            {dayNames.map(name => (
+              <div class="day-name">{name}</div>
+            ))}
+
+            {monthData.days.map(dayData =>
+              dayData.day ? (
+                dayData.hasEvents ? (
+                  <a
+                    href={`/events/event/${dayData.events[0].id}`}
+                    class={`calendar-day ${
+                      currentMonth === monthData.month &&
+                      currentDay === dayData.day
+                        ? 'today'
+                        : ''
+                    } has-events`}
+                  >
+                    <span class="day-number">{dayData.day}</span>
+
+                    <div class="day-events">
+                      {dayData.events.map(event => (
+                        <div class="calendar-event">
+                          <span class="event-time">
+                            {formatEventDate(event.event_date)}
+                          </span>
+                          <span class="event-name">{event.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </a>
+                ) : (
+                  <div
+                    class={`calendar-day ${
+                      currentMonth === monthData.month &&
+                      currentDay === dayData.day
+                        ? 'today'
+                        : ''
+                    }`}
+                  >
+                    <span class="day-number">{dayData.day}</span>
                   </div>
-                </a>
+                )
               ) : (
-                <div 
-                  class={`calendar-day ${
-                    currentMonth === monthData.month && currentDay === dayData.day ? 'today' : ''
-                  }`}
-                >
-                  <span class="day-number">{dayData.day}</span>
-                </div>
-              )
-            ) : (
-              <div class="calendar-day empty"></div>
-            )
-          )}
+                <div class="calendar-day empty" />
+              ),
+            )}
+          </div>
         </div>
-      </div>
-    ))}
+      ))
+    }
   </div>
-  
+
   <div class="calendar-navigation">
     <div class="month-selector">
       <label for="month-select">Jump to month:</label>
       <select id="month-select">
-        {monthNames.map((name, index) => (
-          <option value={index} selected={currentMonth === index}>{name}</option>
-        ))}
+        {
+          monthNames.map((name, index) => (
+            <option value={index} selected={currentMonth === index}>
+              {name}
+            </option>
+          ))
+        }
       </select>
     </div>
   </div>
@@ -187,49 +197,45 @@ const currentMonth = today.getMonth();
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Get the year from the URL path
     const pathParts = window.location.pathname.split('/');
     const yearParam = pathParts[pathParts.length - 1] || '';
     const selectedYear = parseInt(yearParam) || 0;
     const currentYear = new Date().getFullYear();
-    
-    // Only jump to current month if we're viewing the current year
+
     if (selectedYear === currentYear) {
       const currentMonth = new Date().getMonth();
-      const currentMonthElement = document.getElementById(`month-${currentMonth}`);
-      
+      const currentMonthElement = document.getElementById(
+        `month-${currentMonth}`,
+      );
+
       if (currentMonthElement) {
         currentMonthElement.scrollIntoView({ behavior: 'smooth' });
       }
     } else {
-      // For non-current years, scroll to January (or the first available month)
       const firstMonth = document.querySelector('.calendar-month');
       if (firstMonth) {
         firstMonth.scrollIntoView({ behavior: 'smooth' });
       }
     }
-    
-    // Handle month selector
-    const monthSelect = document.getElementById('month-select') as HTMLSelectElement;
-    
+
+    const monthSelect = document.getElementById(
+      'month-select',
+    ) as HTMLSelectElement;
+
     if (monthSelect) {
       monthSelect.addEventListener('change', () => {
         const selectedMonth = monthSelect.value;
         const monthElement = document.getElementById(`month-${selectedMonth}`);
-        
+
         if (monthElement) {
           monthElement.scrollIntoView({ behavior: 'smooth' });
         }
       });
     }
-    
-    // Add proximity classes to calendar days based on date
+
     enhanceCalendarDays();
   });
 
-  /**
-   * Enhance calendar days with visual indicators for upcoming events
-   */
   function enhanceCalendarDays() {
     const calendarDays = document.querySelectorAll('.calendar-day');
     if (!calendarDays.length) return;
@@ -238,45 +244,49 @@ const currentMonth = today.getMonth();
     today.setHours(0, 0, 0, 0);
 
     calendarDays.forEach(day => {
-      // Skip empty days and days without a number
       if (day.classList.contains('empty')) return;
-      
+
       const dayNumberElement = day.querySelector('.day-number');
       if (!dayNumberElement || !dayNumberElement.textContent) return;
-      
-      // Get the date from the calendar day
+
       const dayNumber = parseInt(dayNumberElement.textContent);
       if (isNaN(dayNumber)) return;
-      
-      // Find which month this belongs to
+
       const monthElement = day.closest('.calendar-month');
       if (!monthElement) return;
-      
+
       const monthTitleElement = monthElement.querySelector('.month-title');
       if (!monthTitleElement || !monthTitleElement.textContent) return;
-      
+
       const monthTitle = monthTitleElement.textContent;
       const monthMatch = monthTitle.match(/([A-Za-z]+)\s+(\d{4})/);
       if (!monthMatch) return;
-      
+
       const monthName = monthMatch[1];
       const year = parseInt(monthMatch[2]);
       const monthIndex = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
       ].indexOf(monthName);
-      
+
       if (monthIndex === -1 || isNaN(year)) return;
-      
-      // Create date object for this calendar day
+
       const calendarDate = new Date(year, monthIndex, dayNumber);
       calendarDate.setHours(0, 0, 0, 0);
-      
-      // Calculate days difference
+
       const timeDifference = calendarDate.getTime() - today.getTime();
       const daysDifference = Math.round(timeDifference / (1000 * 60 * 60 * 24));
-      
-      // Add special classes based on proximity to today
+
       if (daysDifference === 1) {
         day.classList.add('future-1day');
       } else if (daysDifference > 1 && daysDifference <= 3) {
@@ -284,16 +294,17 @@ const currentMonth = today.getMonth();
       } else if (daysDifference > 3 && daysDifference <= 7) {
         day.classList.add('future-7days');
       }
-      
-      // Only add tooltip to days with events
+
       if (day.classList.contains('has-events')) {
-        // Add a title attribute to show days until event on hover
         if (daysDifference > 0) {
           day.setAttribute('title', `Event in ${daysDifference} days`);
         } else if (daysDifference === 0) {
           day.setAttribute('title', 'Event today!');
         } else {
-          day.setAttribute('title', `Event was ${Math.abs(daysDifference)} days ago`);
+          day.setAttribute(
+            'title',
+            `Event was ${Math.abs(daysDifference)} days ago`,
+          );
         }
       }
     });

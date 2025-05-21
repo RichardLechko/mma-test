@@ -124,7 +124,6 @@ $breakpoint-xxl: 1536px;
         gap: $spacing-xs;
       }
 
-      // Specific styling for the hero buttons
       .btn {
         margin: 0;
         font-size: $font-size-md;
@@ -231,9 +230,9 @@ $breakpoint-xxl: 1536px;
       border-radius: $border-radius-md;
       display: flex;
       flex-direction: column;
-      position: relative; // For positioning the countdown
-      height: 100%; // Make all cards the same height
-      min-height: 280px; // Set a minimum height
+      position: relative;
+      height: 100%;
+      min-height: 280px;
 
       @include mobile {
         padding: $spacing-sm;
@@ -280,8 +279,6 @@ $breakpoint-xxl: 1536px;
           background-color: #383838;
           border-left: 3px solid $primary-color;
           border-radius: $border-radius-sm;
-
-          // Simple clean design, no unnecessary indicators
         }
 
         @include tablet {
@@ -496,8 +493,6 @@ $breakpoint-xxl: 1536px;
   }
 }
 
-// Add these refinements to your existing code
-
 @media (max-width: 640px) {
   .home {
     .hero-content {
@@ -515,15 +510,14 @@ $breakpoint-xxl: 1536px;
       padding: $spacing-xs calc(#{$spacing-sm} + 0.2rem);
     }
 
-    // Enhanced event card responsiveness
     .event-preview {
       .event-details {
-        min-height: 260px; // Slightly reduce minimum height
+        min-height: 260px;
         padding: $spacing-sm;
 
         h3 {
           font-size: $font-size-md;
-          padding-right: 75px; // Adjusted for countdown
+          padding-right: 75px;
         }
 
         .event-date,
@@ -550,7 +544,6 @@ $breakpoint-xxl: 1536px;
   }
 }
 
-// Add specific optimizations for 425px (xs)
 @media (max-width: 425px) {
   .home {
     .content {
@@ -565,7 +558,7 @@ $breakpoint-xxl: 1536px;
         h3 {
           font-size: calc(#{$font-size-md} - 0.1rem);
           margin-bottom: $spacing-xs;
-          padding-right: 70px; // Adjusted for countdown
+          padding-right: 70px;
         }
 
         .event-date,
@@ -613,7 +606,6 @@ $breakpoint-xxl: 1536px;
   }
 }
 
-// Add specific optimizations for 375px (xxs)
 @media (max-width: 375px) {
   .home {
     .event-preview {
@@ -622,7 +614,7 @@ $breakpoint-xxl: 1536px;
 
         h3 {
           font-size: $font-size-sm;
-          padding-right: 65px; // Adjusted for countdown
+          padding-right: 65px;
         }
 
         .event-date,
@@ -669,7 +661,6 @@ $breakpoint-xxl: 1536px;
   }
 }
 
-// Add specific optimizations for 320px (xxxs)
 @media (max-width: 320px) {
   .home {
     .content {
@@ -688,7 +679,7 @@ $breakpoint-xxl: 1536px;
 
         h3 {
           font-size: calc(#{$font-size-sm} - 0.05rem);
-          padding-right: 60px; // Adjusted for countdown
+          padding-right: 60px;
           margin-bottom: calc(#{$spacing-xs} - 0.05rem);
         }
 

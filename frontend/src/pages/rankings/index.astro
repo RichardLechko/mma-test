@@ -1,6 +1,5 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { supabase } from '../../lib/supabase';
 
 interface Fighter {
   id: string;
@@ -13,14 +12,6 @@ interface Fighter {
   draws: number;
   status?: string;
   nationality?: string;
-}
-
-interface FighterRanking {
-  id: string;
-  fighter_id: string;
-  fighter: Fighter;
-  weight_class: string;
-  rank: string;
 }
 
 const weightClasses = [
@@ -39,40 +30,6 @@ const weightClasses = [
   "Women's Featherweight"
 ];
 
-const { data: rankings, error: rankingsError } = await supabase
-  .from('fighter_rankings')
-  .select(`
-    id,
-    fighter_id,
-    weight_class,
-    rank,
-    fighter:fighter_id (
-      id,
-      name,
-      nickname,
-      wins,
-      losses,
-      draws,
-      status,
-      nationality
-    )
-  `);
-
-if (rankingsError) {
-  console.error('Error fetching rankings:', rankingsError);
-}
-
-const { data: rankedFighters, error: fightersError } = await supabase
-  .from('fighters')
-  .select('*')
-  .not('rank', 'is', null)
-  .not('rank', 'eq', 'Unranked')
-  .not('rank', 'eq', 'NR');
-
-if (fightersError) {
-  console.error('Error fetching fighters:', fightersError);
-}
-
 function getRankValue(rank: string): number {
   if (!rank) return 999;
   if (rank === "Champion") return -2;
@@ -87,62 +44,39 @@ function getRankValue(rank: string): number {
 
 const fightersByWeightClass: Record<string, any[]> = {};
 
+const dummyFighters = {
+  "Flyweight": [
+    { id: "fly-001", name: "Alex Johnson", nickname: "The Swift", wins: 22, losses: 2, draws: 0, status: "Active", nationality: "USA", currentRank: "Champion", currentWeightClass: "Flyweight" },
+    { id: "fly-002", name: "Miguel Santos", nickname: "El Rayo", wins: 18, losses: 3, draws: 1, status: "Active", nationality: "Brazil", currentRank: "#1", currentWeightClass: "Flyweight" },
+    { id: "fly-003", name: "Takashi Yamamoto", nickname: "Thunder", wins: 16, losses: 4, draws: 0, status: "Active", nationality: "Japan", currentRank: "#2", currentWeightClass: "Flyweight" },
+    { id: "fly-004", name: "Daniel Wilson", nickname: "The Hurricane", wins: 15, losses: 5, draws: 0, status: "Active", nationality: "UK", currentRank: "#3", currentWeightClass: "Flyweight" },
+    { id: "fly-005", name: "Li Wei", nickname: "Dragon", wins: 14, losses: 3, draws: 1, status: "Active", nationality: "China", currentRank: "#4", currentWeightClass: "Flyweight" },
+  ],
+  "Bantamweight": [
+    { id: "ban-001", name: "Carlos Mendez", nickname: "The Cobra", wins: 24, losses: 1, draws: 0, status: "Active", nationality: "Mexico", currentRank: "Champion", currentWeightClass: "Bantamweight" },
+    { id: "ban-002", name: "Jason Smith", nickname: "Quick Hands", wins: 19, losses: 2, draws: 0, status: "Active", nationality: "USA", currentRank: "#1", currentWeightClass: "Bantamweight" },
+    { id: "ban-003", name: "Ivan Petrov", nickname: "The Beast", wins: 17, losses: 3, draws: 0, status: "Active", nationality: "Russia", currentRank: "#2", currentWeightClass: "Bantamweight" },
+    { id: "ban-004", name: "Lee Sung-ho", nickname: "The Technician", wins: 15, losses: 4, draws: 1, status: "Active", nationality: "South Korea", currentRank: "#3", currentWeightClass: "Bantamweight" },
+  ],
+  "Heavyweight": [
+    { id: "hvy-001", name: "Marcus Williams", nickname: "The Destroyer", wins: 20, losses: 0, draws: 0, status: "Active", nationality: "USA", currentRank: "Champion", currentWeightClass: "Heavyweight" },
+    { id: "hvy-002", name: "Dmitri Volkov", nickname: "Ice Man", wins: 18, losses: 2, draws: 0, status: "Active", nationality: "Russia", currentRank: "#1", currentWeightClass: "Heavyweight" },
+    { id: "hvy-003", name: "Francis Mbeki", nickname: "The Predator", wins: 16, losses: 3, draws: 0, status: "Active", nationality: "Cameroon", currentRank: "#2", currentWeightClass: "Heavyweight" },
+  ],
+  "Women's Strawweight": [
+    { id: "wst-001", name: "Sofia Rodriguez", nickname: "La Reina", wins: 21, losses: 1, draws: 0, status: "Active", nationality: "Brazil", currentRank: "Champion", currentWeightClass: "Women's Strawweight" },
+    { id: "wst-002", name: "Jessica Lee", nickname: "The Diamond", wins: 16, losses: 3, draws: 0, status: "Active", nationality: "USA", currentRank: "#1", currentWeightClass: "Women's Strawweight" },
+    { id: "wst-003", name: "Zhang Wei", nickname: "Iron Fist", wins: 15, losses: 2, draws: 1, status: "Active", nationality: "China", currentRank: "#2", currentWeightClass: "Women's Strawweight" },
+  ]
+};
+
 weightClasses.forEach(weightClass => {
-  fightersByWeightClass[weightClass] = [];
+  if (dummyFighters[weightClass]) {
+    fightersByWeightClass[weightClass] = dummyFighters[weightClass];
+  } else {
+    fightersByWeightClass[weightClass] = [];
+  }
 });
-
-if (rankings) {
-  rankings.forEach((ranking: any) => {
-    const weightClass = ranking.weight_class;
-    const rank = ranking.rank;
-    const fighter = ranking.fighter;
-    
-    if (rank === "Champion" || rank === "Interim Champion" || 
-        rank.startsWith("#") || !isNaN(parseInt(rank))) {
-      
-      if (weightClasses.includes(weightClass) && fighter) {
-        fightersByWeightClass[weightClass].push({
-          id: fighter.id,
-          name: fighter.name,
-          nickname: fighter.nickname,
-          wins: fighter.wins || 0,
-          losses: fighter.losses || 0,
-          draws: fighter.draws || 0,
-          status: fighter.status,
-          nationality: fighter.nationality || "",
-          currentRank: rank,
-          currentWeightClass: weightClass
-        });
-      }
-    }
-  });
-}
-
-if (rankedFighters) {
-  rankedFighters.forEach((fighter: any) => {
-    const hasRankingEntry = rankings?.some(
-      ranking => ranking.fighter_id === fighter.id
-    );
-    
-    if (!hasRankingEntry && fighter.rank && fighter.weight_class) {
-      const weightClass = fighter.weight_class;
-      if (weightClasses.includes(weightClass)) {
-        fightersByWeightClass[weightClass].push({
-          id: fighter.id,
-          name: fighter.name,
-          nickname: fighter.nickname,
-          wins: fighter.wins || 0,
-          losses: fighter.losses || 0, 
-          draws: fighter.draws || 0,
-          status: fighter.status,
-          nationality: fighter.nationality || "",
-          currentRank: fighter.rank,
-          currentWeightClass: weightClass
-        });
-      }
-    }
-  });
-}
 
 for (const weightClass in fightersByWeightClass) {
   fightersByWeightClass[weightClass].sort((a, b) => {
@@ -166,7 +100,6 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
       <a href="/rankings" class="rankings-nav-link active">Rankings</a>
     </div>
     
-    <!-- Keep original tabs -->
     <div class="rankings-weight-class-tabs">
       {activeWeightClasses.map(weightClass => (
         <button 
@@ -178,7 +111,6 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
       ))}
     </div>
     
-    <!-- Add mobile dropdown that will only show on mobile -->
     <div class="rankings-weight-dropdown">
       <select id="weight-class-dropdown">
         {activeWeightClasses.map(weightClass => (
@@ -230,7 +162,6 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
   const tabButtons = document.querySelectorAll('.rankings-weight-tab');
   const fighterTabs = document.querySelectorAll('.rankings-weight-class-section');
   
-  // Tab button click handlers
   tabButtons.forEach(button => {
     button.addEventListener('click', () => {
       const weightClass = button.getAttribute('data-weight-class');
@@ -248,22 +179,18 @@ const selectedWeightClass = activeWeightClasses.length > 0 ? activeWeightClasses
     });
   });
   
-  // Handle mobile dropdown for weight classes
   const weightClassDropdown = document.getElementById('weight-class-dropdown') as HTMLSelectElement;
   if (weightClassDropdown) {
     weightClassDropdown.addEventListener('change', () => {
       const selectedValue = weightClassDropdown.value;
       
-      // Hide all weight class sections
       fighterTabs.forEach(tab => tab.classList.remove('active'));
       
-      // Show the selected section
       const tabElement = document.getElementById(`weight-class-${selectedValue.replace(/\s+/g, '-').replace(/'/g, '').toLowerCase()}`);
       if (tabElement) {
         tabElement.classList.add('active');
       }
       
-      // Update active tab button (even though it's hidden on mobile)
       tabButtons.forEach(btn => {
         btn.classList.remove('active');
         if (btn.getAttribute('data-weight-class') === selectedValue) {
